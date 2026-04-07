@@ -1,0 +1,47 @@
+/**
+ * KISS API Docs - Custom styles
+ * Primary brand color: #D80812
+ */
+
+:root {
+  --ifm-color-primary: #D80812;
+  --ifm-color-primary-dark: #c2070f;
+  --ifm-color-primary-darker: #b7070f;
+  --ifm-color-primary-darkest: #97060c;
+  --ifm-color-primary-light: #ee0914;
+  --ifm-color-primary-lighter: #f41420;
+  --ifm-color-primary-lightest: #f63c46;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #f63c46;
+  --ifm-color-primary-dark: #f51a26;
+  --ifm-color-primary-darker: #f00d1a;
+  --ifm-color-primary-darkest: #c70a15;
+  --ifm-color-primary-light: #f75e66;
+  --ifm-color-primary-lighter: #f86b73;
+  --ifm-color-primary-lightest: #fa9399;
+
+  /* Tella-inspired dark backgrounds */
+  --ifm-background-color: #0c0c10;
+  --ifm-background-surface-color: #0c0c10;
+  --ifm-navbar-background-color: #0c0c10;
+
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.navbar {
+  height: 60px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .navbar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.navbar__logo img {
+  height: 32px;
+}
