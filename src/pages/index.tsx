@@ -10,7 +10,7 @@ function Hero() {
     <header className={styles.hero}>
       <div className="container">
         <Heading as="h1" className={styles.heroTitle}>
-          KISS API Documentation
+          KISS API Documentation (Preview Test)
         </Heading>
         <p className={styles.heroSubtitle}>
           Integrate smart storage access into your platform.
