@@ -1,0 +1,911 @@
+openapi: 3.0.3
+info:
+  title: KISS API
+  description: |
+    Public API for Keep It Simple Storage (KISS). Two audiences:
+    - **White-label app operators** - authenticate tenants, retrieve access/keys, report lock activity
+    - **PMS push integrators** - sync unit and tenant data into KISS
+  version: 1.0.0
+  license:
+    name: Proprietary
+  contact:
+    name: KISS Support
+    url: https://keepitsimplestorage.com
+
+servers:
+  - url: https://api.keepitsimplestorage.com/api/v1
+    description: Production
+
+tags:
+  - name: Authentication
+    description: Tenant phone + OTP authentication
+  - name: Tenant Access
+    description: Retrieve units, access status, and entry points
+  - name: Lock Logs
+    description: Report lock activity after NFC tap
+  - name: Entry Point Logs
+    description: Report entry point activity (gates, doors)
+  - name: PMS Sync
+    description: Push unit and tenant data into KISS
+  - name: Health
+    description: API health check
+
+security:
+  - BearerAuth: []
+
+paths:
+  /auth/phone:
+    post:
+      operationId: requestOtp
+      tags:
+        - Authentication
+      summary: Request OTP
+      description: Sends a one-time password to the tenant's phone number via SMS.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - country_code
+                - phone_number
+              properties:
+                country_code:
+                  type: string
+                  description: Country calling code without `+` (1-3 digits)
+                  example: "1"
+                phone_number:
+                  type: string
+                  description: Phone number without country code (7-15 digits)
+                  example: "5551234567"
+            example:
+              country_code: "1"
+              phone_number: "5551234567"
+      responses:
+        "200":
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "OTP sent successfully."
+        "422":
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: "A tenant with the submitted phone number does not exist."
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags:
+        - Authentication
+      summary: Verify OTP
+      description: |
+        Verifies the OTP code and returns a Bearer token.
+
+        If the phone number is associated with multiple tenant accounts, the API returns `token: null` and a list of accounts. The integrator prompts the tenant to select an account, then calls this same endpoint again with the same OTP + the selected `tenant_id`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - country_code
+                - phone_number
+                - otp
+              properties:
+                country_code:
+                  type: string
+                  description: Country calling code without `+` (1-3 digits)
+                  example: "1"
+                phone_number:
+                  type: string
+                  description: Phone number (7-15 digits)
+                  example: "5551234567"
+                otp:
+                  type: string
+                  description: 6-digit OTP code received via SMS
+                  example: "482910"
+                tenant_id:
+                  type: string
+                  description: Required on second call when multiple accounts exist. The selected tenant's ID.
+                  example: "01HQA123456789ABCDEFGHJKMNPQRS"
+            examples:
+              single_account:
+                summary: Standard OTP verification
+                value:
+                  country_code: "1"
+                  phone_number: "5551234567"
+                  otp: "482910"
+              select_account:
+                summary: Selecting an account (second call)
+                value:
+                  country_code: "1"
+                  phone_number: "5551234567"
+                  otp: "482910"
+                  tenant_id: "01HQA123456789ABCDEFGHJKMNPQRS"
+      responses:
+        "200":
+          description: Login successful or multiple accounts found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        nullable: true
+                        description: Bearer token. Null when multiple accounts exist.
+                      user:
+                        $ref: "#/components/schemas/User"
+                      accounts:
+                        type: array
+                        description: Only present when multiple accounts exist.
+                        items:
+                          $ref: "#/components/schemas/TenantAccount"
+              examples:
+                single_account:
+                  summary: Single account - token returned
+                  value:
+                    message: "Login successful."
+                    data:
+                      token: "1|abc123def456..."
+                      user:
+                        id: "usr_abc123"
+                        name: "Jane Smith"
+                        email: null
+                        phone: "+15551234567"
+                multiple_accounts:
+                  summary: Multiple accounts - selection required
+                  value:
+                    message: "Multiple accounts found."
+                    data:
+                      token: null
+                      accounts:
+                        - tenant_id: "01HQA123456789ABCDEFGHJKMNPQRS"
+                          name: "Jane Smith"
+                          location: "Downtown Storage"
+                          company: "ABC Storage Co."
+                        - tenant_id: "01HQB234567890BCDEFGHJKMNPQRST"
+                          name: "Jane Smith"
+                          location: "Uptown Storage"
+                          company: "ABC Storage Co."
+        "422":
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: "The OTP code is invalid or has expired."
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /tenant/access:
+    get:
+      operationId: getTenantAccess
+      tags:
+        - Tenant Access
+      summary: Get tenant access
+      description: |
+        Returns everything the app needs in a single call: the tenant's units, their access status, and their entry points. Call this on app launch and on pull-to-refresh, then cache the response for offline use.
+      responses:
+        "200":
+          description: Tenant access data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      tenant_id:
+                        type: string
+                        description: Tenant ULID
+                      synced_at:
+                        type: string
+                        format: date-time
+                        description: When unit facts were last refreshed
+                      units:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TenantUnit"
+                      entry_points:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TenantEntryPoint"
+              example:
+                message: "Request successful."
+                data:
+                  tenant_id: "01HQ0123456789ABCDEFGHJKMNPQRS"
+                  synced_at: "2026-02-13T14:30:00Z"
+                  units:
+                    - unit_id: "01HQ1234567890ABCDEFGHJKMNPQRS"
+                      unit_name: "B204"
+                      location_id: "01HQ9876543210ZYXWVUTSRQPONML"
+                      grant_type: "tenant_primary"
+                      state: "tenant_permitted"
+                      reason: "active"
+                      access: true
+                      has_unit_lock: true
+                      has_entry_point: true
+                    - unit_id: "01HQ2345678901BCDEFGHJKMNPQRST"
+                      unit_name: "C101"
+                      location_id: "01HQ9876543210ZYXWVUTSRQPONML"
+                      grant_type: "tenant_primary"
+                      state: "tenant_denied"
+                      reason: "delinquent"
+                      access: false
+                      has_unit_lock: true
+                      has_entry_point: true
+                      balance_due: 150.00
+                      paid_through_date: "2026-01-10"
+                    - unit_id: "01HQ3456789012CDEFGHJKMNPQRSTU"
+                      unit_name: "A305"
+                      location_id: "01HQ8765432109YXWVUTSRQPONMLK"
+                      grant_type: "tenant_shared"
+                      state: "tenant_permitted"
+                      reason: "active"
+                      access: true
+                      has_unit_lock: false
+                      has_entry_point: true
+                  entry_points:
+                    - entry_point_id: "01HQ4567890123DEFGHJKMNPQRSTUV"
+                      name: "Main Gate"
+                      zone_id: "01HQ5678901234EFGHJKMNPQRSTUVW"
+                      location_id: "01HQ9876543210ZYXWVUTSRQPONML"
+                      would_have_access: true
+                      access: false
+                      denied_reason: "tenant_denied_in_zone"
+                    - entry_point_id: "01HQ6789012345FGHJKMNPQRSTUVWX"
+                      name: "Building B Door"
+                      zone_id: "01HQ7890123456GHJKMNPQRSTUVWXY"
+                      location_id: "01HQ9876543210ZYXWVUTSRQPONML"
+                      would_have_access: true
+                      access: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /locks/{lock_id}/logs:
+    post:
+      operationId: createLockLog
+      tags:
+        - Lock Logs
+      summary: Create lock log
+      description: Reports lock activity back to KISS after a tenant interacts with an NFC lock. Call this after every NFC tap attempt (successful or failed).
+      parameters:
+        - name: lock_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The lock's unique identifier
+          example: "01HQ8901234567HIJKMNPQRSTUVWXY"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+              properties:
+                key:
+                  $ref: "#/components/schemas/LockLogKey"
+                reason:
+                  type: string
+                  maxLength: 1000
+                  description: Human-readable failure reason. Required when key is `lock.close_failure`.
+            examples:
+              open_success:
+                summary: Successful lock open
+                value:
+                  key: "lock.open_successful"
+              close_failure:
+                summary: Lock close failure with reason
+                value:
+                  key: "lock.close_failure"
+                  reason: "Lock did not respond within timeout period."
+      responses:
+        "201":
+          description: Log created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/LogEntry"
+              example:
+                message: "Log created successfully."
+                data:
+                  id: "log_xyz789"
+                  key: "lock.open_successful"
+                  happened_at: "2026-02-13T14:35:22Z"
+                  created_at: "2026-02-13T14:35:22Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Lock not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: "Lock not found."
+
+  /entry-points/{entry_point_id}/logs:
+    post:
+      operationId: createEntryPointLog
+      tags:
+        - Entry Point Logs
+      summary: Create entry point log
+      description: Reports entry point activity (gates, building doors) back to KISS after a tenant interacts with an entry point NFC reader.
+      parameters:
+        - name: entry_point_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The entry point's unique identifier
+          example: "01HQ4567890123DEFGHJKMNPQRSTUV"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+              properties:
+                key:
+                  $ref: "#/components/schemas/EntryPointLogKey"
+            example:
+              key: "entry_point.open_successful"
+      responses:
+        "201":
+          description: Log created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/LogEntry"
+              example:
+                message: "Log created successfully."
+                data:
+                  id: "log_abc456"
+                  key: "entry_point.open_successful"
+                  happened_at: "2026-02-13T14:36:10Z"
+                  created_at: "2026-02-13T14:36:10Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Entry point not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: "Entry point not found."
+
+  /pms/units/sync:
+    post:
+      operationId: syncUnits
+      tags:
+        - PMS Sync
+      summary: Sync units
+      description: |
+        Bulk upsert unit facts. Idempotent - posting the same data multiple times produces the same result.
+
+        Units are matched by `crm_unit_id` within the authenticated company's scope. If no match is found, the unit is created automatically.
+
+        Move-in is handled by sending `occupied: true` with tenant info. Move-out is handled by sending `occupied: false` - KISS automatically resets all facts to defaults.
+      security:
+        - ApiTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - units
+              properties:
+                units:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncUnit"
+            example:
+              units:
+                - crm_unit_id: "PMS-U-1001"
+                  name: "B204"
+                  occupied: true
+                  tenant:
+                    pms_tenant_id: "PMS-T-5001"
+                    first_name: "Jane"
+                    last_name: "Smith"
+                    phone: "+15551234567"
+                    email: "jane.smith@email.com"
+                  move_in_date: "2024-03-01"
+                  balance_due: 0.00
+                  paid_through_date: "2026-04-01"
+                  pms_lockout: false
+                  pms_lock_exempt: false
+                  pms_auction: false
+                  pms_unrentable: false
+                - crm_unit_id: "PMS-U-1002"
+                  name: "C101"
+                  occupied: true
+                  tenant:
+                    pms_tenant_id: "PMS-T-5002"
+                    first_name: "Bob"
+                    last_name: "Jones"
+                    phone: "+15559876543"
+                  move_in_date: "2024-06-15"
+                  balance_due: 150.00
+                  paid_through_date: "2026-01-10"
+                  pms_lockout: true
+                  pms_lock_exempt: false
+                  pms_auction: false
+                  pms_unrentable: false
+                - crm_unit_id: "PMS-U-1003"
+                  name: "A305"
+                  occupied: false
+      responses:
+        "200":
+          description: Sync completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/SyncResult"
+              examples:
+                success:
+                  summary: All units synced successfully
+                  value:
+                    message: "Sync completed."
+                    data:
+                      synced_at: "2026-04-02T14:30:00Z"
+                      total: 3
+                      created: 1
+                      updated: 1
+                      unchanged: 1
+                      errors: []
+                partial_failure:
+                  summary: Sync with errors
+                  value:
+                    message: "Sync completed with errors."
+                    data:
+                      synced_at: "2026-04-02T14:30:00Z"
+                      total: 3
+                      created: 1
+                      updated: 1
+                      unchanged: 0
+                      errors:
+                        - crm_unit_id: "PMS-U-1002"
+                          error: "Invalid value for balance_due: must be a number."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+              example:
+                message: "Validation failed."
+                errors:
+                  units.0.crm_unit_id:
+                    - "The crm_unit_id field is required."
+                  units.0.occupied:
+                    - "The occupied field is required."
+
+  /pms/webhooks:
+    post:
+      operationId: registerWebhook
+      tags:
+        - PMS Sync
+      summary: Register webhook (coming soon)
+      description: |
+        Register a URL to receive event notifications from KISS (e.g., lock opened, access denied).
+
+        **This endpoint is planned for a future release and is not available in V1.**
+      security:
+        - ApiTokenAuth: []
+      responses:
+        "501":
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                message: "This endpoint is not yet available."
+
+  /health:
+    get:
+      operationId: healthCheck
+      tags:
+        - Health
+      summary: Health check
+      description: Simple health check to verify the API is reachable and operational.
+      security: []
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+              example:
+                message: "Request successful."
+                data:
+                  version: "1.0.0"
+                  timestamp: "2026-02-13T14:30:00Z"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Tenant Bearer token obtained via OTP flow
+    ApiTokenAuth:
+      type: http
+      scheme: bearer
+      description: PMS API token generated from the KISS dashboard
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Unauthorized."
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Too many attempts. Please try again in 60 seconds."
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User ULID
+        name:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          description: Phone number in E.164 format
+
+    TenantAccount:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          description: Tenant ULID
+        name:
+          type: string
+        location:
+          type: string
+          description: Facility/location name
+        company:
+          type: string
+          description: Company name
+
+    TenantUnit:
+      type: object
+      required:
+        - unit_id
+        - unit_name
+        - location_id
+        - grant_type
+        - state
+        - reason
+        - access
+        - has_unit_lock
+        - has_entry_point
+      properties:
+        unit_id:
+          type: string
+          description: Unit ULID
+        unit_name:
+          type: string
+          description: Display name of the unit
+        location_id:
+          type: string
+          description: Facility/location ULID
+        grant_type:
+          type: string
+          enum:
+            - tenant_primary
+            - tenant_shared
+          description: Type of access grant
+        state:
+          $ref: "#/components/schemas/UnitState"
+        reason:
+          $ref: "#/components/schemas/ReasonCode"
+        access:
+          type: boolean
+          description: "Final access decision. `true` = tenant can unlock."
+        has_unit_lock:
+          type: boolean
+          description: Whether this unit has a ONELock lock device
+        has_entry_point:
+          type: boolean
+          description: Whether this unit's zone has entry points (gates, doors)
+        balance_due:
+          type: number
+          description: Amount owed. Only present when denied for financial reasons.
+        paid_through_date:
+          type: string
+          format: date
+          description: Last paid date. Only present when denied for financial reasons.
+
+    TenantEntryPoint:
+      type: object
+      required:
+        - entry_point_id
+        - name
+        - zone_id
+        - location_id
+        - would_have_access
+        - access
+      properties:
+        entry_point_id:
+          type: string
+          description: Entry point ULID
+        name:
+          type: string
+          description: Display name (e.g., "Main Gate")
+        zone_id:
+          type: string
+          description: Zone ULID
+        location_id:
+          type: string
+          description: Facility/location ULID
+        would_have_access:
+          type: boolean
+          description: Whether the tenant would have access if all units were permitted
+        access:
+          type: boolean
+          description: Actual access. Can be false even if would_have_access is true.
+        denied_reason:
+          type: string
+          description: Why access was denied. Only present when access is false.
+
+    UnitState:
+      type: string
+      enum:
+        - tenant_permitted
+        - tenant_denied
+        - vacant
+        - auction
+        - unrentable
+      description: Evaluated unit state
+
+    ReasonCode:
+      type: string
+      enum:
+        - active
+        - delinquent
+        - future_move_in
+        - blanket_delinquency
+        - pms_lockout
+        - system_lockout
+        - pms_exempt
+        - system_exempt
+      description: Why access was permitted or denied
+
+    LockLogKey:
+      type: string
+      enum:
+        - lock.open_successful
+        - lock.open_failure
+        - lock.open_blocked
+        - lock.close_successful
+        - lock.close_successful_confirmed
+        - lock.close_failure
+        - lock.close_blocked
+      description: Lock event type
+
+    EntryPointLogKey:
+      type: string
+      enum:
+        - entry_point.open_successful
+        - entry_point.open_failure
+        - entry_point.open_blocked
+        - entry_point.close_successful
+        - entry_point.close_successful_confirmed
+        - entry_point.close_failure
+        - entry_point.close_blocked
+      description: Entry point event type
+
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Log entry ULID
+        key:
+          type: string
+          description: Event type
+        happened_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    SyncUnit:
+      type: object
+      required:
+        - crm_unit_id
+        - occupied
+      properties:
+        crm_unit_id:
+          type: string
+          description: The PMS's unique identifier for this unit
+        name:
+          type: string
+          description: Display name (e.g., "B204")
+        occupied:
+          type: boolean
+          description: Is there a tenant in this unit?
+        tenant:
+          $ref: "#/components/schemas/SyncTenant"
+        move_in_date:
+          type: string
+          format: date
+          description: Tenant's move-in date. Required when occupied is true.
+        balance_due:
+          type: number
+          default: 0.00
+          description: Amount owed. Positive = owes money.
+        paid_through_date:
+          type: string
+          format: date
+          description: Date the account is paid through
+        pms_lockout:
+          type: boolean
+          default: false
+          description: PMS says deny access (overlock, lien, legal hold, etc)
+        pms_lock_exempt:
+          type: boolean
+          default: false
+          description: PMS says never lock out this tenant
+        pms_auction:
+          type: boolean
+          default: false
+          description: Unit is in auction process
+        pms_unrentable:
+          type: boolean
+          default: false
+          description: Unit cannot be rented (maintenance, damage, etc)
+        pms_status_raw:
+          type: string
+          description: The PMS's original status string. Stored for audit/debugging only.
+
+    SyncTenant:
+      type: object
+      required:
+        - pms_tenant_id
+        - first_name
+        - last_name
+      properties:
+        pms_tenant_id:
+          type: string
+          description: The PMS's unique identifier for this tenant
+        first_name:
+          type: string
+          description: Tenant's first name
+        last_name:
+          type: string
+          description: Tenant's last name
+        phone:
+          type: string
+          description: Phone number in E.164 format (e.g., +15551234567). Required for tenants who need app access.
+        email:
+          type: string
+          format: email
+          description: Tenant's email. Auto-generated if not provided.
+
+    SyncResult:
+      type: object
+      properties:
+        synced_at:
+          type: string
+          format: date-time
+        total:
+          type: integer
+          description: Total units in the request
+        created:
+          type: integer
+          description: Units created (new crm_unit_id)
+        updated:
+          type: integer
+          description: Units updated (facts changed)
+        unchanged:
+          type: integer
+          description: Units with no changes
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              crm_unit_id:
+                type: string
+              error:
+                type: string
