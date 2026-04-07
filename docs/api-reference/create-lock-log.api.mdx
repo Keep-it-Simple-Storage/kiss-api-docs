@@ -1,0 +1,69 @@
+---
+id: create-lock-log
+title: "Create lock log"
+description: "Reports lock activity back to KISS after a tenant interacts with an NFC lock. Call this after every NFC tap attempt (successful or failed)."
+sidebar_label: "Create lock log"
+hide_title: true
+hide_table_of_contents: true
+api: eJzNV1lz2zYQ/is7eGnioc44F98c1524dhLFkpu2jseByJWIigQQYClb0ei/dxakrDNOm5lmqhdJAPb69sCHuTAWnSRl9GkqYpE4lITnJpmcm7GIBMmxF/GV4BU4N2MvriORok+csiwkYnGB1jjykPMRmZCaKprBUCYTIANnp/0+yBGhAwmEWmoCpQmdTMjDraIMpIa3vxwH+SYcyzwHypSvhXCKbhb2SVqQRFhYgke+TBL0flTmYByMpMoxfdwUkbDSyQIJHbs9F1oWKGLBum9UKiKh2GUrKRORcPi5VA5TEZMrMRI+ybCQIp4LmlkW8+SUHovFdsiDDIO7P3kotfpcIqgUNamRQicigXeysDkraHdev3/xst3pPjl8+uz569Nfz9687b2/6A8uf/vw+x9icV05gZ5emXTGlrd9Sowm1MRb0tpcJSFXrb88OzLfddkM/8KENoK7EhOccd6s42STQs8CvLgTaiRQlwXLhHQYi/pmhbWI1pYZ9NLhxtqQf2K6XEty43GP/Pb6TWL0SLliW3LLRLW4tLFTiKFGcYqaIAQVCVIU0lDX8xnOOJcOZY3eduyFvDtHPaZMxJ12u71t4HVZSN1wKFM5zBFq76DS14SLGnG4zVDDBGegPHzaDedTUywWi/syCclYBzrktSwK6WYiFv1VpYcO45MiElOZl3ifxv3ZYiObQG5oDniF/ftQQj/W+Oy3sZ2YJZiVtlSloA2BQ2+NToM+pYFUgaYksOiUSUP4AYHqmK8g6LY7/LWd0zFUM4lL47ubYbPyC/RejnF/o0v6BxpUuq98dl1HTW4Gl+enP7Pur3TcptjJqoAXkciktagxvZG0T3RkXME77DY2GGYWqgH7FzKL9V4Zn7DXGzW6gdp6UmBVbvmM5+8SP0ZI5GZ8czf78vzFSxE9VKhbcYpuu/us0e42Ok8GncP4ydO42/1TbMa1/0xdV4f7SumN8l7pMd8XSk9lrlKQJWU8t6s6+gEF9o2Jgs4ZB0vp9ayc8I74WkIuNUdinPqCdXcxBof72imZhAYdmVL/iI76jwLejKO5zHuBlBkuPGt8cJLv+Vi0uOh8a16zgEUrZyITCY9uuiQKpctFLDIi6+NWS1rVnCBaRV6FGU3GyTE2E1PwXmva2Yms50xaJuEPX+sek9IpmgXlr1A6dEcle3N1vb7dZ4ArDNcP3cPIDomamfD/YTi0Y3xQEatKBZCZoAYzJKk0pjBVEt4NejDKzS0jemTVgE98n6nemz4c9U5rI2PUTB8xhZEzBVCGFeNLpc+GRro0JJXL6WLFc05WKX1wKNzfLavxrPTIBJ/rMgnGjnqnu26Ww1wlwdORcXCGaOGUoB/SCf0qn/CI5R83YXBrQJapQp2gjz/qBhwcfMgUYSOXQ8xBWgsVUTbOHxxAY310YM1rfQQOySmcIsgQRmuCs7DKDHmTIFc2GExb+ixQ4vGaej/TCXNLAqnTJW/m2conK1b9MVzR6HwVcKfZbraZKakEtQ/g1uS354x1Colv/UXV8jKhtQMBxH5p2UsRbbXCV9og5JXbrJB6TdVxGNFVqLnZ6f/5auD8z94NdRMQ3lHL5lJphiogMa/HSEWJeW7Eq+dEXj+JMh448ZWYz4fS46XLFwte/lwiU62rayZTTvHMCwMhVZ5/pyIeydzjAyg9WrLKx/CNV8feCOpFqWcrPic2LmOOY3HNVANlii64V+0eV040BhWZXkrv3BOLaClxlCRo6cGz12tTuveuPxCRGNZPn8KkLOPkLfe+vK08NQGUMCHD2lzkUo/L6h6odPLnbwOyG7s=
+sidebar_class_name: "post api-method"
+info_path: docs/api-reference/kiss-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Create lock log"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/locks/{lock_id}/logs"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Reports lock activity back to KISS after a tenant interacts with an NFC lock. Call this after every NFC tap attempt (successful or failed).
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./create-lock-log.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./create-lock-log.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./create-lock-log.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

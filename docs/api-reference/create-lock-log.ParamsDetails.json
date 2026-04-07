@@ -1,0 +1,1 @@
+{"parameters":[{"name":"lock_id","in":"path","required":true,"schema":{"type":"string"},"description":"The lock's unique identifier","example":"01HQ8901234567HIJKMNPQRSTUVWXY"}]}

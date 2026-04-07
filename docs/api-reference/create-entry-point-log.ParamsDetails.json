@@ -1,0 +1,1 @@
+{"parameters":[{"name":"entry_point_id","in":"path","required":true,"schema":{"type":"string"},"description":"The entry point's unique identifier","example":"01HQ4567890123DEFGHJKMNPQRSTUV"}]}

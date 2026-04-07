@@ -1,0 +1,62 @@
+---
+id: get-tenant-access
+title: "Get tenant access"
+description: "Returns everything the app needs in a single call: the tenant's units, their access status, and their entry points. Call this on app launch and on pull-to-refresh, then cache the response for offline use."
+sidebar_label: "Get tenant access"
+hide_title: true
+hide_table_of_contents: true
+api: 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
+sidebar_class_name: "get api-method"
+info_path: docs/api-reference/kiss-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get tenant access"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/tenant/access"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Returns everything the app needs in a single call: the tenant's units, their access status, and their entry points. Call this on app launch and on pull-to-refresh, then cache the response for offline use.
+
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./get-tenant-access.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./get-tenant-access.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

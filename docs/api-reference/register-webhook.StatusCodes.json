@@ -1,0 +1,1 @@
+{"responses":{"501":{"description":"Not implemented","content":{"application/json":{"schema":{"type":"object","properties":{"message":{"type":"string","description":"Human-readable error message"}},"title":"Error"},"example":{"message":"This endpoint is not yet available."}}}}}}
