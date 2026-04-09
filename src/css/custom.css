@@ -45,3 +45,62 @@
 .navbar__logo img {
   height: 32px;
 }
+
+/* Search bar - centered in navbar */
+.navbar-search-centered {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.navbar-search-centered .navbar__search-input {
+  width: 300px;
+  height: 36px;
+  font-size: 0.875rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.navbar-search-centered .navbar__search-input:focus {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0.2);
+  background-color: #fff;
+}
+
+[data-theme='dark'] .navbar-search-centered .navbar__search-input {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .navbar-search-centered .navbar__search-input:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Wider dropdown, centered under the input using negative margin */
+.navbar-search-centered [class*="dropdownMenu"] {
+  width: 550px !important;
+  margin-right: -125px !important;
+  border-radius: 12px !important;
+}
+
+/* Mobile: reset search bar to default inline position */
+@media screen and (max-width: 996px) {
+  .navbar-search-centered {
+    position: static !important;
+    transform: none !important;
+  }
+
+  .navbar-search-centered .navbar__search-input {
+    width: 100% !important;
+  }
+
+  .navbar-search-centered [class*="dropdownMenu"] {
+    width: calc(100vw - 2rem) !important;
+    max-width: 550px !important;
+    margin-right: 0 !important;
+    right: 0 !important;
+    left: auto !important;
+  }
+}

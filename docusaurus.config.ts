@@ -61,7 +61,19 @@ const config: Config = {
     ],
   ],
 
-  themes: ['docusaurus-theme-openapi-docs'],
+  themes: [
+    'docusaurus-theme-openapi-docs',
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        indexBlog: false,
+        docsRouteBasePath: '/docs',
+        highlightSearchTermsOnTargetPage: true,
+        searchResultLimits: 8,
+      },
+    ],
+  ],
 
   themeConfig: {
     image: 'img/social-card.jpg',
@@ -89,6 +101,11 @@ const config: Config = {
           sidebarId: 'apiReferenceSidebar',
           position: 'left',
           label: 'API Reference',
+        },
+        {
+          type: 'search',
+          position: 'right',
+          className: 'navbar-search-centered',
         },
         {
           href: 'https://github.com/Keep-it-Simple-Storage',
