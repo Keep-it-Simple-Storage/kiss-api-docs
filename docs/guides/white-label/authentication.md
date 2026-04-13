@@ -67,13 +67,11 @@ White-label app integrators authenticate tenants using a phone number + OTP (one
 
 ### How it works
 
-```
-1. App calls POST /auth/phone with tenant's phone number
+1. App calls `POST /auth/phone` with tenant's phone number
 2. Tenant receives a 6-digit OTP via SMS
-3. App calls POST /auth/verify-otp with the OTP
+3. App calls `POST /auth/verify-otp` with the OTP
 4. API returns a Bearer token
 5. App uses the token for all subsequent requests
-```
 
 ### Step 1: Request OTP
 
@@ -233,11 +231,6 @@ Cache the token for the duration of the session and handle 401 responses by redi
 |---|---|---|---|
 | `POST /auth/phone` | 5 requests | 60 seconds | Per phone number |
 | `POST /auth/verify-otp` | 5 attempts | 60 seconds | Per phone number |
-| `GET /tenant/access` | 30 requests | 60 seconds | Per tenant |
-| `POST /locks/{id}/logs` | 20 requests | 60 seconds | Per tenant |
-| `POST /entry-points/{id}/logs` | 20 requests | 60 seconds | Per tenant |
-| `POST /pms/units/sync` | 100 requests | 1 hour | Per API token |
-| `GET /health` | 60 requests | 60 seconds | Per IP |
 
 When rate limited, the API returns `429 Too Many Requests`:
 
