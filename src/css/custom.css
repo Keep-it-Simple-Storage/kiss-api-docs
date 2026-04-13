@@ -45,3 +45,66 @@
 .navbar__logo img {
   height: 32px;
 }
+
+/* Search bar - centered in navbar */
+.navbar-search-centered {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.navbar-search-centered .navbar__search-input {
+  width: 300px;
+  height: 36px;
+  font-size: 0.875rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.navbar-search-centered .navbar__search-input:focus {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0.2);
+  background-color: #fff;
+}
+
+[data-theme='dark'] .navbar-search-centered .navbar__search-input {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .navbar__search-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M6.02945,10.20327a4.17382,4.17382,0,1,1,4.17382-4.17382A4.15609,4.15609,0,0,1,6.02945,10.20327Zm9.69195,4.2199L10.8989,9.59979A5.88021,5.88021,0,0,0,12.058,6.02856,6.00467,6.00467,0,1,0,9.59979,10.8989l4.82338,4.82338a.89729.89729,0,0,0,1.29912,0,.89749.89749,0,0,0-.00089-1.29911Z' fill='%23fff'/%3E%3C/svg%3E") !important;
+}
+
+[data-theme='dark'] .navbar-search-centered .navbar__search-input:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Wider dropdown, centered under the input using negative margin */
+.navbar-search-centered [class*="dropdownMenu"] {
+  width: 550px !important;
+  margin-right: -125px !important;
+  border-radius: 12px !important;
+}
+
+/* Mobile: reset search bar to default inline position */
+@media screen and (max-width: 996px) {
+  .navbar-search-centered {
+    position: static !important;
+    transform: none !important;
+  }
+
+  .navbar-search-centered .navbar__search-input {
+    width: 100% !important;
+  }
+
+  .navbar-search-centered [class*="dropdownMenu"] {
+    width: calc(100vw - 2rem) !important;
+    max-width: 550px !important;
+    margin-right: 0 !important;
+    right: 0 !important;
+    left: auto !important;
+  }
+}
