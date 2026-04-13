@@ -81,7 +81,7 @@ If the phone number is linked to multiple accounts, the API returns a list of ac
 
 ## Step 2: Retrieve tenant access
 
-This is the core endpoint. It returns everything your app needs in a single call: the tenant's units, their access status, NFC keys, and entry points.
+This is the core endpoint. It returns everything your app needs in a single call: the tenant's units, their access status, lock keys, and entry points.
 
 ```bash
 curl https://api.keepitsimplestorage.com/api/v1/tenant/access \
@@ -107,6 +107,30 @@ curl https://api.keepitsimplestorage.com/api/v1/tenant/access \
         "access": true,
         "has_unit_lock": true,
         "has_entry_point": true
+      },
+      {
+        "unit_id": "01HQ2345678901BCDEFGHJKMNPQRST",
+        "unit_name": "C101",
+        "location_id": "01HQ9876543210ZYXWVUTSRQPONML",
+        "grant_type": "tenant_primary",
+        "state": "tenant_denied",
+        "reason": "delinquent",
+        "access": false,
+        "has_unit_lock": true,
+        "has_entry_point": true,
+        "balance_due": 150.00,
+        "paid_through_date": "2026-01-10"
+      },
+      {
+        "unit_id": "01HQ3456789012CDEFGHJKMNPQRSTU",
+        "unit_name": "A305",
+        "location_id": "01HQ8765432109YXWVUTSRQPONMLK",
+        "grant_type": "tenant_shared",
+        "state": "tenant_permitted",
+        "reason": "active",
+        "access": true,
+        "has_unit_lock": false,
+        "has_entry_point": true
       }
     ],
     "entry_points": [
@@ -114,6 +138,15 @@ curl https://api.keepitsimplestorage.com/api/v1/tenant/access \
         "entry_point_id": "01HQ4567890123DEFGHJKMNPQRSTUV",
         "name": "Main Gate",
         "zone_id": "01HQ5678901234EFGHJKMNPQRSTUVW",
+        "location_id": "01HQ9876543210ZYXWVUTSRQPONML",
+        "would_have_access": true,
+        "access": false,
+        "denied_reason": "tenant_denied_in_zone"
+      },
+      {
+        "entry_point_id": "01HQ6789012345FGHJKMNPQRSTUVWX",
+        "name": "Building B Door",
+        "zone_id": "01HQ7890123456GHJKMNPQRSTUVWXY",
         "location_id": "01HQ9876543210ZYXWVUTSRQPONML",
         "would_have_access": true,
         "access": true
@@ -125,16 +158,29 @@ curl https://api.keepitsimplestorage.com/api/v1/tenant/access \
 
 **Key fields to use in your app:**
 
+**Units:**
+
 | Field | What it means |
 |---|---|
 | `access` | **The final access decision.** `true` = tenant can unlock. |
-| `state` | Why access was permitted or denied (e.g., `tenant_permitted`, `tenant_denied`) |
-| `reason` | Specific reason (e.g., `active`, `delinquent`, `pms_lockout`) |
-| `has_unit_lock` | Whether this unit has a physical NFC lock |
+| `state` | The unit's access state: `tenant_permitted` or `tenant_denied` |
+| `reason` | Why — e.g., `active`, `delinquent`, `pms_lockout`, `future_move_in`, `blanket_delinquency` |
+| `grant_type` | `tenant_primary` (direct lease) or `tenant_shared` (shared access from another tenant) |
+| `has_unit_lock` | Whether this unit has a ONELock device |
 | `has_entry_point` | Whether this unit's zone has gates/doors |
+| `balance_due` | Amount owed. Only present when denied for financial reasons. |
+| `paid_through_date` | Last paid date. Only present when denied for financial reasons. |
+
+**Entry points:**
+
+| Field | What it means |
+|---|---|
+| `access` | Whether the tenant can open this gate/door. |
+| `would_have_access` | Whether the tenant *would* have access if all their units in this zone were permitted. |
+| `denied_reason` | Why access was denied (e.g., `tenant_denied_in_zone`). Only present when `access` is `false`. |
 
 :::note
-Call this endpoint on app launch and on pull-to-refresh. Cache the response for offline NFC access.
+Call this endpoint on app launch and on pull-to-refresh. Cache the response for offline access.
 :::
 
 ---
@@ -179,6 +225,8 @@ curl -X POST https://api.keepitsimplestorage.com/api/v1/locks/LOCK_ID/logs \
 | `lock.close_blocked` | Lock close was blocked |
 
 Entry points (gates, doors) work the same way — use `POST /entry-points/{entry_point_id}/logs` with `entry_point.*` event keys.
+
+See the full [Lock Logs](/docs/api-reference/create-lock-log) and [Entry Point Logs](/docs/api-reference/create-entry-point-log) API reference for details.
 
 ---
 
