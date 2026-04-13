@@ -30,10 +30,13 @@
 
 .logo {
   height: 36px;
-  display: block;
 }
 
 /* Show light logo by default, dark logo in dark mode */
+.logoLight {
+  display: block;
+}
+
 .logoDark {
   display: none;
 }
