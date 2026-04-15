@@ -11,6 +11,7 @@ This guide walks you from zero to successfully syncing unit data into KISS. By t
 ## Prerequisites
 
 - An API token generated from the KISS dashboard (see [Authentication guide](../white-label/authentication.md#generate-a-token))
+- A mapping of your PMS unit and tenant identifiers to sync into KISS
 - A tool to make HTTP requests (curl, Postman, or your integration code)
 
 ## Base URL
@@ -21,31 +22,7 @@ https://api.keepitsimplestorage.com/api/v1
 
 ---
 
-## Step 1: Verify your token
-
-Make a quick health check to confirm your token and connectivity:
-
-```bash
-curl https://api.keepitsimplestorage.com/api/v1/health
-```
-
-**Response:**
-
-```json
-{
-  "message": "Request successful.",
-  "data": {
-    "version": "1.0.0",
-    "timestamp": "2026-04-07T14:30:00Z"
-  }
-}
-```
-
-Now test your token with a sync call. If you get `401`, the token is invalid.
-
----
-
-## Step 2: Sync your first unit
+## Step 1: Sync your first unit
 
 The sync endpoint is the only endpoint you need. It accepts an array of units with their current state — KISS reconciles everything.
 
@@ -102,7 +79,7 @@ Units are matched by `crm_unit_id` within your company. Tenants are matched by `
 
 ---
 
-## Step 3: Move in a tenant
+## Step 2: Move in a tenant
 
 Moving in a tenant is just syncing with `occupied: true` and tenant info. There's no separate move-in endpoint.
 
@@ -134,9 +111,29 @@ curl -X POST https://api.keepitsimplestorage.com/api/v1/pms/units/sync \
   }'
 ```
 
+**Response:**
+
+```json
+{
+  "message": "Sync completed.",
+  "data": {
+    "synced_at": "2026-04-07T14:31:00Z",
+    "total": 1,
+    "created": 1,
+    "updated": 0,
+    "unchanged": 0,
+    "errors": []
+  }
+}
+```
+
+:::info Required fields for move-in
+When `occupied` is `true`, you must include `tenant` (with `pms_tenant_id`, `first_name`, `last_name`) and `move_in_date`. The `phone` field is required for tenants who need app access.
+:::
+
 ---
 
-## Step 4: Move out a tenant
+## Step 3: Move out a tenant
 
 Moving out is syncing with `occupied: false`. KISS automatically resets all tenant-related facts to defaults.
 
@@ -153,6 +150,22 @@ curl -X POST https://api.keepitsimplestorage.com/api/v1/pms/units/sync \
       }
     ]
   }'
+```
+
+**Response:**
+
+```json
+{
+  "message": "Sync completed.",
+  "data": {
+    "synced_at": "2026-04-07T14:32:00Z",
+    "total": 1,
+    "created": 0,
+    "updated": 1,
+    "unchanged": 0,
+    "errors": []
+  }
+}
 ```
 
 When `occupied: false` is sent, KISS resets:
@@ -172,9 +185,9 @@ Fields that are **not** reset: `crm_unit_id`, `name`, lock associations, and acc
 
 ---
 
-## Step 5: Bulk sync
+## Step 4: Bulk sync
 
-In production, you'll sync all your units at once. The endpoint handles arrays of any size:
+In production, you'll sync all your units at once:
 
 ```bash
 curl -X POST https://api.keepitsimplestorage.com/api/v1/pms/units/sync \
@@ -217,23 +230,18 @@ curl -X POST https://api.keepitsimplestorage.com/api/v1/pms/units/sync \
   }'
 ```
 
-**Response (partial failure):**
+**Response:**
 
 ```json
 {
-  "message": "Sync completed with errors.",
+  "message": "Sync completed.",
   "data": {
-    "synced_at": "2026-04-07T14:30:00Z",
+    "synced_at": "2026-04-07T14:33:00Z",
     "total": 3,
     "created": 1,
     "updated": 1,
-    "unchanged": 0,
-    "errors": [
-      {
-        "crm_unit_id": "PMS-U-1003",
-        "error": "Invalid value for balance_due: must be a number."
-      }
-    ]
+    "unchanged": 1,
+    "errors": []
   }
 }
 ```
@@ -244,13 +252,11 @@ Units not included in the payload are **not** affected — this is an upsert, no
 
 ## Typical production setup
 
-```
 1. Generate an API token from the KISS dashboard
 2. Schedule a periodic sync (e.g., every 15 minutes)
-3. Call POST /pms/units/sync with all units and their current state
+3. Call `POST /pms/units/sync` with all units and their current state
 4. KISS updates facts, runs evaluation, updates access states
 5. Tenants see updated access in their app on next refresh
-```
 
 :::note
 After syncing, KISS automatically runs its access evaluation engine on updated units. Tenants with a white-label app will see the changes on their next `GET /tenant/access` call.
