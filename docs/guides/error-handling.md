@@ -44,7 +44,6 @@ The `errors` object maps field paths to arrays of error messages. For nested fie
 | `401` | Unauthorized | Missing, invalid, or expired token |
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
-| `409` | Conflict | Resource state conflict (e.g., trying to create something that already exists) |
 | `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
@@ -98,6 +97,22 @@ The `errors` object maps field paths to arrays of error messages. For nested fie
 
 ---
 
+### Syncing a move-in without move_in_date
+
+**Error:**
+```json
+{
+  "message": "Validation failed.",
+  "errors": {
+    "units.0.move_in_date": ["The move_in_date field is required when occupied is true."]
+  }
+}
+```
+
+**Fix:** When `occupied` is `true`, include `move_in_date` alongside the `tenant` object.
+
+---
+
 ### Using an expired or invalid OTP
 
 **Error:**
@@ -107,7 +122,7 @@ The `errors` object maps field paths to arrays of error messages. For nested fie
 }
 ```
 
-**Fix:** OTPs expire after 5 minutes. Request a new one via `POST /auth/phone` (30-second cooldown between requests) and try again.
+**Fix:** The OTP has expired or was entered incorrectly. Request a new one via `POST /auth/phone` and try again.
 
 ---
 
@@ -153,7 +168,7 @@ Authorization: Bearer YOUR_TOKEN
 
 ---
 
-### Lock or entry point not found
+### Lock not found
 
 **Error:**
 ```json
@@ -162,7 +177,20 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** The `lock_id` or `entry_point_id` in the URL doesn't match any resource. Double-check the IDs from the `GET /tenant/access` response.
+**Fix:** The `lock_id` in the URL doesn't match any resource. Double-check the ID from the `GET /tenant/access` response.
+
+---
+
+### Entry point not found
+
+**Error:**
+```json
+{
+  "message": "Entry point not found."
+}
+```
+
+**Fix:** The `entry_point_id` in the URL doesn't match any resource. Double-check the ID from the `GET /tenant/access` response.
 
 ---
 
@@ -187,6 +215,7 @@ This is **not** an error. The sync endpoint is idempotent. Posting the same data
 {
   "message": "Sync completed.",
   "data": {
+    "synced_at": "2026-04-07T14:30:00Z",
     "total": 3,
     "created": 0,
     "updated": 0,
