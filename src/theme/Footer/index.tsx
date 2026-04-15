@@ -52,7 +52,7 @@ function FooterLinks() {
       links: [
         {label: 'White-Label Quickstart', to: '/docs/guides/white-label/quickstart'},
         {label: 'PMS Quickstart', to: '/docs/guides/pms/quickstart'},
-        {label: 'Authentication', to: '/docs/guides/white-label/authentication'},
+        {label: 'Authentication', to: '/docs/guides/authentication'},
         {label: 'Concepts', to: '/docs/guides/concepts'},
         {label: 'Error Handling', to: '/docs/guides/error-handling'},
       ],

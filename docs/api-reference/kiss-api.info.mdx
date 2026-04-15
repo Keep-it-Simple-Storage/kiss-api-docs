@@ -1,7 +1,7 @@
 ---
 id: kiss-api
 title: "KISS API"
-description: "Public API for Keep It Simple Storage (KISS). Two audiences:"
+description: "Public API for Keep It Simple Storage (KISS). Integrate smart storage access into your platform."
 sidebar_label: Introduction
 sidebar_position: 0
 hide_title: true
@@ -29,9 +29,13 @@ import Export from "@theme/ApiExplorer/Export";
 
 
 
-Public API for Keep It Simple Storage (KISS). Two audiences:
-- **White-label app operators** - authenticate tenants, retrieve access/keys, report lock activity
-- **PMS push integrators** - sync unit and tenant data into KISS
+Public API for Keep It Simple Storage (KISS). Integrate smart storage access into your platform.
+
+**White-label app operators** — authenticate tenants via phone + OTP, retrieve unit access and lock keys, report lock activity.
+
+**PMS push integrators** — sync unit and tenant data into KISS via a single idempotent endpoint.
+
+New to KISS? Start with the [Concepts guide](/docs/guides/concepts) to understand the data model, then check the [Authentication guide](/docs/guides/authentication) for setup.
 
 
 <div
@@ -74,12 +78,12 @@ Public API for Keep It Simple Storage (KISS). Two audiences:
         </table>
       </div>
     </TabItem><TabItem
-      label={"HTTP: Bearer Auth"}
+      label={"API Key: ApiTokenAuth"}
       value={"ApiTokenAuth"}
     >
       
       
-      PMS API token generated from the KISS dashboard
+      PMS API token generated from the KISS dashboard. Send as: `Bearer YOUR_API_TOKEN`
       
       <div>
         <table>
@@ -88,13 +92,13 @@ Public API for Keep It Simple Storage (KISS). Two audiences:
               <th>
                 Security Scheme Type:
               </th><td>
-                http
+                apiKey
               </td>
             </tr><tr>
               <th>
-                HTTP Authorization Scheme:
+                Header parameter name:
               </th><td>
-                bearer
+                Authorization
               </td>
             </tr>
           </tbody>

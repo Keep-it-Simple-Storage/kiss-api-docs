@@ -203,7 +203,7 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** You've exceeded the rate limit. Wait for the window to reset and retry. See the [rate limits table](./white-label/authentication.md#rate-limits) for limits per endpoint.
+**Fix:** You've exceeded the rate limit. Wait for the window to reset and retry. See the [rate limits table](./authentication.md#rate-limits) for limits per endpoint.
 
 ---
 

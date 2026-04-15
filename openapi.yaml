@@ -2,9 +2,13 @@ openapi: 3.0.3
 info:
   title: KISS API
   description: |
-    Public API for Keep It Simple Storage (KISS). Two audiences:
-    - **White-label app operators** - authenticate tenants, retrieve access/keys, report lock activity
-    - **PMS push integrators** - sync unit and tenant data into KISS
+    Public API for Keep It Simple Storage (KISS). Integrate smart storage access into your platform.
+
+    **White-label app operators** — authenticate tenants via phone + OTP, retrieve unit access and lock keys, report lock activity.
+
+    **PMS push integrators** — sync unit and tenant data into KISS via a single idempotent endpoint.
+
+    New to KISS? Start with the [Concepts guide](/docs/guides/concepts) to understand the data model, then check the [Authentication guide](/docs/guides/authentication) for setup.
   version: 1.0.0
   license:
     name: Proprietary
@@ -593,9 +597,10 @@ components:
       scheme: bearer
       description: Tenant Bearer token obtained via OTP flow
     ApiTokenAuth:
-      type: http
-      scheme: bearer
-      description: PMS API token generated from the KISS dashboard
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "PMS API token generated from the KISS dashboard. Send as: `Bearer YOUR_API_TOKEN`"
 
   responses:
     Unauthorized:

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+sidebar_label: "PMS Quickstart"
 ---
 
 # Quickstart: PMS Push Integration
@@ -10,7 +11,7 @@ This guide walks you from zero to successfully syncing unit data into KISS. By t
 
 ## Prerequisites
 
-- An API token generated from the KISS dashboard (see [Authentication guide](../white-label/authentication.md#generate-a-token))
+- An API token generated from the KISS dashboard (see [Authentication guide](../authentication.md#generate-a-token))
 - A mapping of your PMS unit and tenant identifiers to sync into KISS
 - A tool to make HTTP requests (curl, Postman, or your integration code)
 
@@ -266,7 +267,7 @@ After syncing, KISS automatically runs its access evaluation engine on updated u
 
 ## What's next
 
-- [Authentication guide](../white-label/authentication.md) — token management and rate limits
+- [Authentication guide](../authentication.md) — token management and rate limits
 - [Concepts](../concepts.md) — understand the facts-based data model and access states
 - [API Reference](/docs/api-reference/kiss-api) — full endpoint reference
 - [Error handling](../error-handling.md) — standard error format and troubleshooting

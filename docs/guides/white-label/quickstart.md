@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+sidebar_label: "White-Label Quickstart"
 ---
 
 # Quickstart: White-Label App Integration
@@ -74,7 +75,7 @@ curl -X POST https://api.keepitsimplestorage.com/api/v1/auth/verify-otp \
 Save the `token` — you'll use it for all subsequent requests.
 
 :::tip
-If the phone number is linked to multiple accounts, the API returns a list of accounts instead of a token. See the [Authentication guide](./authentication.md#handling-multiple-accounts) for how to handle this.
+If the phone number is linked to multiple accounts, the API returns a list of accounts instead of a token. See the [Authentication guide](../authentication.md#handling-multiple-accounts) for how to handle this.
 :::
 
 ---
@@ -232,7 +233,7 @@ See the full [Lock Logs](/docs/api-reference/create-lock-log) and [Entry Point L
 
 ## What's next
 
-- [Authentication guide](./authentication.md) — token expiration, rate limits, best practices
+- [Authentication guide](../authentication.md) — token expiration, rate limits, best practices
 - [Concepts](../concepts.md) — understand units, tenants, access states, and the KISS data model
 - [API Reference](/docs/api-reference/kiss-api) — full endpoint reference
 - [Error handling](../error-handling.md) — standard error format and troubleshooting
