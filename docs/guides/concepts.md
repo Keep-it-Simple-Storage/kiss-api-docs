@@ -46,18 +46,25 @@ Every unit with a lock is evaluated into one of five access states. This is what
 | `auction` | Unit is in the auction process | No |
 | `unrentable` | Unit is marked as not available for rent (maintenance, damage, etc.) | No |
 
-When access is denied, the `reason` field tells you why:
+The `reason` field tells you why a unit ended up in its current state:
+
+**Permitted reasons:**
 
 | Reason | What happened |
 |---|---|
-| `active` | All checks passed. Access granted. |
+| `active` | All checks passed — tenant is in good standing |
+| `pms_exempt` | The PMS exempted this unit from lockout despite other flags |
+| `system_exempt` | An operator exempted this unit via an ONELock override |
+
+**Denied reasons:**
+
+| Reason | What happened |
+|---|---|
 | `delinquent` | Tenant is past due on payment beyond the grace period |
 | `future_move_in` | Tenant's lease hasn't started yet |
 | `blanket_delinquency` | Tenant is delinquent on another unit at the same location |
 | `pms_lockout` | The PMS flagged this unit for denied access (overlock, lien, legal hold) |
 | `system_lockout` | An operator locked out the unit via the ONELock dashboard |
-| `pms_exempt` | The PMS exempted this unit from lockout despite other flags |
-| `system_exempt` | An operator exempted this unit via an ONELock override |
 
 ---
 
@@ -87,14 +94,14 @@ If you're reading this documentation, you're most likely a **push** integrator o
 
 ## NFC Keys
 
-When a tenant calls `GET /tenant/access`, the response includes everything needed for NFC lock interaction. The app passes this data to the KISS Flutter SDK, which handles the actual NFC communication with the ONELock hardware.
+When a tenant calls `GET /tenant/access`, the response includes a key string for each permitted lock and entry point. This key is the NFC credential — the app passes it to the KISS Flutter SDK, which uses it to communicate with the ONELock hardware during a tap.
 
 Here's how it works:
 
-1. App calls `GET /tenant/access` and receives the unit/entry point data
-2. App passes the access data to the Flutter SDK
+1. App calls `GET /tenant/access` and receives unit/entry point data with key strings
+2. App passes the key to the Flutter SDK
 3. Tenant taps their phone on the lock
-4. The SDK communicates with the lock via NFC
+4. The SDK uses the key to authenticate with the lock via NFC
 5. App reports the result back to KISS via the logs endpoint
 
 The app should **cache the access response** for offline use. This way, tenants can still open their lock even without network connectivity. On the next app launch or pull-to-refresh, the app fetches fresh data from the API.
@@ -112,7 +119,7 @@ Your PMS syncs unit facts → KISS evaluates access → Tenant opens lock via ap
 
 **If you're a white-label app developer:**
 ```
-Tenant logs in via OTP → App fetches access data → SDK handles NFC → App reports logs
+Tenant logs in via one-time password (OTP) → App fetches access data → SDK handles NFC → App reports logs
 ```
 
 Both paths rely on the same underlying data model. The PMS keeps facts current, and the app reads the evaluated result. KISS sits in the middle, turning raw facts into access decisions.
