@@ -10,7 +10,7 @@ Welcome to the KISS API documentation. This API allows you to integrate with Kee
 **Base URL:**
 
 ```
-https://api.keepitsimplestorage.com/api/v1
+https://api.keepitsimplestorage.com/api/v2
 ```
 
 :::tip New to KISS?
@@ -31,11 +31,12 @@ You have your own tenant-facing mobile app and need to integrate with KISS for l
 
 ### PMS Push Integrators
 
-You're a property management software company that needs to sync unit and tenant data into KISS.
+You're a property management software company (or any other system) that needs to sync unit and tenant data into KISS.
 
-- Push all your unit data in a single idempotent call
-- KISS handles access evaluation automatically
-- No multi-step dance, no order dependency
+- **Event-driven sources** (email notifications, webhooks, MCP tool calls): use the narrow `/pms/events/*` and `PATCH /pms/units/{crm_unit_id}` endpoints to push just the fields a single event carries.
+- **State-oriented sources** (traditional PMS with an API that can produce full unit state on demand): use `POST /pms/units/sync` to bulk-upsert idempotently.
+- Every write endpoint accepts an `Idempotency-Key` header for safe retries.
+- KISS handles access evaluation automatically after every write.
 
 [Get Started](/docs/guides/pms/quickstart)
 

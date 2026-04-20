@@ -6,10 +6,15 @@ info:
 
     **White-label app operators** — authenticate tenants via phone + OTP, retrieve unit access and lock keys, report lock activity.
 
-    **PMS push integrators** — sync unit and tenant data into KISS via a single idempotent endpoint.
+    **PMS push integrators** — two integration patterns depending on how your source produces data:
+
+    - **Event-driven** (email scrapers, webhook relays, MCP agents, any source producing sparse events): use `POST /pms/events/move-in`, `POST /pms/events/move-out`, and `PATCH /pms/units/{crm_unit_id}`.
+    - **State-oriented** (traditional PMS with an API that can produce full state on demand): use `POST /pms/units/sync`.
+
+    All write endpoints accept an optional `Idempotency-Key` header for safe retries.
 
     New to KISS? Start with the [Concepts guide](/docs/guides/concepts) to understand the data model, then check the [Authentication guide](/docs/guides/authentication) for setup.
-  version: 1.0.0
+  version: 2.0.0
   license:
     name: Proprietary
   contact:
@@ -17,7 +22,7 @@ info:
     url: https://keepitsimplestorage.com
 
 servers:
-  - url: https://api.keepitsimplestorage.com/api/v1
+  - url: https://api.keepitsimplestorage.com/api/v2
     description: Production
 
 tags:
@@ -29,8 +34,10 @@ tags:
     description: Report lock activity after NFC tap
   - name: Entry Point Logs
     description: Report entry point activity (gates, doors)
+  - name: PMS Events
+    description: Event-driven push endpoints — move-in, move-out, and sparse fact updates
   - name: PMS Sync
-    description: Push unit and tenant data into KISS
+    description: State-oriented bulk sync endpoint — idempotent upsert of full unit state
   - name: Health
     description: API health check
 
@@ -420,20 +427,214 @@ paths:
               example:
                 message: "Entry point not found."
 
+  /pms/events/move-in:
+    post:
+      operationId: moveInEvent
+      tags:
+        - PMS Events
+      summary: Move-in event
+      description: |
+        Event-oriented endpoint for sources that receive one move-in at a time and cannot produce full unit state.
+
+        Creates the unit if it doesn't exist (stamping `source_type='push'`). Upserts the tenant by `(company_id, pms_tenant_id)`. Sets `occupied=true`. Stamps `move_in_date`.
+
+        Idempotent via the `Idempotency-Key` header.
+      security:
+        - ApiTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveInEvent"
+            example:
+              unit_ref:
+                crm_unit_id: "PMS-U-1001"
+                name: "B204"
+              tenant:
+                pms_tenant_id: "PMS-T-5001"
+                first_name: "Jane"
+                last_name: "Smith"
+                phone: "+15551234567"
+                email: "jane.smith@email.com"
+              move_in_date: "2026-05-01"
+      responses:
+        "201":
+          description: Move-in applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/WriteResult"
+              example:
+                message: "Move-in applied."
+                data:
+                  unit_id: "01HQ1234567890ABCDEFGHJKMNPQRS"
+                  applied_at: "2026-05-01T14:30:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /pms/events/move-out:
+    post:
+      operationId: moveOutEvent
+      tags:
+        - PMS Events
+      summary: Move-out event
+      description: |
+        Event-oriented endpoint to mark a unit as vacant.
+
+        Resets 8 fields to defaults: `pms_tenant_id`, `move_in_date`, `balance_due`, `paid_through_date`, `pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`. Preserves `crm_unit_id`, `name`, lock associations, access history.
+
+        Idempotent. Re-sending for an already-vacant unit returns `200` with no change.
+      security:
+        - ApiTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveOutEvent"
+            example:
+              unit_ref:
+                crm_unit_id: "PMS-U-1001"
+      responses:
+        "200":
+          description: Move-out applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/WriteResult"
+              example:
+                message: "Move-out applied."
+                data:
+                  unit_id: "01HQ1234567890ABCDEFGHJKMNPQRS"
+                  applied_at: "2026-07-15T16:05:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Unit not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /pms/units/{crm_unit_id}:
+    patch:
+      operationId: patchUnitFacts
+      tags:
+        - PMS Events
+      summary: Update unit facts (sparse)
+      description: |
+        Partial update of unit facts. Accepts any subset of `balance_due`, `paid_through_date`, `pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`, `pms_status_raw`.
+
+        Does **not** accept `occupied` or `tenant{...}` — tenancy changes go through `/pms/events/move-in` and `/pms/events/move-out`.
+
+        Does not create units. Returns `404` if the unit doesn't exist.
+
+        Idempotent via the `Idempotency-Key` header.
+      security:
+        - ApiTokenAuth: []
+      parameters:
+        - name: crm_unit_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The PMS's unique identifier for the unit, within the authenticated company's scope.
+          example: "PMS-U-1001"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnitFactsPatch"
+            example:
+              balance_due: 0.00
+              paid_through_date: "2026-06-01"
+      responses:
+        "200":
+          description: Unit updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/WriteResult"
+              example:
+                message: "Unit updated."
+                data:
+                  unit_id: "01HQ1234567890ABCDEFGHJKMNPQRS"
+                  applied_at: "2026-05-14T09:12:34Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Unit not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          description: Validation failed (e.g., rejected field like `occupied`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
   /pms/units/sync:
     post:
       operationId: syncUnits
       tags:
         - PMS Sync
-      summary: Sync units
+      summary: Sync units (bulk)
       description: |
-        Bulk upsert unit facts. Idempotent - posting the same data multiple times produces the same result.
+        Bulk upsert unit facts. State-oriented — partners send the full current state of each unit, KISS reconciles.
 
-        Units are matched by `crm_unit_id` within the authenticated company's scope. If no match is found, the unit is created automatically.
+        Units are matched by `crm_unit_id` within the authenticated company's scope. If no match is found, the unit is created automatically (stamped `source_type='push'`).
 
-        Move-in is handled by sending `occupied: true` with tenant info. Move-out is handled by sending `occupied: false` - KISS automatically resets all facts to defaults.
+        Move-in is handled by sending `occupied: true` with tenant info. Move-out is handled by sending `occupied: false` — KISS automatically resets 8 facts to defaults (same reset as `/pms/events/move-out`).
+
+        Partial failures return `200` with per-unit errors under `errors[]`. Whole-request validation failures return `422`.
+
+        Idempotent via the `Idempotency-Key` header.
       security:
         - ApiTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -522,8 +723,10 @@ paths:
                           error: "Invalid value for balance_due: must be a number."
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "422":
-          description: Validation failed
+          description: Validation failed (whole-request malformed; individual unit errors return 200 with `errors[]`)
           content:
             application/json:
               schema:
@@ -535,6 +738,8 @@ paths:
                     - "The crm_unit_id field is required."
                   units.0.occupied:
                     - "The occupied field is required."
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
 
   /pms/webhooks:
     post:
@@ -612,13 +817,49 @@ components:
           example:
             message: "Unauthorized."
     TooManyRequests:
-      description: Rate limit exceeded
+      description: Rate limit exceeded. Includes a `Retry-After` header.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
           example:
             message: "Too many attempts. Please try again in 60 seconds."
+    Conflict:
+      description: |
+        Returned in two cases:
+
+        - **Source-type collision:** a push write targets a unit that is owned by another source (e.g., a pull-mode PMS integration). Units cannot silently change source type.
+        - **Idempotency-Key reuse with a different payload:** the same `Idempotency-Key` was used for a prior request with a different body.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            source_type_conflict:
+              summary: Source-type collision
+              value:
+                message: "This unit is managed by a pull-mode PMS integration. Contact KISS support to change."
+            idempotency_key_reuse:
+              summary: Idempotency-Key reused with different payload
+              value:
+                message: "Idempotency-Key reused with a different request."
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: |
+        Optional but strongly recommended on every write. A new UUID per logical operation; reuse the same UUID when retrying that operation. The server stores the key + request hash + response for 24 hours. Same key + same payload returns the cached response with no second write. Same key + different payload returns `409 Conflict`.
+      example: "550e8400-e29b-41d4-a716-446655440000"
 
   schemas:
     Error:
@@ -816,6 +1057,8 @@ components:
 
     SyncUnit:
       type: object
+      description: |
+        **Note:** Location binding is a product decision in progress. A future revision may add a `pms_location_code` (or equivalent) field so multi-location partners can specify which facility a unit belongs to. Until then, units are resolved within the authenticated company's default location scope.
       required:
         - crm_unit_id
         - occupied
@@ -914,3 +1157,82 @@ components:
                 type: string
               error:
                 type: string
+
+    UnitRef:
+      type: object
+      required:
+        - crm_unit_id
+      properties:
+        crm_unit_id:
+          type: string
+          description: The PMS's unique identifier for this unit, within the authenticated company's scope.
+          example: "PMS-U-1001"
+        name:
+          type: string
+          description: Display name (e.g., "B204"). Optional — used only when creating a new unit.
+          example: "B204"
+
+    MoveInEvent:
+      type: object
+      required:
+        - unit_ref
+        - tenant
+        - move_in_date
+      properties:
+        unit_ref:
+          $ref: "#/components/schemas/UnitRef"
+        tenant:
+          $ref: "#/components/schemas/SyncTenant"
+        move_in_date:
+          type: string
+          format: date
+          description: Tenant's move-in date.
+
+    MoveOutEvent:
+      type: object
+      required:
+        - unit_ref
+      properties:
+        unit_ref:
+          $ref: "#/components/schemas/UnitRef"
+
+    UnitFactsPatch:
+      type: object
+      description: |
+        Any subset of fact fields. Fields not present in the body are not touched.
+
+        `occupied` and `tenant` are rejected here (422) — tenancy changes go through the event endpoints.
+      properties:
+        balance_due:
+          type: number
+          description: Amount owed. Positive means the tenant owes money.
+        paid_through_date:
+          type: string
+          format: date
+          description: Date the account is paid through.
+        pms_lockout:
+          type: boolean
+          description: PMS says deny access (overlock, lien, legal hold, etc).
+        pms_lock_exempt:
+          type: boolean
+          description: PMS says never lock out this tenant.
+        pms_auction:
+          type: boolean
+          description: Unit is in auction process.
+        pms_unrentable:
+          type: boolean
+          description: Unit cannot be rented (maintenance, damage, etc).
+        pms_status_raw:
+          type: string
+          description: The PMS's original status string. Stored for audit/debugging only.
+
+    WriteResult:
+      type: object
+      properties:
+        unit_id:
+          type: string
+          description: The unit's KISS ULID.
+        applied_at:
+          type: string
+          format: date-time
+          description: When the write was applied server-side.

@@ -62,12 +62,36 @@ const sidebar: SidebarsConfig = {
     },
     {
       type: "category",
+      label: "PMS Events",
+      items: [
+        {
+          type: "doc",
+          id: "api-reference/move-in-event",
+          label: "Move-in event",
+          className: "api-method post",
+        },
+        {
+          type: "doc",
+          id: "api-reference/move-out-event",
+          label: "Move-out event",
+          className: "api-method post",
+        },
+        {
+          type: "doc",
+          id: "api-reference/patch-unit-facts",
+          label: "Update unit facts (sparse)",
+          className: "api-method patch",
+        },
+      ],
+    },
+    {
+      type: "category",
       label: "PMS Sync",
       items: [
         {
           type: "doc",
           id: "api-reference/sync-units",
-          label: "Sync units",
+          label: "Sync units (bulk)",
           className: "api-method post",
         },
         {

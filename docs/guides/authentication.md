@@ -35,11 +35,16 @@ API tokens grant full access to your company's data. Store them securely and nev
 Include the token in the `Authorization` header of every request:
 
 ```bash
-curl -X POST https://api.keepitsimplestorage.com/api/v1/pms/units/sync \
+curl -X POST https://api.keepitsimplestorage.com/api/v2/pms/units/sync \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
   -d '{"units": [...]}'
 ```
+
+:::tip Idempotency-Key
+Every PMS write endpoint accepts an optional `Idempotency-Key` header. When present, the server stores the request hash + response for 24 hours — retrying the same key with the same payload returns the cached response without a second write. Retrying the same key with a *different* payload returns `409 Conflict`. Use a new UUID per logical operation; reuse the same UUID when retrying that operation.
+:::
 
 ### Manage tokens
 
@@ -76,7 +81,7 @@ White-label app integrators authenticate tenants using a phone number + OTP (one
 ### Step 1: Request OTP
 
 ```bash
-curl -X POST https://api.keepitsimplestorage.com/api/v1/auth/phone \
+curl -X POST https://api.keepitsimplestorage.com/api/v2/auth/phone \
   -H "Content-Type: application/json" \
   -d '{
     "country_code": "1",
@@ -112,7 +117,7 @@ OTPs expire after 5 minutes. A new OTP cannot be requested until the resend cool
 ### Step 2: Verify OTP
 
 ```bash
-curl -X POST https://api.keepitsimplestorage.com/api/v1/auth/verify-otp \
+curl -X POST https://api.keepitsimplestorage.com/api/v2/auth/verify-otp \
   -H "Content-Type: application/json" \
   -d '{
     "country_code": "1",
@@ -175,7 +180,7 @@ If a phone number is linked to multiple tenant accounts (e.g., a tenant renting 
 Prompt the tenant to select an account, then call the same endpoint again with the selected `tenant_id`:
 
 ```bash
-curl -X POST https://api.keepitsimplestorage.com/api/v1/auth/verify-otp \
+curl -X POST https://api.keepitsimplestorage.com/api/v2/auth/verify-otp \
   -H "Content-Type: application/json" \
   -d '{
     "country_code": "1",
@@ -196,7 +201,7 @@ The OTP is **not** consumed on the first call when multiple accounts are returne
 Include the Bearer token in all subsequent API requests:
 
 ```bash
-curl https://api.keepitsimplestorage.com/api/v1/tenant/access \
+curl https://api.keepitsimplestorage.com/api/v2/tenant/access \
   -H "Authorization: Bearer 1|abc123def456..."
 ```
 
@@ -227,12 +232,25 @@ Cache the token for the duration of the session and handle 401 responses by redi
 
 ## Rate Limits
 
+### White-Label Auth
+
 | Endpoint | Limit | Window | Notes |
 |---|---|---|---|
 | `POST /auth/phone` | 5 requests | 60 seconds | Per phone number |
 | `POST /auth/verify-otp` | 5 attempts | 60 seconds | Per phone number |
 
-When rate limited, the API returns `429 Too Many Requests`:
+### PMS Push
+
+| Endpoint group | Limit | Window | Notes |
+|---|---|---|---|
+| `POST /pms/units/sync` | TBD — see note below | Per minute | Per company |
+| `POST /pms/events/*`, `PATCH /pms/units/{crm_unit_id}` | TBD — see note below | Per minute | Per company |
+
+:::note Rate limits for PMS push endpoints are not yet finalized
+Final numbers are a product decision in progress. Partners should design for retries and treat `429 Too Many Requests` with a `Retry-After` header as a recoverable state. Exponential backoff with jitter is the expected client behavior.
+:::
+
+When rate limited, the API returns `429 Too Many Requests` with a `Retry-After` header:
 
 ```json
 {

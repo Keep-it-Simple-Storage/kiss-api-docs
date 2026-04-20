@@ -16,7 +16,7 @@ import Export from "@theme/ApiExplorer/Export";
 
 <span
   className={"theme-doc-version-badge badge badge--secondary"}
-  children={"Version: 1.0.0"}
+  children={"Version: 2.0.0"}
 >
 </span>
 
@@ -33,7 +33,12 @@ Public API for Keep It Simple Storage (KISS). Integrate smart storage access int
 
 **White-label app operators** — authenticate tenants via phone + OTP, retrieve unit access and lock keys, report lock activity.
 
-**PMS push integrators** — sync unit and tenant data into KISS via a single idempotent endpoint.
+**PMS push integrators** — two integration patterns depending on how your source produces data:
+
+- **Event-driven** (email scrapers, webhook relays, MCP agents, any source producing sparse events): use `POST /pms/events/move-in`, `POST /pms/events/move-out`, and `PATCH /pms/units/{crm_unit_id}`.
+- **State-oriented** (traditional PMS with an API that can produce full state on demand): use `POST /pms/units/sync`.
+
+All write endpoints accept an optional `Idempotency-Key` header for safe retries.
 
 New to KISS? Start with the [Concepts guide](/docs/guides/concepts) to understand the data model, then check the [Authentication guide](/docs/guides/authentication) for setup.
 
