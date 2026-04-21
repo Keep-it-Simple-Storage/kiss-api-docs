@@ -84,11 +84,48 @@ KISS supports three integration models for how unit data gets into the system. A
 
 | Source type | How data flows | Who you are |
 |---|---|---|
-| **Push** | Your PMS sends data to KISS via the sync API | PMS integrator calling `POST /pms/units/sync` |
+| **Push** | Your system sends data to KISS via write endpoints | PMS integrator, email-scraper integrator, or any source calling `/pms/events/*`, `PATCH /pms/units/{crm_unit_id}`, or `POST /pms/units/sync` |
 | **Pull** | KISS fetches data from your PMS on demand | PMS with an API that KISS connects to (configured by KISS team) |
 | **Standalone** | Data is managed directly in the KISS dashboard | Operators without a PMS integration |
 
 If you're reading this documentation, you're most likely a **push** integrator or a **white-label app** developer. Pull integrations are configured server-side by the KISS team and don't require API calls from your end.
+
+Once a unit is created under one source type, it stays under that source type. A push-owned unit will not be overwritten by a pull sync, and vice versa — attempts return `409 Conflict`.
+
+---
+
+## Integration Patterns for Push Sources
+
+There are two ways to write into KISS as a push integrator. Pick the one that matches how your source produces data.
+
+### State-oriented: `POST /pms/units/sync`
+
+Use this when your source can produce the **full current state** of every unit on demand — most PMSs with an API fall here.
+
+- One endpoint. Bulk upsert. Idempotent.
+- You send the full unit object (all known facts). KISS reconciles.
+- Typical cadence: every 15 minutes, or after a detected change event.
+- Partial failures return `200` with per-unit errors in the `errors[]` array.
+
+### Event-oriented: `/pms/events/*` + `PATCH /pms/units/{crm_unit_id}`
+
+Use this when your source produces **sparse events** — a move-in email, a payment notification, an MCP tool call — and cannot reconstruct full unit state without a local cache.
+
+- `POST /pms/events/move-in` — creates the unit if missing, upserts the tenant, sets `occupied=true`.
+- `POST /pms/events/move-out` — triggers the documented 8-field reset (see move-out section below).
+- `PATCH /pms/units/{crm_unit_id}` — partial update of any fact field. `occupied` and `tenant` go through the `/events/*` endpoints instead.
+- Each endpoint takes only the fields the event actually carries. No state reconstruction required.
+
+Both paths hit the same fact-apply service internally and run the same access evaluation after every write. You can mix them in one integration — use bulk sync for nightly reconciliation and events+patch for real-time updates.
+
+### Idempotency
+
+Every write endpoint accepts an optional `Idempotency-Key` header. Send a new unique value per logical operation (any opaque string up to 255 characters — UUIDs work well); reuse the same value when retrying. The server stores the key + request hash + response for 24 hours:
+
+- Same key, same payload → returns cached response, no second write.
+- Same key, different payload → `409 Conflict`.
+
+This is stronger than the payload-hash idempotency an earlier draft of these docs promised, and it's the right primitive for at-least-once retry semantics.
 
 ---
 
@@ -112,13 +149,18 @@ The app should **cache the access response** for offline use. This way, tenants 
 
 Here's how everything connects for the two main integration paths:
 
-**If you're a PMS integrator:**
-```
+**If you're a PMS integrator (state-oriented):**
+```text
 Your PMS syncs unit facts → KISS evaluates access → Tenant opens lock via app
 ```
 
-**If you're a white-label app developer:**
+**If you're an event-driven integrator (email scraper, MCP agent, webhook relay):**
+```text
+Event arrives → You call /pms/events/* or PATCH /pms/units/{id} → KISS evaluates → Tenant sees update
 ```
+
+**If you're a white-label app developer:**
+```text
 Tenant logs in via one-time password (OTP) → App fetches access data → SDK handles NFC → App reports logs
 ```
 

@@ -45,6 +45,7 @@ The `errors` object maps field paths to arrays of error messages. For nested fie
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
 | `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
+| `409` | Conflict | Source-type collision (a push write against a pull-owned unit, or vice versa) **or** `Idempotency-Key` reused with a different payload. |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
 | `501` | Not Implemented | Endpoint exists but isn't available yet (e.g., webhook registration) |
@@ -203,7 +204,33 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** You've exceeded the rate limit. Wait for the window to reset and retry. See the [rate limits table](./authentication.md#rate-limits) for limits per endpoint.
+**Fix:** You've exceeded the rate limit. Wait for the window to reset and retry. See the [rate limits table](./authentication.md#rate-limits) for limits per endpoint. The response includes a `Retry-After` header indicating how long to wait.
+
+---
+
+### Idempotency-Key reused with a different payload
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "Idempotency-Key reused with a different request."
+}
+```
+
+**Fix:** You sent two requests with the same `Idempotency-Key` header but different bodies. The key is tied to a specific logical operation — reusing it with different data is a client-side bug. Generate a new unique value for each new logical operation; reuse the same value only when retrying the *exact same* request.
+
+---
+
+### Source-type conflict
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "This unit is managed by a pull-mode PMS integration. Contact KISS support to change."
+}
+```
+
+**Fix:** The unit you're trying to write to was created by a different integration mode (pull, standalone). A push write cannot silently take over a pull-owned unit — the source-of-truth rule protects partner data. If you need to migrate a unit between source types, reach out to KISS support.
 
 ---
 
@@ -236,7 +263,7 @@ No need to check if a unit or tenant exists before syncing. Just send your curre
 If something isn't working, start here:
 
 ```bash
-curl https://api.keepitsimplestorage.com/api/v1/health
+curl https://api.keepitsimplestorage.com/api/v2/health
 ```
 
 If this returns a `200`, the API is up and the issue is in your request. If it doesn't respond, the API may be down.
