@@ -35,10 +35,13 @@ API tokens grant full access to your company's data. Store them securely and nev
 Include the token in the `Authorization` header of every request:
 
 ```bash
+# Generate one key per logical operation. Reuse the same value when retrying.
+IDEMPOTENCY_KEY=$(uuidgen)
+
 curl -X POST https://api.keepitsimplestorage.com/api/v2/pms/units/sync \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
   -d '{"units": [...]}'
 ```
 
@@ -243,8 +246,8 @@ Cache the token for the duration of the session and handle 401 responses by redi
 
 | Endpoint group | Limit | Window | Notes |
 |---|---|---|---|
-| `POST /pms/units/sync` | TBD — see note below | Per minute | Per company |
-| `POST /pms/events/*`, `PATCH /pms/units/{crm_unit_id}` | TBD — see note below | Per minute | Per company |
+| `POST /pms/units/sync` | TBD — see note below | 60 seconds | Per company |
+| `POST /pms/events/*`, `PATCH /pms/units/{crm_unit_id}` | TBD — see note below | 60 seconds | Per company |
 
 :::note Rate limits for PMS push endpoints are not yet finalized
 Final numbers are a product decision in progress. Partners should design for retries and treat `429 Too Many Requests` with a `Retry-After` header as a recoverable state. Exponential backoff with jitter is the expected client behavior.

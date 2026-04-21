@@ -45,10 +45,13 @@ Use this path when your source produces one event at a time and can't reconstruc
 A single event email arrives: *"Jane Smith moved into B204 on 2026-05-01."* One call:
 
 ```bash
+# Generate one key per logical operation. Reuse the same value when retrying.
+IDEMPOTENCY_KEY=$(uuidgen)
+
 curl -X POST https://api.keepitsimplestorage.com/api/v2/pms/events/move-in \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
   -d '{
     "unit_ref": {
       "crm_unit_id": "PMS-U-1001",
@@ -84,10 +87,13 @@ The unit is created if it doesn't exist. The tenant is upserted (matched by `pms
 A payment posts — the email carries the new balance and paid-through date, nothing else. You patch just those two fields:
 
 ```bash
+# Generate one key per logical operation. Reuse the same value when retrying.
+IDEMPOTENCY_KEY=$(uuidgen)
+
 curl -X PATCH https://api.keepitsimplestorage.com/api/v2/pms/units/PMS-U-1001 \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
   -d '{
     "balance_due": 0.00,
     "paid_through_date": "2026-06-01"
@@ -113,25 +119,31 @@ curl -X PATCH https://api.keepitsimplestorage.com/api/v2/pms/units/PMS-U-1001 \
 Overlock email arrives. One field changes:
 
 ```bash
+# Generate one key per logical operation. Reuse the same value when retrying.
+IDEMPOTENCY_KEY=$(uuidgen)
+
 curl -X PATCH https://api.keepitsimplestorage.com/api/v2/pms/units/PMS-U-1001 \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
   -d '{
     "pms_lockout": true,
     "pms_status_raw": "Overlocked per facility manager 2026-05-20"
   }'
 ```
 
-KISS's evaluation engine picks up `pms_lockout: true` on the next access check and denies the tenant.
+After the PATCH applies, KISS re-evaluates the unit — `pms_lockout: true` flips the access decision to denied. The tenant will see the lockout on their next access refresh in the white-label app.
 
 ### Move out a tenant
 
 ```bash
+# Generate one key per logical operation. Reuse the same value when retrying.
+IDEMPOTENCY_KEY=$(uuidgen)
+
 curl -X POST https://api.keepitsimplestorage.com/api/v2/pms/events/move-out \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
   -d '{
     "unit_ref": { "crm_unit_id": "PMS-U-1001" }
   }'
@@ -171,10 +183,13 @@ Preserved: `crm_unit_id`, `name`, lock associations, access history, `last_acces
 Use this path when your source can produce the full current state of every unit on demand. Most PMSs with a complete API fall here.
 
 ```bash
+# Generate one key per logical operation. Reuse the same value when retrying.
+IDEMPOTENCY_KEY=$(uuidgen)
+
 curl -X POST https://api.keepitsimplestorage.com/api/v2/pms/units/sync \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
   -d '{
     "units": [
       {

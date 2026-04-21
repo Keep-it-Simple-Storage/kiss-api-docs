@@ -150,17 +150,17 @@ The app should **cache the access response** for offline use. This way, tenants 
 Here's how everything connects for the two main integration paths:
 
 **If you're a PMS integrator (state-oriented):**
-```
+```text
 Your PMS syncs unit facts → KISS evaluates access → Tenant opens lock via app
 ```
 
 **If you're an event-driven integrator (email scraper, MCP agent, webhook relay):**
-```
+```text
 Event arrives → You call /pms/events/* or PATCH /pms/units/{id} → KISS evaluates → Tenant sees update
 ```
 
 **If you're a white-label app developer:**
-```
+```text
 Tenant logs in via one-time password (OTP) → App fetches access data → SDK handles NFC → App reports logs
 ```
 

@@ -11,7 +11,7 @@ info:
     - **Event-driven** (email scrapers, webhook relays, MCP agents, any source producing sparse events): use `POST /pms/events/move-in`, `POST /pms/events/move-out`, and `PATCH /pms/units/{crm_unit_id}`.
     - **State-oriented** (traditional PMS with an API that can produce full state on demand): use `POST /pms/units/sync`.
 
-    All write endpoints accept an optional `Idempotency-Key` header for safe retries.
+    All PMS write endpoints (`/pms/events/*`, `PATCH /pms/units/{crm_unit_id}`, `POST /pms/units/sync`) accept an optional `Idempotency-Key` header for safe retries. The header is not used by authentication or log-reporting endpoints.
 
     New to KISS? Start with the [Concepts guide](/docs/guides/concepts) to understand the data model, then check the [Authentication guide](/docs/guides/authentication) for setup.
   version: 2.0.0
@@ -501,6 +501,8 @@ paths:
 
         Resets 8 fields to defaults: `pms_tenant_id`, `move_in_date`, `balance_due`, `paid_through_date`, `pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`. Preserves `crm_unit_id`, `name`, lock associations, access history.
 
+        **Does not create units.** If the referenced `crm_unit_id` does not exist under the authenticated company, returns `404`. Units are only created by `POST /pms/events/move-in` or `POST /pms/units/sync`.
+
         Idempotent. Re-sending for an already-vacant unit returns `200` with no change.
       security:
         - ApiTokenAuth: []
@@ -542,6 +544,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          description: Validation failed (e.g., missing or malformed `unit_ref.crm_unit_id`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
         "429":
           $ref: "#/components/responses/TooManyRequests"
 
@@ -792,7 +800,7 @@ paths:
               example:
                 message: "Request successful."
                 data:
-                  version: "1.0.0"
+                  version: "2.0.0"
                   timestamp: "2026-02-13T14:30:00Z"
 
 components:
@@ -1195,14 +1203,25 @@ components:
         - unit_ref
       properties:
         unit_ref:
-          $ref: "#/components/schemas/UnitRef"
+          type: object
+          description: |
+            Reference to the unit being moved out. Move-out does not create units — if the unit does not exist under the authenticated company, the request returns `404`.
+          required:
+            - crm_unit_id
+          properties:
+            crm_unit_id:
+              type: string
+              description: The PMS's unique identifier for this unit, within the authenticated company's scope.
+              example: "PMS-U-1001"
 
     UnitFactsPatch:
       type: object
       description: |
-        Any subset of fact fields. Fields not present in the body are not touched.
+        A sparse patch of fact fields. Only the fields listed below are accepted; any other property (including `occupied` and `tenant`) is rejected with `422` — tenancy changes go through the `/pms/events/move-in` and `/pms/events/move-out` endpoints. Fields not present in the body are not touched on the unit.
 
-        `occupied` and `tenant` are rejected here (422) — tenancy changes go through the event endpoints.
+        At least one property is required — an empty body `{}` is rejected with `422`.
+      additionalProperties: false
+      minProperties: 1
       properties:
         balance_due:
           type: number
