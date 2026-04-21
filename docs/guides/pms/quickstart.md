@@ -22,7 +22,7 @@ Both paths hit the same underlying data model — you can mix them.
 
 ## Base URL
 
-```
+```text
 https://api.keepitsimplestorage.com/api/v2
 ```
 
@@ -30,8 +30,8 @@ https://api.keepitsimplestorage.com/api/v2
 Every write endpoint accepts an optional `Idempotency-Key` header. We strongly recommend setting one on every request — send a new unique value per logical operation (any opaque string up to 255 characters; `uuidgen` is used in the examples below but any unique identifier from your system works), reuse the same value when retrying that operation. See [Authentication → API Tokens](../authentication.md#idempotency-key) for details.
 :::
 
-:::note Location binding
-The `location_code` field shown in examples below is a placeholder for how units are bound to a facility/location. The final contract is in design — whether partners send a `pms_location_code`, whether a one-location-per-company assumption applies, or whether locations are pre-registered through a separate endpoint is a decision in progress. Check back before you build.
+:::note Location binding is not yet defined
+The contract for how a pushed unit is bound to a facility/location is still in design. **Do not send any location identifier in requests today** — the examples below do not include one, and the schema does not yet accept one. The final shape (an explicit `pms_location_code` on every write, a one-location-per-company assumption, or a separate pre-registration endpoint) is a product decision in progress. This note will be replaced with the concrete contract once the decision lands; until then, partners working against this documentation should plan around receiving an update here before building.
 :::
 
 ---

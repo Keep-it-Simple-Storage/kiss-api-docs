@@ -263,7 +263,7 @@ No need to check if a unit or tenant exists before syncing. Just send your curre
 If something isn't working, start here:
 
 ```bash
-curl https://api.keepitsimplestorage.com/api/v1/health
+curl https://api.keepitsimplestorage.com/api/v2/health
 ```
 
 If this returns a `200`, the API is up and the issue is in your request. If it doesn't respond, the API may be down.
