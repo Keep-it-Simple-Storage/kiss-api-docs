@@ -217,7 +217,7 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** You sent two requests with the same `Idempotency-Key` header but different bodies. The key is tied to a specific logical operation — reusing it with different data is a client-side bug. Generate a new UUID for each new logical operation; reuse the same UUID only when retrying the *exact same* request.
+**Fix:** You sent two requests with the same `Idempotency-Key` header but different bodies. The key is tied to a specific logical operation — reusing it with different data is a client-side bug. Generate a new unique value for each new logical operation; reuse the same value only when retrying the *exact same* request.
 
 ---
 

@@ -120,7 +120,7 @@ Both paths hit the same fact-apply service internally and run the same access ev
 
 ### Idempotency
 
-Every write endpoint accepts an optional `Idempotency-Key` header. Send a new UUID per logical operation; reuse it when retrying. The server stores the key + request hash + response for 24 hours:
+Every write endpoint accepts an optional `Idempotency-Key` header. Send a new unique value per logical operation (any opaque string up to 255 characters — UUIDs work well); reuse the same value when retrying. The server stores the key + request hash + response for 24 hours:
 
 - Same key, same payload → returns cached response, no second write.
 - Same key, different payload → `409 Conflict`.

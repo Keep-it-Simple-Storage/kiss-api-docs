@@ -27,7 +27,7 @@ https://api.keepitsimplestorage.com/api/v2
 ```
 
 :::note Idempotency
-Every write endpoint accepts an optional `Idempotency-Key` header. We strongly recommend setting one on every request — send a new UUID per logical operation, reuse the same UUID when retrying that operation. See [Authentication → API Tokens](../authentication.md#idempotency-key) for details.
+Every write endpoint accepts an optional `Idempotency-Key` header. We strongly recommend setting one on every request — send a new unique value per logical operation (any opaque string up to 255 characters; `uuidgen` is used in the examples below but any unique identifier from your system works), reuse the same value when retrying that operation. See [Authentication → API Tokens](../authentication.md#idempotency-key) for details.
 :::
 
 :::note Location binding

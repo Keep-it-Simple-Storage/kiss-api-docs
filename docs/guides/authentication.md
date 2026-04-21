@@ -43,7 +43,7 @@ curl -X POST https://api.keepitsimplestorage.com/api/v2/pms/units/sync \
 ```
 
 :::tip Idempotency-Key
-Every PMS write endpoint accepts an optional `Idempotency-Key` header. When present, the server stores the request hash + response for 24 hours — retrying the same key with the same payload returns the cached response without a second write. Retrying the same key with a *different* payload returns `409 Conflict`. Use a new UUID per logical operation; reuse the same UUID when retrying that operation.
+Every PMS write endpoint accepts an optional `Idempotency-Key` header. The value is any client-chosen opaque string (max 255 characters) — UUIDs are a common choice but any unique identifier within your namespace works. When present, the server stores the request hash + response for 24 hours — retrying the same key with the same payload returns the cached response without a second write. Retrying the same key with a *different* payload returns `409 Conflict`. Use a new unique value per logical operation; reuse the same value when retrying that operation.
 :::
 
 ### Manage tokens
