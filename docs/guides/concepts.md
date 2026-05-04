@@ -84,7 +84,7 @@ KISS supports three integration models for how unit data gets into the system. A
 
 | Source type | How data flows | Who you are |
 |---|---|---|
-| **Push** | Your system sends data to KISS via write endpoints | PMS integrator, email-scraper integrator, or any source calling `/pms/events/*`, `PATCH /pms/units/{crm_unit_id}`, or `POST /pms/units/sync` |
+| **Push** | Your system sends data to KISS via write endpoints | PMS integrator, email-scraper integrator, or any source calling `PUT/DELETE /units/{crm_unit_id}/tenancy`, `PATCH /units/{crm_unit_id}`, or `PATCH /units` |
 | **Pull** | KISS fetches data from your PMS on demand | PMS with an API that KISS connects to (configured by KISS team) |
 | **Standalone** | Data is managed directly in the KISS dashboard | Operators without a PMS integration |
 
@@ -98,22 +98,22 @@ Once a unit is created under one source type, it stays under that source type. A
 
 There are two ways to write into KISS as a push integrator. Pick the one that matches how your source produces data.
 
-### State-oriented: `POST /pms/units/sync`
+### State-oriented: `PATCH /units`
 
 Use this when your source can produce the **full current state** of every unit on demand — most PMSs with an API fall here.
 
-- One endpoint. Bulk upsert. Idempotent.
+- One endpoint. Bulk upsert. Idempotent. Up to 500 units per request.
 - You send the full unit object (all known facts). KISS reconciles.
 - Typical cadence: every 15 minutes, or after a detected change event.
 - Partial failures return `200` with per-unit errors in the `errors[]` array.
 
-### Event-oriented: `/pms/events/*` + `PATCH /pms/units/{crm_unit_id}`
+### Event-oriented: `PUT/DELETE /units/{crm_unit_id}/tenancy` + `PATCH /units/{crm_unit_id}`
 
 Use this when your source produces **sparse events** — a move-in email, a payment notification, an MCP tool call — and cannot reconstruct full unit state without a local cache.
 
-- `POST /pms/events/move-in` — creates the unit if missing, upserts the tenant, sets `occupied=true`.
-- `POST /pms/events/move-out` — triggers the documented 8-field reset (see move-out section below).
-- `PATCH /pms/units/{crm_unit_id}` — partial update of any fact field. `occupied` and `tenant` go through the `/events/*` endpoints instead.
+- `PUT /units/{crm_unit_id}/tenancy` — move-in. Creates the unit if missing, records the tenant identifier, sets `occupied=true`.
+- `DELETE /units/{crm_unit_id}/tenancy` — move-out. Triggers the documented 8-field reset (see move-out section below).
+- `PATCH /units/{crm_unit_id}` — partial update of any fact field. `occupied`, `tenant_id`, `pms_tenant_id`, and `move_in_date` go through the tenancy endpoints instead.
 - Each endpoint takes only the fields the event actually carries. No state reconstruction required.
 
 Both paths hit the same fact-apply service internally and run the same access evaluation after every write. You can mix them in one integration — use bulk sync for nightly reconciliation and events+patch for real-time updates.
@@ -156,7 +156,7 @@ Your PMS syncs unit facts → KISS evaluates access → Tenant opens lock via ap
 
 **If you're an event-driven integrator (email scraper, MCP agent, webhook relay):**
 ```text
-Event arrives → You call /pms/events/* or PATCH /pms/units/{id} → KISS evaluates → Tenant sees update
+Event arrives → You call PUT/DELETE /units/{id}/tenancy or PATCH /units/{id} → KISS evaluates → Tenant sees update
 ```
 
 **If you're a white-label app developer:**

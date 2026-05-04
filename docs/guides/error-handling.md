@@ -274,7 +274,7 @@ A `401` on every request usually means your token is wrong or expired. For PMS i
 
 ### 3. Read the error message
 
-KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the [API Reference](/docs/api-reference/kiss-api).
+KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the OpenAPI reference (link in the [intro page](/) — moving to a code-derived viewer).
 
 ### 4. Check field paths in validation errors
 

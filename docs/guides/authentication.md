@@ -38,7 +38,7 @@ Include the token in the `Authorization` header of every request:
 # Generate one key per logical operation. Reuse the same value when retrying.
 IDEMPOTENCY_KEY=$(uuidgen)
 
-curl -X POST https://api.keepitsimplestorage.com/api/v2/pms/units/sync \
+curl -X PATCH https://api.keepitsimplestorage.com/api/v2/units \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
@@ -72,6 +72,10 @@ You can create multiple tokens (e.g., separate tokens for production and staging
 ## Tenant OTP Flow (White-Label Apps)
 
 White-label app integrators authenticate tenants using a phone number + OTP (one-time password) flow. The tenant receives an SMS, verifies the code, and your app receives a Bearer token.
+
+:::note White-label V2 surface in design
+The V2 endpoints for the tenant OTP flow and `/tenant/access` are still being scoped under the V2: Tenant & Mobile Access initiative. Today's production white-label clients use the predecessor (unversioned) endpoints — see the [White-Label Quickstart](./white-label/quickstart.md) for the current paths. The shape below describes the v2 contract this surface is moving to; treat the URL prefixes as illustrative until V2 white-label ships.
+:::
 
 ### How it works
 
@@ -246,8 +250,8 @@ Cache the token for the duration of the session and handle 401 responses by redi
 
 | Endpoint group | Limit | Window | Notes |
 |---|---|---|---|
-| `POST /pms/units/sync` | TBD — see note below | 60 seconds | Per company |
-| `POST /pms/events/*`, `PATCH /pms/units/{crm_unit_id}` | TBD — see note below | 60 seconds | Per company |
+| `PATCH /units` (bulk) | TBD — see note below | 60 seconds | Per company |
+| `PUT/DELETE /units/{crm_unit_id}/tenancy`, `PATCH /units/{crm_unit_id}` | TBD — see note below | 60 seconds | Per company |
 
 :::note Rate limits for PMS push endpoints are not yet finalized
 Final numbers are a product decision in progress. Partners should design for retries and treat `429 Too Many Requests` with a `Retry-After` header as a recoverable state. Exponential backoff with jitter is the expected client behavior.

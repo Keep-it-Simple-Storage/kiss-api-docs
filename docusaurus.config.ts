@@ -97,12 +97,6 @@ const config: Config = {
           label: 'Guides',
         },
         {
-          type: 'docSidebar',
-          sidebarId: 'apiReferenceSidebar',
-          position: 'left',
-          label: 'API Reference',
-        },
-        {
           type: 'search',
           position: 'right',
           className: 'navbar-search-centered',
