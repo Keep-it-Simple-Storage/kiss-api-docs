@@ -9,6 +9,10 @@ This guide walks you from zero to your first successful API call. By the end, yo
 
 **Time to complete:** ~15 minutes
 
+:::note Endpoints shown here are the production surface today
+The KISS API is consolidating onto a `/api/v2/` surface, but the white-label endpoints are still scoped under V2: Tenant & Mobile Access (in design). Until that ships, white-label clients use the predecessor endpoints below. URL paths will be republished alongside the V2 white-label work; the request and response shapes will remain functionally similar.
+:::
+
 ## Prerequisites
 
 - A tenant phone number registered in KISS (ask your KISS contact for a test tenant)
@@ -227,14 +231,11 @@ curl -X POST https://api.keepitsimplestorage.com/api/v1/locks/LOCK_ID/logs \
 
 Entry points (gates, doors) work the same way — use `POST /entry-points/{entry_point_id}/logs` with `entry_point.*` event keys.
 
-See the full [Lock Logs](/docs/api-reference/create-lock-log) and [Entry Point Logs](/docs/api-reference/create-entry-point-log) API reference for details.
-
 ---
 
 ## What's next
 
 - [Authentication guide](../authentication.md) — token expiration, rate limits, best practices
 - [Concepts](../concepts.md) — understand units, tenants, access states, and the KISS data model
-- [API Reference](/docs/api-reference/kiss-api) — full endpoint reference
 - [Error handling](../error-handling.md) — standard error format and troubleshooting
 - Flutter SDK setup — NFC lock interaction layer (coming soon)
