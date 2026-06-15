@@ -73,6 +73,6 @@ The same endpoints serve every caller; a Bearer token's scope decides what each 
 
 These paths describe the deepest layer KISS operates for you: from running everything (Full Platform), to running the back office while you bring your own tenant app (Back Office), to serving keys and logs into your own stack (API-Only). The contract is the same across all of them.
 
-:::info The full API reference is on its way
-KISS generates a machine-readable reference (every endpoint, request and response schema, and error shape) directly from the running code, so it never drifts from the live API. We are publishing it for self-service access now. Until it is live, the guides above describe the contract for the endpoints in production. Ask your KISS contact if you need the OpenAPI spec or example collections in advance.
+:::info Looking for the full API reference?
+The complete, machine-readable reference (every endpoint, request and response schema, and error shape) is generated directly from the running code, so it never drifts from the live API. Browse it at **[app.keepitsimplestorage.com/docs/api](https://app.keepitsimplestorage.com/docs/api)**.
 :::

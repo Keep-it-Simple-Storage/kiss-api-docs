@@ -71,6 +71,11 @@ const config: Config = {
       },
       items: [
         {
+          href: 'https://app.keepitsimplestorage.com/docs/api',
+          label: 'API Reference',
+          position: 'left',
+        },
+        {
           type: 'search',
           position: 'right',
           className: 'navbar-search-centered',
