@@ -50,21 +50,12 @@ function FooterLinks() {
     {
       title: 'Guides',
       links: [
-        {label: 'White-Label Quickstart', to: '/docs/guides/white-label/quickstart'},
-        {label: 'PMS Quickstart', to: '/docs/guides/pms/quickstart'},
+        {label: 'Start here', to: '/docs'},
+        {label: 'How access works', to: '/docs/guides/concepts'},
         {label: 'Authentication', to: '/docs/guides/authentication'},
-        {label: 'Concepts', to: '/docs/guides/concepts'},
-        {label: 'Error Handling', to: '/docs/guides/error-handling'},
-      ],
-    },
-    {
-      title: 'API Reference',
-      links: [
-        {label: 'Overview', to: '/docs/api-reference/kiss-api'},
-        {label: 'Authentication', to: '/docs/api-reference/request-otp'},
-        {label: 'Tenant Access', to: '/docs/api-reference/get-tenant-access'},
-        {label: 'PMS Sync', to: '/docs/api-reference/sync-units'},
-        {label: 'Health Check', to: '/docs/api-reference/health-check'},
+        {label: 'PMS integration', to: '/docs/guides/pms/quickstart'},
+        {label: 'Mobile app integration', to: '/docs/guides/white-label/quickstart'},
+        {label: 'Error handling', to: '/docs/guides/error-handling'},
       ],
     },
     {
@@ -72,7 +63,6 @@ function FooterLinks() {
       links: [
         {label: 'KISS Website', href: 'https://keepitsimplestorage.com'},
         {label: 'GitHub', href: 'https://github.com/Keep-it-Simple-Storage'},
-        {label: 'Status', to: '/docs/api-reference/health-check'},
       ],
     },
   ];
@@ -122,7 +112,7 @@ export default function Footer(): ReactNode {
               &copy; {new Date().getFullYear()} Keep It Simple Storage. All rights reserved.
             </span>
             <span className={styles.baseUrl}>
-              API Base URL: <code>api.keepitsimplestorage.com/api/v1</code>
+              API Base URL: <code>api-app.keepitsimplestorage.com/api/v2</code>
             </span>
           </div>
         </div>

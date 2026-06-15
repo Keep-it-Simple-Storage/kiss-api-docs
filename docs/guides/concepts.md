@@ -1,167 +1,210 @@
 ---
 sidebar_position: 3
+sidebar_label: How access works
 ---
 
-# Concepts
+# How KISS access works
 
-This page explains the core concepts behind KISS. Read this before making API calls so you understand how the pieces fit together.
+This page explains the core model behind KISS: units, the facts you write, and how the access evaluator turns those facts into a decision the tenant's app can act on. Read it before making API calls so the rest of the docs make sense.
 
 ---
 
-## Units and Tenants
+## Units and tenants
 
-A **unit** is a storage space (e.g., "B204") with a smart lock on the door. Units belong to a location (facility), and locations belong to a company.
+A **unit** is a storage space (for example "B204") with a smart lock on the door. Units belong to a location (a facility), and locations belong to a company.
 
-A **tenant** is the person renting the unit. They use a mobile app to tap their phone on the lock and open the door.
+A **tenant** is the person renting the unit. They use the KISS Access app to tap their phone on the lock and open the door.
 
 Units persist across tenants. When a tenant moves out, the unit resets (balance cleared, flags removed) but the lock stays. A new tenant can be assigned to the same unit later.
 
-A tenant can rent multiple units, and a unit can only have one primary tenant at a time. Tenants can also have **shared access** to units they don't directly rent (e.g., a business partner granted access by the primary tenant).
+A tenant can rent multiple units, and a unit has one primary tenant at a time. Tenants can also have shared access to units they do not directly rent (for example, a business partner the primary tenant grants access to).
 
 ---
 
-## Facts-Based Model
+## The facts-based model
 
-KISS uses a facts-based approach to manage unit data. Instead of tracking complex state machines, integrators simply write **facts** about a unit and KISS evaluates them to determine access.
+Instead of asking integrators to track a state machine, KISS asks you to keep a small set of **facts** about each unit current. KISS evaluates those facts to decide access.
 
-Facts include:
+Facts fall into three groups:
 
 - **Occupancy:** Is the unit occupied? Who is the tenant?
-- **Financial:** What is the balance due? When is the account paid through?
-- **Flags:** Is the unit locked out by the PMS? Exempt from lockout? In auction? Unrentable?
+- **Financial:** What is the balance due? Through what date is the account paid?
+- **Flags:** Is the unit overlocked by the PMS? Exempt from lockout? In auction? Out of service?
 
-As an integrator, your job is to keep these facts up to date. KISS handles the rest. You don't need to calculate whether a tenant should have access. You just send the current state of the unit and KISS runs its evaluation engine to decide.
+Your job is to keep these up to date. You do not calculate whether a tenant should have access. You send the current facts, and KISS runs its evaluator to decide.
 
 ---
 
-## Access States
+## Which facts gate access
 
-Every unit with a lock is evaluated into one of five access states. This is what you'll see in the `state` field of the API response.
+These are the fields you control. Some directly gate access; others are informational or feed an optional delinquency calculation.
+
+| Field | Gates access? | Meaning |
+| --- | --- | --- |
+| `pms_lockout` | Yes | The overlock switch. `true` revokes the tenant's lock access; `false` restores it. |
+| `pms_lock_exempt` | Yes | Never deny this tenant for billing reasons, regardless of other flags. |
+| `pms_auction` | Yes | Unit is in auction status; tenant access is denied. |
+| `pms_unrentable` | Yes | Unit is out of service; no tenant access. |
+| `move_in_date` | Yes | A future date delays access until that date. |
+| `balance_due` / `paid_through_date` | Optional | KISS can compute delinquency from these against the location's threshold and grace period. Informational if you drive lockouts yourself. |
+| `pms_status_raw` | No | Your system's own status label, stored verbatim so both support teams see the same word. |
+
+:::tip Pick one delinquency owner
+If your system owns the delinquency rules, drive the overlock explicitly: set `pms_lockout` on delinquency, clear it on payment, and treat `balance_due` / `paid_through_date` as informational. If you would rather KISS compute delinquency, send `balance_due` and `paid_through_date` on every change and KISS applies the location's threshold and grace period. Driving the overlock yourself is the recommended default.
+:::
+
+---
+
+## The evaluator: precedence order
+
+After every write, KISS evaluates a unit's facts in a fixed order. The **first** rule that matches decides the outcome:
+
+1. A manager's on-site override (lockout or exemption), when present, beats everything below it.
+2. `pms_unrentable`, then `pms_auction`: access denied.
+3. Vacant unit (no active tenancy): no tenant access.
+4. `move_in_date` in the future: access starts on that date.
+5. `pms_lock_exempt`: access allowed.
+6. `pms_lockout`: access denied.
+7. Balance past the location's threshold and grace period: access denied as delinquent.
+8. Otherwise: access allowed.
+
+Location policy toggles (for example, whether the location respects `pms_lockout`) can adjust which rules apply. Your KISS contact configures those per location with you.
+
+---
+
+## Access states and reasons
+
+The evaluator resolves every unit with a lock into a `state` and a `reason`. This is what a read returns.
 
 | State | Meaning | Tenant can unlock? |
-|---|---|---|
+| --- | --- | --- |
 | `vacant` | No tenant assigned to this unit | No |
 | `tenant_permitted` | Tenant is assigned and all checks pass | Yes |
 | `tenant_denied` | Tenant is assigned but access is denied (see reason) | No |
 | `auction` | Unit is in the auction process | No |
-| `unrentable` | Unit is marked as not available for rent (maintenance, damage, etc.) | No |
+| `unrentable` | Unit is marked as not available for rent (maintenance, damage) | No |
 
-The `reason` field tells you why a unit ended up in its current state:
+The `reason` field explains why a unit ended up in its state:
 
-**Permitted reasons:**
+**Permitted reasons**
 
 | Reason | What happened |
-|---|---|
-| `active` | All checks passed — tenant is in good standing |
+| --- | --- |
+| `active` | All checks passed; tenant is in good standing |
 | `pms_exempt` | The PMS exempted this unit from lockout despite other flags |
-| `system_exempt` | An operator exempted this unit via an ONELock override |
+| `system_exempt` | An operator exempted this unit via an override |
 
-**Denied reasons:**
+**Denied reasons**
 
 | Reason | What happened |
-|---|---|
+| --- | --- |
 | `delinquent` | Tenant is past due on payment beyond the grace period |
-| `future_move_in` | Tenant's lease hasn't started yet |
+| `future_move_in` | Tenant's lease has not started yet |
 | `blanket_delinquency` | Tenant is delinquent on another unit at the same location |
 | `pms_lockout` | The PMS flagged this unit for denied access (overlock, lien, legal hold) |
-| `system_lockout` | An operator locked out the unit via the ONELock dashboard |
+| `system_lockout` | An operator locked out the unit via the dashboard |
+
+:::note Exact shapes live in the reference
+This guide explains the model. The exact field names and enum values for any endpoint come from the API reference, which is generated from the live code. When a guide and the reference disagree, the reference wins.
+:::
 
 ---
 
-## Entry Points and Zones
+## Entry points and zones
 
-**Entry points** are shared access points like gates, building doors, or elevator readers. They are separate from unit locks but connected through **zones**.
+**Entry points** are shared access points such as gates, building doors, or elevator readers. They are separate from unit locks but connected through **zones**.
 
-A **zone** is a grouping within a location. A unit belongs to a zone, and entry points are assigned to zones. If a tenant has access to a unit in Zone B, they also get access to Zone B's entry points (e.g., "Building B Door").
+A **zone** is a grouping within a location. A unit belongs to a zone, and entry points are assigned to zones. If a tenant has access to a unit in Zone B, they also get access to Zone B's entry points (for example, "Building B Door").
 
-However, entry point access depends on unit access. If a tenant is denied on all their units in a zone, they lose entry point access for that zone too. The API response includes a `would_have_access` field on entry points to distinguish between "access denied because of a unit denial" and "no access at all."
+Entry point access depends on unit access. If a tenant is denied on all their units in a zone, they lose entry point access for that zone too. Reads include a `would_have_access` field on entry points so you can distinguish "access denied because of a unit denial" from "no access at all."
 
 ---
 
-## Source Types
+## How unit data gets in: source types
 
-KISS supports three integration models for how unit data gets into the system. As an integrator, you'll be using one of these:
+KISS supports three integration models. A `source` field records which one owns each unit.
 
 | Source type | How data flows | Who you are |
-|---|---|---|
-| **Push** | Your system sends data to KISS via write endpoints | PMS integrator, email-scraper integrator, or any source calling `PUT/DELETE /units/{crm_unit_id}/tenancy`, `PATCH /units/{crm_unit_id}`, or `PATCH /units` |
-| **Pull** | KISS fetches data from your PMS on demand | PMS with an API that KISS connects to (configured by KISS team) |
-| **Standalone** | Data is managed directly in the KISS dashboard | Operators without a PMS integration |
+| --- | --- | --- |
+| **Push** | Your system sends data to KISS via the write endpoints | A PMS integrator, an email-scraper integrator, or any source calling `PUT/DELETE /units/{unit_id}/tenancy`, `PATCH /units/{unit_id}`, or `PATCH /units` |
+| **Pull** | KISS fetches data from your PMS on demand | A PMS with an API that KISS connects to (configured by the KISS team) |
+| **Standalone** | Data is managed directly in the KISS dashboard | Operators with no PMS integration |
 
-If you're reading this documentation, you're most likely a **push** integrator or a **white-label app** developer. Pull integrations are configured server-side by the KISS team and don't require API calls from your end.
+If you are reading these docs, you are most likely a **push** integrator or a **mobile app** developer. Pull integrations are configured server-side by the KISS team and need no API calls from you.
 
-Once a unit is created under one source type, it stays under that source type. A push-owned unit will not be overwritten by a pull sync, and vice versa — attempts return `409 Conflict`.
+Once a unit exists under one source type it stays there. A push-owned unit is not overwritten by a pull sync, and the reverse is also true; conflicting writes return `409 Conflict`.
 
 ---
 
-## Integration Patterns for Push Sources
+## Two ways to write as a push integrator
 
-There are two ways to write into KISS as a push integrator. Pick the one that matches how your source produces data.
+Pick the shape that matches how your source produces data. Both hit the same fact-apply logic internally and run the same evaluation after every write, so you can mix them.
 
 ### State-oriented: `PATCH /units`
 
-Use this when your source can produce the **full current state** of every unit on demand — most PMSs with an API fall here.
+Use this when your source can produce the **full current state** of every unit on demand, which is where most PMSs with an API land.
 
-- One endpoint. Bulk upsert. Idempotent. Up to 500 units per request.
-- You send the full unit object (all known facts). KISS reconciles.
+- One endpoint. Bulk upsert, matched on your `crm_unit_id` in the body. Idempotent. Up to 500 units per request.
+- You send each unit's known facts; KISS reconciles.
 - Typical cadence: every 15 minutes, or after a detected change event.
-- Partial failures return `200` with per-unit errors in the `errors[]` array.
+- Partial failures return `200` with per-unit problems in an `errors` array, so always check it.
 
-### Event-oriented: `PUT/DELETE /units/{crm_unit_id}/tenancy` + `PATCH /units/{crm_unit_id}`
+### Event-oriented: `PUT/DELETE /units/{unit_id}/tenancy` plus `PATCH /units/{unit_id}`
 
-Use this when your source produces **sparse events** — a move-in email, a payment notification, an MCP tool call — and cannot reconstruct full unit state without a local cache.
+Use this when your source produces **sparse events** (a move-in email, a payment notification, an MCP tool call) and cannot reconstruct full unit state without a local cache.
 
-- `PUT /units/{crm_unit_id}/tenancy` — move-in. Creates the unit if missing, records the tenant identifier, sets `occupied=true`.
-- `DELETE /units/{crm_unit_id}/tenancy` — move-out. Triggers the documented 8-field reset (see move-out section below).
-- `PATCH /units/{crm_unit_id}` — partial update of any fact field. `occupied`, `tenant_id`, `pms_tenant_id`, and `move_in_date` go through the tenancy endpoints instead.
-- Each endpoint takes only the fields the event actually carries. No state reconstruction required.
+- `PUT /units/{unit_id}/tenancy` records a move-in: marks the unit occupied and, when you include a tenant block, sets up the tenant so they can claim the unit in the app.
+- `DELETE /units/{unit_id}/tenancy` records a move-out and resets the unit to vacant.
+- `PATCH /units/{unit_id}` is the workhorse for sparse fact updates such as overlock on delinquency and release on payment.
+- Each call carries only the fields the event actually changed. No state reconstruction required.
 
-Both paths hit the same fact-apply service internally and run the same access evaluation after every write. You can mix them in one integration — use bulk sync for nightly reconciliation and events+patch for real-time updates.
+Per-unit paths address the unit by its KISS **ULID** (`unit_id`). The bulk endpoint matches on your own `crm_unit_id` in the body, so you can sync without ever storing KISS IDs. The [PMS integration guide](/docs/guides/pms/quickstart) walks through both shapes end to end.
 
 ### Idempotency
 
-Every write endpoint accepts an optional `Idempotency-Key` header. Send a new unique value per logical operation (any opaque string up to 255 characters — UUIDs work well); reuse the same value when retrying. The server stores the key + request hash + response for 24 hours:
+Every write accepts an `Idempotency-Key` header. Send a fresh opaque value (up to 255 characters; a UUID works well) per logical operation, and reuse the same value when retrying. KISS remembers the key, request, and response for 24 hours, scoped to your company:
 
-- Same key, same payload → returns cached response, no second write.
-- Same key, different payload → `409 Conflict`.
-
-This is stronger than the payload-hash idempotency an earlier draft of these docs promised, and it's the right primitive for at-least-once retry semantics.
+- Same key, same payload: the original response is replayed and nothing is applied twice. Safe to retry on timeouts or 5xx.
+- Same key, different payload: `409 Conflict`. Generate a new key for each distinct event.
 
 ---
 
-## NFC Keys
+## NFC keys
 
-When a tenant calls `GET /tenant/access`, the response includes a key string for each permitted lock and entry point. This key is the NFC credential — the app passes it to the KISS Flutter SDK, which uses it to communicate with the ONELock hardware during a tap.
+When a tenant's app calls `GET /access`, the response includes a key string for each permitted lock and entry point. That key is the NFC credential: the app passes it to the KISS Flutter SDK, which uses it to talk to the lock during a tap.
 
-Here's how it works:
+The flow:
 
-1. App calls `GET /tenant/access` and receives unit/entry point data with key strings
-2. App passes the key to the Flutter SDK
-3. Tenant taps their phone on the lock
-4. The SDK uses the key to authenticate with the lock via NFC
-5. App reports the result back to KISS via the logs endpoint
+1. App calls `GET /access` and receives units and entry points with key strings.
+2. App passes the key to the Flutter SDK.
+3. Tenant taps their phone on the lock.
+4. The SDK uses the key to authenticate with the lock over NFC.
+5. App reports the result back to KISS via the logs endpoints.
 
-The app should **cache the access response** for offline use. This way, tenants can still open their lock even without network connectivity. On the next app launch or pull-to-refresh, the app fetches fresh data from the API.
+Keys are **served, never exported**. The app caches the access bundle for offline use, so tenants can open their lock without connectivity, and refreshes it on the next launch or pull-to-refresh. Because callers borrow keys rather than holding a static dump, KISS can revoke and rotate them.
 
 ---
 
-## Putting It Together
+## Putting it together
 
-Here's how everything connects for the two main integration paths:
+The same data model serves every path:
 
-**If you're a PMS integrator (state-oriented):**
+**State-oriented PMS integrator**
+
 ```text
-Your PMS syncs unit facts → KISS evaluates access → Tenant opens lock via app
+Your PMS syncs unit facts -> KISS evaluates access -> Tenant opens lock via app
 ```
 
-**If you're an event-driven integrator (email scraper, MCP agent, webhook relay):**
+**Event-driven integrator (email scraper, MCP agent, webhook relay)**
+
 ```text
-Event arrives → You call PUT/DELETE /units/{id}/tenancy or PATCH /units/{id} → KISS evaluates → Tenant sees update
+Event arrives -> You call PUT/DELETE /units/{unit_id}/tenancy or PATCH /units/{unit_id} -> KISS evaluates -> Tenant sees the update
 ```
 
-**If you're a white-label app developer:**
+**Mobile app developer**
+
 ```text
-Tenant logs in via one-time password (OTP) → App fetches access data → SDK handles NFC → App reports logs
+Tenant signs in with a one-time password -> App calls GET /access -> SDK handles NFC -> App reports logs
 ```
 
-Both paths rely on the same underlying data model. The PMS keeps facts current, and the app reads the evaluated result. KISS sits in the middle, turning raw facts into access decisions.
+In every case the writer keeps facts current and the app reads the evaluated result. KISS sits in the middle, turning raw facts into access decisions.
