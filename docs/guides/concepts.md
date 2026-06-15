@@ -1,6 +1,8 @@
 ---
 sidebar_position: 3
 sidebar_label: How access works
+sidebar_custom_props:
+  icon: concepts
 ---
 
 # How KISS access works
@@ -142,7 +144,7 @@ Use this when your source produces **sparse events** (a move-in email, a payment
 - `PATCH /units/{unit_id}` is the workhorse for sparse fact updates such as overlock on delinquency and release on payment.
 - Each call carries only the fields the event actually changed. No state reconstruction required.
 
-Per-unit paths address the unit by its KISS **ULID** (`unit_id`). The bulk endpoint matches on your own `crm_unit_id` in the body, so you can sync without ever storing KISS IDs. The [PMS integration guide](/docs/guides/pms/quickstart) walks through both shapes end to end.
+Per-unit paths address the unit by its KISS **ULID** (`unit_id`). The bulk endpoint matches on your own `crm_unit_id` in the body, so you can sync without ever storing KISS IDs. The [PMS integration guide](/guides/pms/quickstart) walks through both shapes end to end.
 
 ### Idempotency
 

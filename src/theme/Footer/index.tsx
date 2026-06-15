@@ -50,12 +50,12 @@ function FooterLinks() {
     {
       title: 'Guides',
       links: [
-        {label: 'Start here', to: '/docs'},
-        {label: 'How access works', to: '/docs/guides/concepts'},
-        {label: 'Authentication', to: '/docs/guides/authentication'},
-        {label: 'PMS integration', to: '/docs/guides/pms/quickstart'},
-        {label: 'Mobile app integration', to: '/docs/guides/white-label/quickstart'},
-        {label: 'Error handling', to: '/docs/guides/error-handling'},
+        {label: 'Introduction', to: '/'},
+        {label: 'How access works', to: '/guides/concepts'},
+        {label: 'Authentication', to: '/guides/authentication'},
+        {label: 'PMS integration', to: '/guides/pms/quickstart'},
+        {label: 'Mobile app integration', to: '/guides/white-label/quickstart'},
+        {label: 'Error handling', to: '/guides/error-handling'},
       ],
     },
     {

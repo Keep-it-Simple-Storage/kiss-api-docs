@@ -1,7 +1,6 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
-import type * as OpenApiPlugin from 'docusaurus-plugin-openapi-docs';
 
 const config: Config = {
   title: 'KISS API Docs',
@@ -30,8 +29,8 @@ const config: Config = {
       'classic',
       {
         docs: {
+          routeBasePath: '/',
           sidebarPath: './sidebars.ts',
-          docItemComponent: '@theme/ApiItem',
         },
         blog: false,
         theme: {
@@ -41,34 +40,15 @@ const config: Config = {
     ],
   ],
 
-  plugins: [
-    'docusaurus-node-polyfills',
-    [
-      'docusaurus-plugin-openapi-docs',
-      {
-        id: 'api',
-        docsPluginId: 'classic',
-        config: {
-          kissApi: {
-            specPath: 'openapi.yaml',
-            outputDir: 'docs/api-reference',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          } satisfies OpenApiPlugin.Options,
-        },
-      },
-    ],
-  ],
+  plugins: ['docusaurus-node-polyfills'],
 
   themes: [
-    'docusaurus-theme-openapi-docs',
     [
       '@easyops-cn/docusaurus-search-local',
       {
         hashed: true,
         indexBlog: false,
-        docsRouteBasePath: '/docs',
+        docsRouteBasePath: '/',
         highlightSearchTermsOnTargetPage: true,
         searchResultLimits: 8,
       },
@@ -82,7 +62,7 @@ const config: Config = {
       respectPrefersColorScheme: false,
     },
     navbar: {
-      title: '',
+      title: 'Developer Portal',
       logo: {
         alt: 'KISS Logo',
         src: 'img/logo.svg',
@@ -90,12 +70,6 @@ const config: Config = {
         style: { height: '32px' },
       },
       items: [
-        {
-          type: 'docSidebar',
-          sidebarId: 'guidesSidebar',
-          position: 'left',
-          label: 'Guides',
-        },
         {
           type: 'search',
           position: 'right',

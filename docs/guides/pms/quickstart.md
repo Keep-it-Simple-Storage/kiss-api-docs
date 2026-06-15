@@ -1,6 +1,8 @@
 ---
 sidebar_position: 1
-sidebar_label: "PMS Quickstart"
+sidebar_label: "PMS integration"
+sidebar_custom_props:
+  icon: pms
 ---
 
 # Quickstart: PMS Push Integration
