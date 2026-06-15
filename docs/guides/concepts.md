@@ -7,8 +7,6 @@ sidebar_label: How access works
 
 This page explains the core model behind KISS: units, the facts you write, and how the access evaluator turns those facts into a decision the tenant's app can act on. Read it before making API calls so the rest of the docs make sense.
 
----
-
 ## Units and tenants
 
 A **unit** is a storage space (for example "B204") with a smart lock on the door. Units belong to a location (a facility), and locations belong to a company.
@@ -18,8 +16,6 @@ A **tenant** is the person renting the unit. They use the KISS Access app to tap
 Units persist across tenants. When a tenant moves out, the unit resets (balance cleared, flags removed) but the lock stays. A new tenant can be assigned to the same unit later.
 
 A tenant can rent multiple units, and a unit has one primary tenant at a time. Tenants can also have shared access to units they do not directly rent (for example, a business partner the primary tenant grants access to).
-
----
 
 ## The facts-based model
 
@@ -32,8 +28,6 @@ Facts fall into three groups:
 - **Flags:** Is the unit overlocked by the PMS? Exempt from lockout? In auction? Out of service?
 
 Your job is to keep these up to date. You do not calculate whether a tenant should have access. You send the current facts, and KISS runs its evaluator to decide.
-
----
 
 ## Which facts gate access
 
@@ -53,8 +47,6 @@ These are the fields you control. Some directly gate access; others are informat
 If your system owns the delinquency rules, drive the overlock explicitly: set `pms_lockout` on delinquency, clear it on payment, and treat `balance_due` / `paid_through_date` as informational. If you would rather KISS compute delinquency, send `balance_due` and `paid_through_date` on every change and KISS applies the location's threshold and grace period. Driving the overlock yourself is the recommended default.
 :::
 
----
-
 ## The evaluator: precedence order
 
 After every write, KISS evaluates a unit's facts in a fixed order. The **first** rule that matches decides the outcome:
@@ -70,8 +62,6 @@ After every write, KISS evaluates a unit's facts in a fixed order. The **first**
 
 Location policy toggles (for example, whether the location respects `pms_lockout`) can adjust which rules apply. Your KISS contact configures those per location with you.
 
----
-
 ## Access states and reasons
 
 The evaluator resolves every unit with a lock into a `state` and a `reason`. This is what a read returns.
@@ -84,7 +74,7 @@ The evaluator resolves every unit with a lock into a `state` and a `reason`. Thi
 | `auction` | Unit is in the auction process | No |
 | `unrentable` | Unit is marked as not available for rent (maintenance, damage) | No |
 
-The `reason` field explains why a unit ended up in its state:
+The `reason` field explains why a unit ended up in its state.
 
 **Permitted reasons**
 
@@ -108,8 +98,6 @@ The `reason` field explains why a unit ended up in its state:
 This guide explains the model. The exact field names and enum values for any endpoint come from the API reference, which is generated from the live code. When a guide and the reference disagree, the reference wins.
 :::
 
----
-
 ## Entry points and zones
 
 **Entry points** are shared access points such as gates, building doors, or elevator readers. They are separate from unit locks but connected through **zones**.
@@ -117,8 +105,6 @@ This guide explains the model. The exact field names and enum values for any end
 A **zone** is a grouping within a location. A unit belongs to a zone, and entry points are assigned to zones. If a tenant has access to a unit in Zone B, they also get access to Zone B's entry points (for example, "Building B Door").
 
 Entry point access depends on unit access. If a tenant is denied on all their units in a zone, they lose entry point access for that zone too. Reads include a `would_have_access` field on entry points so you can distinguish "access denied because of a unit denial" from "no access at all."
-
----
 
 ## How unit data gets in: source types
 
@@ -133,8 +119,6 @@ KISS supports three integration models. A `source` field records which one owns 
 If you are reading these docs, you are most likely a **push** integrator or a **mobile app** developer. Pull integrations are configured server-side by the KISS team and need no API calls from you.
 
 Once a unit exists under one source type it stays there. A push-owned unit is not overwritten by a pull sync, and the reverse is also true; conflicting writes return `409 Conflict`.
-
----
 
 ## Two ways to write as a push integrator
 
@@ -167,8 +151,6 @@ Every write accepts an `Idempotency-Key` header. Send a fresh opaque value (up t
 - Same key, same payload: the original response is replayed and nothing is applied twice. Safe to retry on timeouts or 5xx.
 - Same key, different payload: `409 Conflict`. Generate a new key for each distinct event.
 
----
-
 ## NFC keys
 
 When a tenant's app calls `GET /access`, the response includes a key string for each permitted lock and entry point. That key is the NFC credential: the app passes it to the KISS Flutter SDK, which uses it to talk to the lock during a tap.
@@ -182,8 +164,6 @@ The flow:
 5. App reports the result back to KISS via the logs endpoints.
 
 Keys are **served, never exported**. The app caches the access bundle for offline use, so tenants can open their lock without connectivity, and refreshes it on the next launch or pull-to-refresh. Because callers borrow keys rather than holding a static dump, KISS can revoke and rotate them.
-
----
 
 ## Putting it together
 
