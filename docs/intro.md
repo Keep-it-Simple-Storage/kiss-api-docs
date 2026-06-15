@@ -1,14 +1,20 @@
 ---
 sidebar_position: 1
-sidebar_label: Start here
+sidebar_label: Introduction
 slug: /
+sidebar_custom_props:
+  icon: introduction
 ---
 
 import {Cards, Card} from '@site/src/components/Cards';
 
-# Start here
+# Introduction
 
-KISS is a smart-lock access platform for self-storage. Locks are NFC devices with no battery and no network connection: the tenant's phone powers and operates the lock through a tap, the same technology used for contactless payments. Because the lock itself is offline, everything intelligent happens in the apps and the platform behind them.
+Welcome to the KISS API. KISS is a smart-lock access platform for self-storage, and this is the one-stop home for everything you need to build on it.
+
+## Overview
+
+KISS locks are NFC devices with no battery and no network connection: the tenant's phone powers and operates the lock through a tap, the same technology used for contactless payments. Because the lock itself is offline, everything intelligent happens in the apps and the platform behind them.
 
 The **KISS API** is how external systems take part in that platform. Whether you run a property management system, build your own tenant app, or pull access data into your own tools, you talk to one versioned REST API.
 
@@ -18,9 +24,21 @@ The **KISS API** is how external systems take part in that platform. Whether you
 https://api-app.keepitsimplestorage.com/api/v2
 ```
 
-:::tip New to KISS?
-Read [How access works](/docs/guides/concepts) first. It explains units, facts, and the access evaluator, which is the model everything else builds on.
-:::
+## The KISS platform at a glance
+
+<Cards columns={3}>
+  <Card title="KISS Access app" icon="mobile">
+    Tenants sign in with their mobile number and a one-time SMS code, then open their lock with an NFC tap. The app caches a signed access bundle so it keeps working offline.
+  </Card>
+  <Card title="KISS Manager app" icon="manager">
+    Site staff install and assign locks to units, open units when needed, and apply manual overrides such as an on-site lockout or an exemption.
+  </Card>
+  <Card title="Web admin portal" icon="admin">
+    A browser console for company settings, locations, units, access logs, and API tokens. Managers sign in with email and password.
+  </Card>
+</Cards>
+
+Your integration is the fourth piece. Your system keeps each unit's business facts current (who rents it, whether they are paid up, whether it should be overlocked) and KISS evaluates those facts into an access decision it delivers to the tenant's app. One business event becomes one HTTP call.
 
 ## One API, many writers
 
@@ -39,16 +57,16 @@ You never compute access yourself or hold key material. You keep the facts curre
 The same endpoints serve every caller; a Bearer token's scope decides what each one can do. Pick the path that matches what you are building.
 
 <Cards>
-  <Card title="How access works" icon="concepts" href="/docs/guides/concepts">
+  <Card title="How access works" icon="concepts" href="/guides/concepts">
     The data model: units, tenants, facts, access states, entry points, and NFC keys.
   </Card>
-  <Card title="Authentication" icon="auth" href="/docs/guides/authentication">
+  <Card title="Authentication" icon="auth" href="/guides/authentication">
     Bearer tokens and scopes for partners, one-time-password sign-in for tenants.
   </Card>
-  <Card title="PMS integration" icon="pms" href="/docs/guides/pms/quickstart">
+  <Card title="PMS integration" icon="pms" href="/guides/pms/quickstart">
     Push tenancy, balance, and overlock state from your system, and keep unit facts in sync.
   </Card>
-  <Card title="Mobile app integration" icon="mobile" href="/docs/guides/white-label/quickstart">
+  <Card title="Mobile app integration" icon="mobile" href="/guides/white-label/quickstart">
     Authenticate tenants and read their access bundle to build your own app.
   </Card>
 </Cards>

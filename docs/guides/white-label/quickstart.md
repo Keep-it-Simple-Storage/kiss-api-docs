@@ -1,6 +1,8 @@
 ---
 sidebar_position: 1
-sidebar_label: "White-Label Quickstart"
+sidebar_label: "Mobile app integration"
+sidebar_custom_props:
+  icon: mobile
 ---
 
 # Quickstart: White-Label App Integration

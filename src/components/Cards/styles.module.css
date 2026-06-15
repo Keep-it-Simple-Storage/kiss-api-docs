@@ -5,8 +5,16 @@
   margin: 1.5rem 0 2rem;
 }
 
+.cardGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
 @media (max-width: 768px) {
-  .cardGrid {
+  .cardGrid,
+  .cardGrid3 {
     grid-template-columns: 1fr;
   }
 }
