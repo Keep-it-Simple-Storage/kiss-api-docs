@@ -6,41 +6,41 @@ sidebar_custom_props:
 
 # Authentication
 
-KISS uses two authentication methods depending on your integration type:
+Every request carries `Authorization: Bearer <token>`. How you obtain that token depends on who is calling.
 
-| Integration | Auth method | Who authenticates |
-|---|---|---|
-| **PMS Push** | API token (Bearer) | Your server |
-| **White-Label App** | Phone + OTP | Your app's end user (tenant) |
+| Caller | Token | Who authenticates |
+| --- | --- | --- |
+| **Partner / PMS server** | Per-company API token (or OAuth 2.0 for multi-company partners) | Your server |
+| **Tenant app** | Phone + one-time password (OTP) | Your app's end user |
 
----
+## Partner API tokens
 
-## API Tokens (PMS Integrators)
+API tokens authenticate server-to-server requests. Each token is scoped to a single company.
 
-API tokens authenticate server-to-server requests from your PMS to KISS. Each token is scoped to a single company.
+### Create a token
 
-### Generate a token
+You can self-serve in the KISS web admin portal:
 
-1. Log in to the [KISS Dashboard](https://app.keepitsimplestorage.com)
-2. Navigate to your **Company** page from the sidebar
-3. Click the **API** tab
-4. Enter a name for your token (e.g., `production-sync`, `staging`)
-5. Click **Create a new token**
-6. **Copy the token immediately** — it won't be shown again
+1. Sign in to the [KISS Dashboard](https://app.keepitsimplestorage.com) and open **Company Settings**.
+2. Click the **API** tab. (This needs company admin permission; if you do not see it, ask KISS to adjust your user or issue the token for you.)
+3. Name the token (for example `acme-pms-integration`), select the scopes the integration needs, and create it.
+4. **Copy the token immediately.** It is shown once; store it in a secrets manager.
 
 :::caution
-API tokens grant full access to your company's data. Store them securely and never expose them in client-side code, public repos, or logs.
+API tokens grant access to your company's data. Never expose them in client-side code, public repos, or logs. Revoke a token from the same **API** tab if it is ever exposed; revocation takes effect immediately.
 :::
+
+For PMS integrations, scope the token to `pms:read` and `pms:write`. See the [PMS integration guide](/guides/pms/quickstart) for the end-to-end flow.
 
 ### Use the token
 
-Include the token in the `Authorization` header of every request:
+Include it in the `Authorization` header of every request:
 
 ```bash
-# Generate one key per logical operation. Reuse the same value when retrying.
+# Generate one key per logical write. Reuse the same value when retrying.
 IDEMPOTENCY_KEY=$(uuidgen)
 
-curl -X PATCH https://api.keepitsimplestorage.com/api/v2/units \
+curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
@@ -48,231 +48,50 @@ curl -X PATCH https://api.keepitsimplestorage.com/api/v2/units \
 ```
 
 :::tip Idempotency-Key
-Every PMS write endpoint accepts an optional `Idempotency-Key` header. The value is any client-chosen opaque string (max 255 characters) — UUIDs are a common choice but any unique identifier within your namespace works. When present, the server stores the request hash + response for 24 hours — retrying the same key with the same payload returns the cached response without a second write. Retrying the same key with a *different* payload returns `409 Conflict`. Use a new unique value per logical operation; reuse the same value when retrying that operation.
+Every write accepts an `Idempotency-Key` header: any opaque string up to 255 characters (a UUID works well). The server stores the request hash and response for 24 hours, so retrying the same key with the same payload returns the cached response without a second write. Retrying the same key with a *different* payload returns `409 Conflict`. Use a fresh value per logical operation; reuse it only when retrying that operation.
 :::
 
-### Manage tokens
+### Multi-company partners (OAuth 2.0)
 
-You can view all active tokens in the **API** tab of your Company page. Each token shows its name and creation date. To revoke a token, click the delete icon next to it — this takes effect immediately.
+A partner that serves many companies (a PMS vendor with dozens of operators, for example) uses OAuth 2.0 rather than a per-company token, with cross-tenant scopes and refresh tokens. If that is you, contact KISS to set up an OAuth client. All flavors accept the same scopes and hit the same routes.
 
-You can create multiple tokens (e.g., separate tokens for production and staging environments).
-
-### Error responses
+### Errors
 
 | Status | Meaning |
-|---|---|
+| --- | --- |
 | `401 Unauthorized` | Missing or invalid token |
+| `403 Forbidden` | Token is valid but lacks the required scope |
 
-```json
-{
-  "message": "Unauthorized."
-}
-```
+## Tenant sign-in (mobile apps)
 
----
+Tenant apps authenticate the end user with a **phone number plus a one-time password**. The app sends the tenant's mobile number, the tenant receives a 6-digit SMS code, the app submits that code, and KISS returns a Bearer token the app uses for subsequent requests.
 
-## Tenant OTP Flow (White-Label Apps)
+A few things worth knowing as you build:
 
-White-label app integrators authenticate tenants using a phone number + OTP (one-time password) flow. The tenant receives an SMS, verifies the code, and your app receives a Bearer token.
+- **Multiple accounts.** If a phone number is linked to more than one tenant account (for example, the same person renting at two facilities), KISS returns the list of accounts instead of a token. Prompt the tenant to choose, then complete sign-in for the selected account.
+- **No refresh tokens.** Tenant tokens expire. When a request returns `401`, send the tenant back through OTP sign-in to get a new token; cache the token for the session in between.
+- **Keep tenant tokens on the device.** They should never be sent to your backend; your server uses partner API tokens for server-side work.
 
-:::note White-label V2 surface in design
-The V2 endpoints for the tenant OTP flow and `/tenant/access` are still being scoped under the V2: Tenant & Mobile Access initiative. Today's production white-label clients use the predecessor (unversioned) endpoints — see the [White-Label Quickstart](./white-label/quickstart.md) for the current paths. The shape below describes the v2 contract this surface is moving to; treat the URL prefixes as illustrative until V2 white-label ships.
+:::note Endpoints are finalizing under Mobile Migration
+The exact tenant sign-in and `GET /access` paths and payloads are converging onto `/api/v2` now. For current request and response shapes, see the [API Reference](https://app.keepitsimplestorage.com/docs/api) or the [Mobile app integration guide](/guides/white-label/quickstart). The flow above is stable; the URLs are not yet frozen here to avoid drift.
 :::
-
-### How it works
-
-1. App calls `POST /auth/phone` with tenant's phone number
-2. Tenant receives a 6-digit OTP via SMS
-3. App calls `POST /auth/verify-otp` with the OTP
-4. API returns a Bearer token
-5. App uses the token for all subsequent requests
-
-### Step 1: Request OTP
-
-```bash
-curl -X POST https://api.keepitsimplestorage.com/api/v2/auth/phone \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country_code": "1",
-    "phone_number": "5551234567"
-  }'
-```
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `country_code` | string | Yes | Country calling code without `+` (1-3 digits) |
-| `phone_number` | string | Yes | Phone number without country code (7-15 digits) |
-
-**Success — 200 OK:**
-
-```json
-{
-  "message": "OTP sent successfully."
-}
-```
-
-**Error — 422:** The phone number is not associated with any tenant in KISS.
-
-```json
-{
-  "message": "A tenant with the submitted phone number does not exist."
-}
-```
-
-:::tip
-OTPs expire after 5 minutes. A new OTP cannot be requested until the resend cooldown (30 seconds) has passed.
-:::
-
-### Step 2: Verify OTP
-
-```bash
-curl -X POST https://api.keepitsimplestorage.com/api/v2/auth/verify-otp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country_code": "1",
-    "phone_number": "5551234567",
-    "otp": "482910"
-  }'
-```
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `country_code` | string | Yes | Country calling code without `+` |
-| `phone_number` | string | Yes | Phone number |
-| `otp` | string | Yes | 6-digit code received via SMS |
-| `tenant_id` | string | No | Required on second call when multiple accounts exist |
-
-**Success — 200 OK (single account):**
-
-```json
-{
-  "message": "Login successful.",
-  "data": {
-    "token": "1|abc123def456...",
-    "user": {
-      "id": "usr_abc123",
-      "name": "Jane Smith",
-      "email": null,
-      "phone": "+15551234567"
-    }
-  }
-}
-```
-
-### Handling multiple accounts
-
-If a phone number is linked to multiple tenant accounts (e.g., a tenant renting at two locations), the API returns `token: null` and a list of accounts:
-
-```json
-{
-  "message": "Multiple accounts found.",
-  "data": {
-    "token": null,
-    "accounts": [
-      {
-        "tenant_id": "01HQA123456789ABCDEFGHJKMNPQRS",
-        "name": "Jane Smith",
-        "location": "Downtown Storage",
-        "company": "ABC Storage Co."
-      },
-      {
-        "tenant_id": "01HQB234567890BCDEFGHJKMNPQRST",
-        "name": "Jane Smith",
-        "location": "Uptown Storage",
-        "company": "ABC Storage Co."
-      }
-    ]
-  }
-}
-```
-
-Prompt the tenant to select an account, then call the same endpoint again with the selected `tenant_id`:
-
-```bash
-curl -X POST https://api.keepitsimplestorage.com/api/v2/auth/verify-otp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country_code": "1",
-    "phone_number": "5551234567",
-    "otp": "482910",
-    "tenant_id": "01HQA123456789ABCDEFGHJKMNPQRS"
-  }'
-```
-
-This returns the standard success response with a token.
-
-:::note
-The OTP is **not** consumed on the first call when multiple accounts are returned — it stays valid so your app can call again with the selected `tenant_id`.
-:::
-
-### Step 3: Use the token
-
-Include the Bearer token in all subsequent API requests:
-
-```bash
-curl https://api.keepitsimplestorage.com/api/v2/tenant/access \
-  -H "Authorization: Bearer 1|abc123def456..."
-```
-
-### Token expiration
-
-Tenant Bearer tokens have a limited lifetime. When a token expires, the API returns `401 Unauthorized`. There is no refresh token mechanism. The tenant must re-authenticate via the OTP flow to get a new token.
-
-:::tip
-Cache the token for the duration of the session and handle 401 responses by redirecting the tenant back to the OTP login screen.
-:::
-
-### Error responses
-
-| Status | Meaning |
-|---|---|
-| `401 Unauthorized` | Missing, invalid, or expired token |
-| `403 Forbidden` | Token is valid but lacks permission for this resource (e.g., accessing a unit that doesn't belong to this tenant) |
-| `422 Unprocessable` | Invalid or expired OTP |
-| `429 Too Many Requests` | Rate limited. Retry after 60 seconds. |
-
-```json
-{
-  "message": "The OTP code is invalid or has expired."
-}
-```
-
----
 
 ## Rate Limits
 
-### White-Label Auth
+KISS rate-limits abusive traffic and returns `429 Too Many Requests` with a `Retry-After` header. Design clients for retries: exponential backoff with jitter is the expected behavior.
 
-| Endpoint | Limit | Window | Notes |
-|---|---|---|---|
-| `POST /auth/phone` | 5 requests | 60 seconds | Per phone number |
-| `POST /auth/verify-otp` | 5 attempts | 60 seconds | Per phone number |
+| Endpoint group | Notes |
+| --- | --- |
+| Tenant OTP sign-in | Limited per phone number |
+| `PATCH /units` (bulk), `PUT/DELETE /units/{unit_id}/tenancy`, `PATCH /units/{unit_id}` | Per company |
 
-### PMS Push
-
-| Endpoint group | Limit | Window | Notes |
-|---|---|---|---|
-| `PATCH /units` (bulk) | TBD — see note below | 60 seconds | Per company |
-| `PUT/DELETE /units/{crm_unit_id}/tenancy`, `PATCH /units/{crm_unit_id}` | TBD — see note below | 60 seconds | Per company |
-
-:::note Rate limits for PMS push endpoints are not yet finalized
-Final numbers are a product decision in progress. Partners should design for retries and treat `429 Too Many Requests` with a `Retry-After` header as a recoverable state. Exponential backoff with jitter is the expected client behavior.
+:::note Exact limits are a product decision in progress
+Treat `429` with a `Retry-After` header as a recoverable state. Final numbers will be published in the [API Reference](https://app.keepitsimplestorage.com/docs/api) when locked.
 :::
 
-When rate limited, the API returns `429 Too Many Requests` with a `Retry-After` header:
+## Best practices
 
-```json
-{
-  "message": "Too many attempts. Please try again in 60 seconds."
-}
-```
-
----
-
-## Best Practices
-
-- **Store tokens securely.** API tokens belong in environment variables or a secrets manager, never in source code.
-- **Use separate tokens per environment.** Create distinct tokens for production, staging, and development.
-- **Cache the tenant Bearer token.** After OTP verification, cache the token in the app for the session. Don't re-authenticate on every API call.
-- **Handle 401 gracefully.** If a request returns 401, the token has expired or been revoked. Prompt the tenant to re-authenticate via OTP.
-- **Never send tokens to your backend.** Tenant Bearer tokens should stay on the device. Your server should use API tokens for server-side operations.
+- **Store partner tokens securely.** Environment variables or a secrets manager, never source code. Use separate tokens per environment.
+- **Cache the tenant token for the session.** Do not re-authenticate on every call.
+- **Handle `401` gracefully.** A partner token may be revoked; a tenant token may have expired. Re-authenticate accordingly.
+- **Keep tenant tokens on the device.** Server-side operations use partner API tokens.

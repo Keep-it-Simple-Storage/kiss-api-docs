@@ -125,7 +125,7 @@ The `errors` object maps field paths to arrays of error messages. For nested fie
 }
 ```
 
-**Fix:** The OTP has expired or was entered incorrectly. Request a new one via `POST /auth/phone` and try again.
+**Fix:** The OTP has expired or was entered incorrectly. Request a new one through the OTP sign-in flow and try again.
 
 ---
 
@@ -138,7 +138,7 @@ The `errors` object maps field paths to arrays of error messages. For nested fie
 }
 ```
 
-**Fix:** The tenant's Bearer token has expired. Re-authenticate through the OTP flow (`POST /auth/phone` then `POST /auth/verify-otp`) to get a new token. There is no refresh token mechanism.
+**Fix:** The tenant's Bearer token has expired. Re-authenticate through the OTP sign-in flow to get a new token. There is no refresh token mechanism.
 
 ---
 
@@ -180,7 +180,7 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** The `lock_id` in the URL doesn't match any resource. Double-check the ID from the `GET /tenant/access` response.
+**Fix:** The `lock_id` in the URL doesn't match any resource. Double-check the ID from the access response (`GET /access`).
 
 ---
 
@@ -193,7 +193,7 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** The `entry_point_id` in the URL doesn't match any resource. Double-check the ID from the `GET /tenant/access` response.
+**Fix:** The `entry_point_id` in the URL doesn't match any resource. Double-check the ID from the access response (`GET /access`).
 
 ---
 
@@ -265,7 +265,7 @@ No need to check if a unit or tenant exists before syncing. Just send your curre
 If something isn't working, start here:
 
 ```bash
-curl https://api.keepitsimplestorage.com/api/v2/health
+curl https://api-app.keepitsimplestorage.com/api/v2/health
 ```
 
 If this returns a `200`, the API is up and the issue is in your request. If it doesn't respond, the API may be down.
@@ -276,7 +276,7 @@ A `401` on every request usually means your token is wrong or expired. For PMS i
 
 ### 3. Read the error message
 
-KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the OpenAPI reference (link in the [intro page](/) — moving to a code-derived viewer).
+KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the [API Reference](https://app.keepitsimplestorage.com/docs/api).
 
 ### 4. Check field paths in validation errors
 
