@@ -4,6 +4,8 @@ sidebar_label: Start here
 slug: /
 ---
 
+import {Cards, Card} from '@site/src/components/Cards';
+
 # Start here
 
 KISS is a smart-lock access platform for self-storage. Locks are NFC devices with no battery and no network connection: the tenant's phone powers and operates the lock through a tap, the same technology used for contactless payments. Because the lock itself is offline, everything intelligent happens in the apps and the platform behind them.
@@ -22,36 +24,36 @@ Read [How access works](/docs/guides/concepts) first. It explains units, facts, 
 
 ## One API, many writers
 
-Reduced to its core, the product is a set of unit IDs matched to a set of keys, plus the logic that decides who may use them when. The API is organized around one idea:
-
-> **The units table is the source of truth.** Every system that feeds KISS is a *writer* to it, and a `source` field records where each unit's data came from.
+Reduced to its core, the product is a set of unit IDs matched to a set of keys, plus the logic that decides who may use them when. The API is organized around one idea: **the units table is the source of truth.** Every system that feeds KISS is a *writer* to it, and a `source` field records where each unit's data came from.
 
 That keeps one mental model no matter who is integrating:
 
 - **You write facts** about each unit: who rents it, whether they are paid up, whether it should be overlocked, whether it is in auction or out of service.
-- **KISS evaluates** those facts into an access decision (the access evaluator), after every write.
+- **KISS evaluates** those facts into an access decision after every write.
 - **The tenant's app reads** the evaluated result and opens the lock.
 
 You never compute access yourself or hold key material. You keep the facts current; KISS does the rest and serves keys per tap.
 
-## Who the API is for
-
-The same endpoints serve every caller; a Bearer token's scope decides what each one can do. Most integrations fall into one of these shapes:
-
-| You are | You want to | Start with |
-| --- | --- | --- |
-| A property management system or other data source | Push tenancy, balance, and overlock state into KISS | [PMS integration](/docs/guides/pms/quickstart) |
-| A builder of your own tenant-facing app | Authenticate tenants and read their access bundle | [Mobile app integration](/docs/guides/white-label/quickstart) |
-| A platform consumer | Pull logs, events, and reporting data | Talk to your KISS contact (guide coming) |
-
-These describe the deepest layer KISS operates for you, from running everything (Full Platform), to running the back office while you bring your own tenant app (Back Office), to serving keys and logs into your own stack (API-Only). The contract is the same across all of them.
-
 ## Choose your path
 
-- [How access works](/docs/guides/concepts) — the data model: units, tenants, facts, access states, entry points, and NFC keys.
-- [Authentication](/docs/guides/authentication) — Bearer tokens and scopes for partners, one-time-password sign-in for tenants.
-- [PMS integration](/docs/guides/pms/quickstart) — map your events to API calls and keep unit facts in sync.
-- [Error handling](/docs/guides/error-handling) — the response envelope, status codes, idempotency, and troubleshooting.
+The same endpoints serve every caller; a Bearer token's scope decides what each one can do. Pick the path that matches what you are building.
+
+<Cards>
+  <Card title="How access works" icon="concepts" href="/docs/guides/concepts">
+    The data model: units, tenants, facts, access states, entry points, and NFC keys.
+  </Card>
+  <Card title="Authentication" icon="auth" href="/docs/guides/authentication">
+    Bearer tokens and scopes for partners, one-time-password sign-in for tenants.
+  </Card>
+  <Card title="PMS integration" icon="pms" href="/docs/guides/pms/quickstart">
+    Push tenancy, balance, and overlock state from your system, and keep unit facts in sync.
+  </Card>
+  <Card title="Mobile app integration" icon="mobile" href="/docs/guides/white-label/quickstart">
+    Authenticate tenants and read their access bundle to build your own app.
+  </Card>
+</Cards>
+
+These paths describe the deepest layer KISS operates for you: from running everything (Full Platform), to running the back office while you bring your own tenant app (Back Office), to serving keys and logs into your own stack (API-Only). The contract is the same across all of them.
 
 :::info The full API reference is on its way
 KISS generates a machine-readable reference (every endpoint, request and response schema, and error shape) directly from the running code, so it never drifts from the live API. We are publishing it for self-service access now. Until it is live, the guides above describe the contract for the endpoints in production. Ask your KISS contact if you need the OpenAPI spec or example collections in advance.
