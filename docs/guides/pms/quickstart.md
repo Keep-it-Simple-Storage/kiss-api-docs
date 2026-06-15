@@ -5,306 +5,246 @@ sidebar_custom_props:
   icon: pms
 ---
 
-# Quickstart: PMS Push Integration
+import {Cards, Card} from '@site/src/components/Cards';
 
-This guide walks you from zero to syncing unit data into KISS. There are two integration patterns depending on how your source produces data:
+# PMS integration
 
-- **Event-driven** (email notifications, webhooks, MCP tool calls, anything that receives sparse events): use `PUT /units/{crm_unit_id}/tenancy` (move-in), `DELETE /units/{crm_unit_id}/tenancy` (move-out), and `PATCH /units/{crm_unit_id}` (sparse fact updates).
-- **State-oriented** (traditional PMS with an API that can produce full unit state on demand): use `PATCH /units` (bulk upsert).
+This guide walks a property management system (or any system that knows about units and tenants) through pushing state into KISS: who rents each unit, whether they are paid up, and whether the unit should be overlocked. KISS evaluates what you send and decides whether the tenant's app can open the lock.
 
-Both paths hit the same underlying data model — you can mix them.
+It assumes you have skimmed [How access works](/guides/concepts), which explains the facts-based model and the access evaluator. Here we focus on the integration itself.
 
-**Time to complete:** ~10 minutes
-
-## Prerequisites
-
-- An API token generated from the KISS dashboard (see [Authentication guide](../authentication.md#generate-a-token))
-- A mapping of your unit and tenant identifiers to sync into KISS
-- A tool to make HTTP requests (curl, Postman, or your integration code)
-
-## Base URL
-
-```text
-https://api.keepitsimplestorage.com/api/v2
-```
-
-:::note Idempotency
-Every write endpoint accepts an `Idempotency-Key` header. We strongly recommend setting one on every request — send a new unique value per logical operation (any opaque string up to 255 characters; `uuidgen` is used in the examples below but any unique identifier from your system works), reuse the same value when retrying that operation. See [Authentication → Use the token](../authentication.md#use-the-token) for details.
+:::tip The reference has the exact shapes
+This guide shows the shape of each call with working examples. For the complete, always-current field lists and response schemas, follow the **[API Reference](https://app.keepitsimplestorage.com/docs/api)** links throughout. The reference is generated from the live code, so it never drifts.
 :::
 
-:::note Body schema is in flight
-The endpoints' URL paths and methods are stable. The **body shape** is being aligned alongside [KEEP-665](https://linear.app/keep-it-simple-storage/issue/KEEP-665) (path keys migrating from `crm_unit_id` to ulid) — in particular, tenant identity fields (name, email, phone) are not yet accepted by the move-in endpoint. The examples below match what the controllers accept today; partner-facing identity creation will be added in a follow-up.
-:::
+## Before you begin
 
----
+Every request is JSON over HTTPS, authenticated with a company-scoped Bearer token.
 
-## Path A — Event-driven integration
+| | |
+| --- | --- |
+| Base URL | `https://api-app.keepitsimplestorage.com/api/v2` |
+| Format | `Content-Type: application/json` |
+| Auth | `Authorization: Bearer <token>` |
+| Writes | Require an `Idempotency-Key` header |
 
-Use this path when your source produces one event at a time and can't reconstruct full unit state. Examples: an inbox that receives move-in / lockout / payment emails from a PMS, an MCP server translating agent tool calls, an integration relaying webhooks from another platform.
+You can create the token yourself in the KISS web admin portal:
 
-### Move in a tenant
+1. Sign in and open **Company Settings**, then the **API** tab. (This needs company admin permission; if you do not see the tab, ask KISS to adjust your user or issue the token for you.)
+2. Name the token, for example `acme-pms-integration`.
+3. Select only the `pms:read` and `pms:write` scopes. The selector preselects every scope; deselect the others.
+4. Copy the token when it appears. It is shown once; store it in your secrets manager.
 
-A single event email arrives: *"Jane Smith moved into B204 on 2026-05-01."* One call:
+| Scope | Grants |
+| --- | --- |
+| `pms:read` | Read your units (discovery) |
+| `pms:write` | Unit sync, move-in, move-out, and unit fact updates |
+
+See [Authentication](/guides/authentication) for the full token model.
+
+## Identifiers and locations
+
+Resources are addressed by **ULID**, a 26-character ID like `01KTSC4X57H4M49E661CW41BXE`. Two identifiers matter for units:
+
+| Identifier | Owned by | Meaning |
+| --- | --- | --- |
+| `unit_id` | KISS | The unit's ULID. Used in every per-unit URL. Read it from `GET /units`. |
+| `crm_unit_id` | You | Your system's key for the unit. The bulk sync matches on it, so you can write units without ever storing KISS IDs. Stored and echoed back on every read. |
+
+Units enter the platform two ways: KISS registers them during lock installation, or your sync calls create them. Either way, `GET /units` is the authoritative mapping between your keys and ours.
+
+Every unit belongs to a **location** (a facility). Payloads that create units accept a location in one of three ways:
+
+1. **Omit it.** If your company has exactly one active location in KISS, the API infers it. The common case for a first integration.
+2. **`location_id`**: the location's ULID, returned on every unit in `GET /units`.
+3. **`pms_location_code`**: your own facility code. Set it per location in the admin portal (open the location, Integration tab), then address locations by the code your system already knows. `location_id` and `pms_location_code` are mutually exclusive in a payload.
+
+## Map your events to API calls
+
+Every event in your system maps to one call. This table is the heart of the integration.
+
+| Event in your PMS | API call |
+| --- | --- |
+| Initial setup: discover existing units | `GET /units` (store the IDs) |
+| Initial roster load, or periodic reconciliation | `PATCH /units` (bulk, up to 500 units) |
+| New rental / move-in | `PUT /units/{unit_id}/tenancy` |
+| Tenant goes delinquent: overlock | `PATCH /units/{unit_id}` with `pms_lockout: true` |
+| Tenant pays: release overlock | `PATCH /units/{unit_id}` with `pms_lockout: false` |
+| Unit moves to auction | `PATCH /units/{unit_id}` with `pms_auction: true` |
+| Move-out / vacate | `DELETE /units/{unit_id}/tenancy` |
+
+## Walking through the calls
+
+The examples below are illustrative. For the full field list on each, see the [API Reference](https://app.keepitsimplestorage.com/docs/api).
+
+### Discover your unit IDs
+
+`GET /units` returns every unit in your company with the mapping between your `crm_unit_id` and our `unit_id`. Call it once during setup, store the IDs, and use them in the per-unit write paths.
 
 ```bash
-# Generate one key per logical operation. Reuse the same value when retrying.
-IDEMPOTENCY_KEY=$(uuidgen)
-
-curl -X PUT https://api.keepitsimplestorage.com/api/v2/units/PMS-U-1001/tenancy \
-  -H "Authorization: Bearer YOUR_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
-  -d '{
-    "pms_tenant_id": "PMS-T-5001",
-    "ledger_id": "LEDGER-9911",
-    "move_in_date": "2026-05-01",
-    "unit_name": "B204",
-    "pms_location_code": "MAIN-ST"
-  }'
+curl https://api-app.keepitsimplestorage.com/api/v2/units \
+  -H "Authorization: Bearer $KISS_TOKEN"
 ```
-
-**Response (201 if the unit was created, 200 if it already existed):**
 
 ```json
 {
-  "message": "Request successful.",
-  "data": {
-    "unit_id": "01HQ1234567890ABCDEFGHJKMNPQRS",
-    "applied_at": "2026-05-01T14:30:00Z"
-  }
+  "message": "Request successful",
+  "data": [
+    {
+      "unit_id": "01KTSC4X57H4M49E661CW41BXE",
+      "crm_unit_id": "A-142",
+      "unit_name": "142",
+      "location_id": "01KTSC1K93D0Z2EVHVDPZHGJ5B",
+      "source_type": "push"
+    }
+  ],
+  "meta": { "count": 1 }
 }
 ```
 
-The unit is created if it doesn't exist (using `unit_name` as the display name and `pms_location_code` to resolve the location). `occupied` is set to `true`. `pms_tenant_id` and `ledger_id` are recorded so subsequent payments and lockouts can reference this tenancy. No other facts are touched — if the unit had a prior balance, it stays until you update it.
+Responses carry `ETag` and `Cache-Control`; send `If-None-Match` to get a cheap `304` when nothing changed. `crm_unit_id` is `null` for units KISS registered that you have not synced yet.
 
-### Update a fact
+### Bulk sync your roster
 
-A payment posts — the email carries the new balance and paid-through date, nothing else. You patch just those two fields:
+`PATCH /units` upserts up to 500 units in one call, matched on your `crm_unit_id`: unknown IDs create units, known IDs update them. Use it for the initial roster load and for periodic reconciliation (nightly is typical).
 
 ```bash
-# Generate one key per logical operation. Reuse the same value when retrying.
-IDEMPOTENCY_KEY=$(uuidgen)
-
-curl -X PATCH https://api.keepitsimplestorage.com/api/v2/units/PMS-U-1001 \
-  -H "Authorization: Bearer YOUR_API_TOKEN" \
+curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
+  -H "Authorization: Bearer $KISS_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
-  -d '{
-    "balance_due": 0.00,
-    "paid_through_date": "2026-06-01"
-  }'
-```
-
-**Response (200):**
-
-```json
-{
-  "message": "Unit updated.",
-  "data": {
-    "unit_id": "01HQ1234567890ABCDEFGHJKMNPQRS",
-    "applied_at": "2026-05-14T09:12:34Z"
-  }
-}
-```
-
-`PATCH /units/{crm_unit_id}` accepts any subset of `balance_due`, `paid_through_date`, `pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`, `pms_status_raw`. Fields not present in the body are untouched. `occupied`, `tenant_id`, `pms_tenant_id`, and `move_in_date` are rejected — tenancy changes go through the `/tenancy` endpoints instead.
-
-### Set a lockout
-
-Overlock email arrives. One field changes:
-
-```bash
-# Generate one key per logical operation. Reuse the same value when retrying.
-IDEMPOTENCY_KEY=$(uuidgen)
-
-curl -X PATCH https://api.keepitsimplestorage.com/api/v2/units/PMS-U-1001 \
-  -H "Authorization: Bearer YOUR_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
-  -d '{
-    "pms_lockout": true,
-    "pms_status_raw": "Overlocked per facility manager 2026-05-20"
-  }'
-```
-
-After the PATCH applies, KISS re-evaluates the unit — `pms_lockout: true` flips the access decision to denied. The tenant will see the lockout on their next access refresh in the white-label app.
-
-### Move out a tenant
-
-```bash
-# Generate one key per logical operation. Reuse the same value when retrying.
-IDEMPOTENCY_KEY=$(uuidgen)
-
-curl -X DELETE https://api.keepitsimplestorage.com/api/v2/units/PMS-U-1001/tenancy \
-  -H "Authorization: Bearer YOUR_API_TOKEN" \
-  -H "Idempotency-Key: $IDEMPOTENCY_KEY"
-```
-
-**Response (200):**
-
-```json
-{
-  "message": "Request successful.",
-  "data": {
-    "unit_id": "01HQ1234567890ABCDEFGHJKMNPQRS",
-    "applied_at": "2026-07-15T16:05:00Z"
-  }
-}
-```
-
-When move-out is applied, KISS resets the following fields to defaults:
-
-| Field | Reset value |
-|---|---|
-| `pms_tenant_id` | null |
-| `move_in_date` | null |
-| `balance_due` | 0.00 |
-| `paid_through_date` | null |
-| `pms_lockout` | false |
-| `pms_lock_exempt` | false |
-| `pms_auction` | false |
-| `pms_unrentable` | false |
-
-Preserved: `crm_unit_id`, `name`, lock associations, access history, `last_accessed_at`. **Does not create units** — if the `crm_unit_id` doesn't exist for your company, the request returns `404`.
-
----
-
-## Path B — State-oriented bulk sync
-
-Use this path when your source can produce the full current state of every unit on demand. Most PMSs with a complete API fall here.
-
-```bash
-# Generate one key per logical operation. Reuse the same value when retrying.
-IDEMPOTENCY_KEY=$(uuidgen)
-
-curl -X PATCH https://api.keepitsimplestorage.com/api/v2/units \
-  -H "Authorization: Bearer YOUR_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
+  -H "Idempotency-Key: acme-roster-sync-2026-06-12" \
   -d '{
     "units": [
       {
-        "crm_unit_id": "PMS-U-1001",
-        "unit_name": "B204",
-        "pms_location_code": "MAIN-ST",
+        "crm_unit_id": "A-142",
+        "unit_name": "142",
         "occupied": true,
-        "pms_tenant_id": "PMS-T-5001",
-        "ledger_id": "LEDGER-9911",
-        "move_in_date": "2024-03-01",
-        "balance_due": 0.00,
-        "paid_through_date": "2026-04-01",
+        "pms_tenant_id": "T-883920",
+        "move_in_date": "2026-06-01",
+        "balance_due": 0,
+        "paid_through_date": "2026-07-01",
         "pms_lockout": false,
-        "pms_lock_exempt": false,
-        "pms_auction": false,
-        "pms_unrentable": false
+        "pms_status_raw": "CURRENT"
       },
-      {
-        "crm_unit_id": "PMS-U-1002",
-        "unit_name": "C101",
-        "pms_location_code": "MAIN-ST",
-        "occupied": false
-      },
-      {
-        "crm_unit_id": "PMS-U-1003",
-        "unit_name": "A305",
-        "pms_location_code": "MAIN-ST",
-        "occupied": true,
-        "pms_tenant_id": "PMS-T-5003",
-        "ledger_id": "LEDGER-9913",
-        "move_in_date": "2026-01-15",
-        "balance_due": 150.00,
-        "paid_through_date": "2026-01-10",
-        "pms_lockout": true,
-        "pms_lock_exempt": false,
-        "pms_auction": false,
-        "pms_unrentable": false
-      }
+      { "crm_unit_id": "A-143", "unit_name": "143", "occupied": false }
     ]
   }'
 ```
 
-**Response (200):**
+A failing item does not abort the batch: it lands in `data.errors` as `{ "crm_unit_id": ..., "error": ... }` and the response is still `200`, so always check that array. The sync maintains unit facts but does not create tenant identities; use the move-in call when a tenant should be able to claim the unit in the app. Full per-item field list: [API Reference → sync units](https://app.keepitsimplestorage.com/docs/api#/operations/v2.units.sync).
 
-```json
-{
-  "message": "Sync completed.",
-  "data": {
-    "synced_at": "2026-04-07T14:33:00Z",
-    "total": 3,
-    "created": 1,
-    "updated": 1,
-    "unchanged": 1,
-    "errors": []
-  }
-}
+### Move-in
+
+`PUT /units/{unit_id}/tenancy` records a new tenancy: marks the unit occupied, clears any lockout, and (when you include the `tenant` block) creates or updates the tenant's identity so they can claim the unit in the KISS Access app. Send the tenant's mobile phone in E.164 format; it is how they authenticate.
+
+```bash
+curl -X PUT https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M49E661CW41BXE/tenancy \
+  -H "Authorization: Bearer $KISS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: acme-movein-A142-2026-06-15" \
+  -d '{
+    "pms_tenant_id": "T-883920",
+    "ledger_id": "L-102233",
+    "move_in_date": "2026-06-15",
+    "tenant": {
+      "first_name": "Jordan",
+      "last_name": "Avery",
+      "phone": "+18015550123",
+      "email": "jordan.avery@example.com"
+    }
+  }'
 ```
 
-### Move in and move out via bulk sync
+`pms_tenant_id` and `ledger_id` are your own references, stored and echoed back for reconciliation. Discover or bulk-sync the unit first; this call expects a unit that already exists.
 
-Within a bulk payload, `occupied: true` with a `pms_tenant_id` and `move_in_date` is a move-in. `occupied: false` is a move-out (triggers the same 8-field reset as `DELETE /units/{crm_unit_id}/tenancy`).
+### Overlock, release, and status flags
 
-Units not included in the payload are **not** affected — this is an upsert, not a full replace.
+`PATCH /units/{unit_id}` is the workhorse: send only the fields that changed. Delinquency and payment events both land here.
 
-### Partial failures
+```bash
+# Overlock on delinquency
+curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M49E661CW41BXE \
+  -H "Authorization: Bearer $KISS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: acme-overlock-A142-2026-07-02" \
+  -d '{ "pms_lockout": true, "balance_due": 189.00, "pms_status_raw": "DELINQUENT" }'
 
-If one unit's validation fails, the rest still apply. The response returns `200` with per-unit errors:
-
-```json
-{
-  "message": "Sync completed with errors.",
-  "data": {
-    "synced_at": "2026-04-02T14:30:00Z",
-    "total": 3,
-    "created": 1,
-    "updated": 1,
-    "unchanged": 0,
-    "errors": [
-      {
-        "crm_unit_id": "PMS-U-1002",
-        "error": "Invalid value for balance_due: must be a number."
-      }
-    ]
-  }
-}
+# Release after payment
+curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M49E661CW41BXE \
+  -H "Authorization: Bearer $KISS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: acme-payment-784421" \
+  -d '{ "pms_lockout": false, "balance_due": 0, "paid_through_date": "2026-08-01", "pms_status_raw": "CURRENT" }'
 ```
 
-Only when the whole request is malformed (e.g., missing `units` key, duplicate `crm_unit_id` values, or more than 500 units) do you get `422`.
+Accepted fields are the access flags from [How access works](/guides/concepts#which-facts-gate-access) (`pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`, `balance_due`, `paid_through_date`, `pms_status_raw`). Tenancy fields (`occupied`, `pms_tenant_id`, `move_in_date`) are rejected here with `422`; use the tenancy endpoints for those.
 
-### Batch size
+### Move-out
 
-Up to **500 units per request**. Sync your property in pages if it exceeds the cap. Duplicate `crm_unit_id` values within a single request are rejected.
+`DELETE /units/{unit_id}/tenancy` ends the tenancy. No body; the URL is the whole instruction. KISS resets the unit to vacant, clearing the tenant link, move-in date, balance, paid-through date, and the lockout, lock-exempt, auction, and unrentable flags.
 
----
+```bash
+curl -X DELETE https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M49E661CW41BXE/tenancy \
+  -H "Authorization: Bearer $KISS_TOKEN" \
+  -H "Idempotency-Key: acme-moveout-A142-2026-09-30"
+```
 
-## Mixing patterns
+Returns `404` for an unknown `unit_id`; move-out never creates units.
 
-You can mix the two paths. A typical operational setup:
+## Idempotency
 
-- **Tenancy + patch** for real-time updates as they happen (a webhook listener, an email parser, an MCP agent).
-- **Bulk sync** for nightly reconciliation to catch any events that were missed or dropped.
+Every write requires an `Idempotency-Key` header: any opaque string up to 255 characters (an event ID, a transaction ID, or a composed key like the examples above). Keys are remembered for 24 hours, scoped to your company.
 
-Both paths converge on the same data model internally. The bulk sync's `occupied: false` and `DELETE /units/{crm_unit_id}/tenancy` run the same reset logic.
+- **Same key, same request:** the original response is replayed and nothing is applied twice. Safe to retry on timeouts or 5xx.
+- **Same key, different body:** `409 Conflict`. Generate a fresh key for each distinct event.
 
----
+## Responses and errors
 
-## Typical production setup
+Every response uses the same envelope: `{ "message": ..., "data": ..., "meta": ... }`. Errors are `{ "message": ... }`, and validation failures add an `errors` object keyed by field.
 
-1. Generate an API token from the KISS dashboard.
-2. Decide your pattern:
-   - Event-driven source → wire your integration to call `PUT/DELETE /units/{crm_unit_id}/tenancy` and `PATCH /units/{crm_unit_id}` as events arrive.
-   - State-oriented source → schedule `PATCH /units` periodically (every 15 minutes is a typical cadence).
-3. Always include an `Idempotency-Key` header so retries are safe.
-4. Handle `429 Too Many Requests` with `Retry-After` honored.
-5. Handle `409 Conflict` (source-type collision or idempotency-key reuse) by logging and alerting — these indicate configuration issues, not transient errors.
+| Status | Meaning |
+| --- | --- |
+| `200` | Applied (bulk sync returns `200` even with per-item errors, check `data.errors`) |
+| `304` | Not modified (conditional `GET /units`) |
+| `401` | Missing or invalid token |
+| `403` | Token lacks the required scope |
+| `404` | Unknown `unit_id` |
+| `409` | Two distinct cases, distinguishable by `message` (see below) |
+| `422` | Validation failure (details in `errors`) |
 
-:::note
-After every write, KISS automatically runs its access evaluation engine on affected units. Tenants with a white-label app will see the changes on their next access refresh.
-:::
+The two `409` cases:
 
----
+- `"Idempotency-Key reused with a different request."` Reuse the response you already have, or send a new key.
+- `"This unit is managed by a pull-mode PMS integration..."` Another sync source owns the record; contact KISS to resolve ownership. In the bulk sync this surfaces as a per-item error instead.
 
-## What's next
+Full envelope and troubleshooting: [Error handling](/guides/error-handling).
 
-- [Authentication guide](../authentication.md) — token management, `Idempotency-Key`, rate limits
-- [Concepts](../concepts.md) — facts-based data model, access states, source types, integration patterns
-- [Error handling](../error-handling.md) — standard error format, status codes, `409` cases, troubleshooting
+## Integration checklist
+
+1. Create your API token (Company Settings, API tab) with `pms:read` and `pms:write`, and store it in your secrets manager.
+2. If you have more than one location, decide how to address them and, if you choose `pms_location_code`, set the codes in the admin portal.
+3. `GET /units` to see what is registered, then load your roster with `PATCH /units` and store each `unit_id`.
+4. Wire your events: move-in to `PUT .../tenancy`, delinquency and payment to `PATCH /units/{unit_id}`, move-out to `DELETE .../tenancy`.
+5. Retry on timeout or 5xx with the *same* `Idempotency-Key`; alert on 4xx (those will not succeed on retry).
+6. Run a live test with KISS on the line: overlock a unit, watch access revoke in the app, release it, watch access restore.
+
+## Beyond the basics
+
+Direct API calls are the right shape to start: your team gets synchronous validation on every call, and the contract above is already in production with multiple partners. As an integration matures, two natural extensions are worth a conversation: an event-feed option, where your system (or your PMS's native webhooks) emits events and KISS handles the mapping, and outbound webhooks from KISS, notifying your systems of activity on our side such as lock events and tenant unit claims.
+
+## Keep going
+
+<Cards>
+  <Card title="How access works" icon="concepts" href="/guides/concepts">
+    The facts-based model and the precedence rules behind every decision.
+  </Card>
+  <Card title="Authentication" icon="auth" href="/guides/authentication">
+    The full token model: scopes, per-company tokens, and OAuth for multi-company partners.
+  </Card>
+  <Card title="Error handling" icon="errors" href="/guides/error-handling">
+    Response envelope, status codes, and troubleshooting.
+  </Card>
+  <Card title="API Reference" icon="reference" href="https://app.keepitsimplestorage.com/docs/api">
+    The complete, always-current endpoint and schema reference, generated from code.
+  </Card>
+</Cards>
