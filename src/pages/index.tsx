@@ -10,19 +10,19 @@ function Hero() {
     <header className={styles.hero}>
       <div className="container">
         <Heading as="h1" className={styles.heroTitle}>
-          KISS API Documentation
+          KISS API
         </Heading>
         <p className={styles.heroSubtitle}>
-          Integrate smart storage access into your platform.
+          One versioned REST API for smart storage access.
           <br />
-          Authenticate tenants, manage units, and control NFC locks — all through a simple REST API.
+          Keep each unit&rsquo;s facts current, and KISS decides who can open which lock, when.
         </p>
         <div className={styles.heroButtons}>
-          <Link className={styles.primaryButton} to="/docs/api-reference/kiss-api">
-            API Reference
+          <Link className={styles.primaryButton} to="/docs">
+            Start here
           </Link>
-          <Link className={styles.secondaryButton} to="/docs">
-            Read the Guides
+          <Link className={styles.secondaryButton} to="/docs/guides/concepts">
+            How access works
           </Link>
         </div>
       </div>
@@ -30,13 +30,31 @@ function Hero() {
   );
 }
 
-function AudienceCards() {
+function BaseUrl() {
+  return (
+    <section className={styles.baseUrl}>
+      <div className="container">
+        <div className={styles.baseUrlInner}>
+          <div className={styles.baseUrlLabel}>Base URL</div>
+          <code className={styles.baseUrlCode}>https://api-app.keepitsimplestorage.com/api/v2</code>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PlatformGlance() {
   return (
     <section className={styles.audiences}>
       <div className="container">
         <Heading as="h2" className={styles.sectionTitle}>
-          Choose your integration path
+          The KISS platform at a glance
         </Heading>
+        <p className={styles.glanceLead}>
+          KISS locks are NFC devices with no battery and no network connection. The tenant&rsquo;s
+          phone powers and operates the lock through a tap. Because the lock itself is offline,
+          everything intelligent happens in the apps and the platform behind them.
+        </p>
         <div className={styles.cardGrid}>
           <div className={styles.card}>
             <div className={styles.cardIcon}>
@@ -46,49 +64,53 @@ function AudienceCards() {
               </svg>
             </div>
             <Heading as="h3" className={styles.cardTitle}>
-              White-Label App Integration
+              KISS Access app
             </Heading>
             <p className={styles.cardDescription}>
-              Build a tenant-facing mobile app with NFC lock access. Authenticate tenants via OTP,
-              retrieve unit access and keys, and report lock activity back to KISS.
+              Tenants sign in with their mobile number and a one-time SMS code, then open their
+              lock with an NFC tap. The app holds a signed access bundle and refreshes it on launch
+              and in the background, so it keeps working offline.
             </p>
-            <ul className={styles.cardEndpoints}>
-              <li><code>POST /auth/phone</code> — Request OTP</li>
-              <li><code>POST /auth/verify-otp</code> — Get bearer token</li>
-              <li><code>GET /tenant/access</code> — Units, keys, entry points</li>
-              <li><code>POST /locks/&#123;id&#125;/logs</code> — Report lock activity</li>
-            </ul>
-            <Link className={styles.cardLink} to="/docs/guides/white-label/quickstart">
-              Get started &rarr;
-            </Link>
           </div>
 
           <div className={styles.card}>
             <div className={styles.cardIcon}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="16 16 12 12 8 16" />
-                <line x1="12" y1="12" x2="12" y2="21" />
-                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                <path d="M14.7 6.3a4 4 0 0 1-5.4 5.4l-5.6 5.6a2 2 0 0 0 0 2.8l.4.4a2 2 0 0 0 2.8 0l5.6-5.6a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.1-2.1z" />
               </svg>
             </div>
             <Heading as="h3" className={styles.cardTitle}>
-              PMS Push Integration
+              KISS Manager app
             </Heading>
             <p className={styles.cardDescription}>
-              Sync unit and tenant data from your property management system into KISS.
-              One idempotent endpoint — push your current state and KISS reconciles everything.
+              Used by site staff: installing and assigning locks to units, opening units when
+              needed, and applying manual overrides such as an on-site lockout or an exemption.
             </p>
-            <ul className={styles.cardEndpoints}>
-              <li><code>POST /pms/units/sync</code> — Bulk upsert units</li>
-              <li>Move-in = sync with <code>occupied: true</code></li>
-              <li>Move-out = sync with <code>occupied: false</code></li>
-              <li>Idempotent — safe to retry</li>
-            </ul>
-            <Link className={styles.cardLink} to="/docs/guides/pms/quickstart">
-              Get started &rarr;
-            </Link>
+          </div>
+
+          <div className={styles.card}>
+            <div className={styles.cardIcon}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+            </div>
+            <Heading as="h3" className={styles.cardTitle}>
+              Web admin portal
+            </Heading>
+            <p className={styles.cardDescription}>
+              Browser console for company settings, locations, units, access logs, and API tokens.
+              Managers sign in with email and password.
+            </p>
           </div>
         </div>
+        <p className={styles.glanceLead}>
+          <strong>The API is the fourth piece.</strong> Your system keeps each unit&rsquo;s business
+          facts current (who rents it, whether they are paid up, whether it should be overlocked).
+          KISS evaluates those facts into an access decision and delivers it to the tenant&rsquo;s
+          app. One business event becomes one HTTP call.
+        </p>
       </div>
     </section>
   );
@@ -97,19 +119,8 @@ function AudienceCards() {
 function QuickLinks() {
   const links = [
     {
-      title: 'Authentication',
-      description: 'OTP flow for tenants, API tokens for PMS integrators.',
-      to: '/docs/guides/authentication',
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Concepts',
-      description: 'Units, tenants, access states, and the facts-based data model.',
+      title: 'How access works',
+      description: 'Units, facts, the access evaluator, entry points, and NFC keys.',
       to: '/docs/guides/concepts',
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -119,19 +130,31 @@ function QuickLinks() {
       ),
     },
     {
-      title: 'API Reference',
-      description: 'Full endpoint reference generated from the OpenAPI spec.',
-      to: '/docs/api-reference/kiss-api',
+      title: 'Authentication',
+      description: 'Bearer tokens and scopes for partners; OTP sign-in for tenants.',
+      to: '/docs/guides/authentication',
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="16 18 22 12 16 6" />
-          <polyline points="8 6 2 12 8 18" />
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
       ),
     },
     {
-      title: 'Error Handling',
-      description: 'Standard error format, status codes, and troubleshooting.',
+      title: 'PMS integration',
+      description: 'Push tenancy, balance, and overlock state from your system into KISS.',
+      to: '/docs/guides/pms/quickstart',
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="16 16 12 12 8 16" />
+          <line x1="12" y1="12" x2="12" y2="21" />
+          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+        </svg>
+      ),
+    },
+    {
+      title: 'Error handling',
+      description: 'Response envelope, status codes, idempotency, and troubleshooting.',
       to: '/docs/guides/error-handling',
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -167,19 +190,6 @@ function QuickLinks() {
   );
 }
 
-function BaseUrl() {
-  return (
-    <section className={styles.baseUrl}>
-      <div className="container">
-        <div className={styles.baseUrlInner}>
-          <div className={styles.baseUrlLabel}>Base URL</div>
-          <code className={styles.baseUrlCode}>https://api.keepitsimplestorage.com/api/v1</code>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function Home(): ReactNode {
   return (
     <Layout
@@ -188,7 +198,7 @@ export default function Home(): ReactNode {
       <Hero />
       <main>
         <BaseUrl />
-        <AudienceCards />
+        <PlatformGlance />
         <QuickLinks />
       </main>
     </Layout>

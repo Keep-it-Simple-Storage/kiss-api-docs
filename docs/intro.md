@@ -1,50 +1,58 @@
 ---
 sidebar_position: 1
+sidebar_label: Start here
 slug: /
 ---
 
-# KISS API Documentation
+# Start here
 
-Welcome to the KISS API documentation. This site hosts the conceptual guides and quickstarts you need to integrate with Keep It Simple Storage for smart-lock access and property-management sync.
+KISS is a smart-lock access platform for self-storage. Locks are NFC devices with no battery and no network connection: the tenant's phone powers and operates the lock through a tap, the same technology used for contactless payments. Because the lock itself is offline, everything intelligent happens in the apps and the platform behind them.
+
+The **KISS API** is how external systems take part in that platform. Whether you run a property management system, build your own tenant app, or pull access data into your own tools, you talk to one versioned REST API.
 
 **Base URL:**
 
 ```
-https://api.keepitsimplestorage.com/api/v2
+https://api-app.keepitsimplestorage.com/api/v2
 ```
 
-:::info API reference is moving
-The full machine-readable API reference (endpoints, request/response schemas, error envelopes) is being consolidated onto a code-derived OpenAPI viewer published directly from the live API. While that's being made public, the guides below describe the contract for the endpoints currently in production. Reach out to your KISS contact if you need the latest OpenAPI spec or example collections in advance.
-:::
-
 :::tip New to KISS?
-Start with [Concepts](/docs/guides/concepts) to understand units, tenants, access states, and the facts-based data model before diving into the quickstarts.
+Read [How access works](/docs/guides/concepts) first. It explains units, facts, and the access evaluator, which is the model everything else builds on.
 :::
 
-## Choose your integration path
+## One API, many writers
 
-### White-Label App Operators
+Reduced to its core, the product is a set of unit IDs matched to a set of keys, plus the logic that decides who may use them when. The API is organized around one idea:
 
-You have your own tenant-facing mobile app and need to integrate with KISS for lock access.
+> **The units table is the source of truth.** Every system that feeds KISS is a *writer* to it, and a `source` field records where each unit's data came from.
 
-- Authenticate tenants via phone + OTP
-- Retrieve units, access status, and entry points in a single call
-- Report lock activity back to KISS
+That keeps one mental model no matter who is integrating:
 
-[Get Started](/docs/guides/white-label/quickstart)
+- **You write facts** about each unit: who rents it, whether they are paid up, whether it should be overlocked, whether it is in auction or out of service.
+- **KISS evaluates** those facts into an access decision (the access evaluator), after every write.
+- **The tenant's app reads** the evaluated result and opens the lock.
 
-### PMS Push Integrators
+You never compute access yourself or hold key material. You keep the facts current; KISS does the rest and serves keys per tap.
 
-You're a property management software company (or any other system) that needs to sync unit and tenant data into KISS.
+## Who the API is for
 
-- **Event-driven sources** (email notifications, webhooks, MCP tool calls): use `PUT /units/{crm_unit_id}/tenancy` (move-in), `DELETE /units/{crm_unit_id}/tenancy` (move-out), and `PATCH /units/{crm_unit_id}` (sparse fact updates) to push just the fields a single event carries.
-- **State-oriented sources** (traditional PMS with an API that can produce full unit state on demand): use `PATCH /units` to bulk-upsert idempotently.
-- Every write endpoint accepts an `Idempotency-Key` header for safe retries.
-- KISS handles access evaluation automatically after every write.
+The same endpoints serve every caller; a Bearer token's scope decides what each one can do. Most integrations fall into one of these shapes:
 
-[Get Started](/docs/guides/pms/quickstart)
+| You are | You want to | Start with |
+| --- | --- | --- |
+| A property management system or other data source | Push tenancy, balance, and overlock state into KISS | [PMS integration](/docs/guides/pms/quickstart) |
+| A builder of your own tenant-facing app | Authenticate tenants and read their access bundle | [Mobile app integration](/docs/guides/white-label/quickstart) |
+| A platform consumer | Pull logs, events, and reporting data | Talk to your KISS contact (guide coming) |
 
-## Supporting guides
+These describe the deepest layer KISS operates for you, from running everything (Full Platform), to running the back office while you bring your own tenant app (Back Office), to serving keys and logs into your own stack (API-Only). The contract is the same across all of them.
 
-- [Authentication](/docs/guides/authentication) — API tokens for PMS, OTP flow for tenants
-- [Error Handling](/docs/guides/error-handling) — error formats, status codes, troubleshooting
+## Choose your path
+
+- [How access works](/docs/guides/concepts) — the data model: units, tenants, facts, access states, entry points, and NFC keys.
+- [Authentication](/docs/guides/authentication) — Bearer tokens and scopes for partners, one-time-password sign-in for tenants.
+- [PMS integration](/docs/guides/pms/quickstart) — map your events to API calls and keep unit facts in sync.
+- [Error handling](/docs/guides/error-handling) — the response envelope, status codes, idempotency, and troubleshooting.
+
+:::info The full API reference is on its way
+KISS generates a machine-readable reference (every endpoint, request and response schema, and error shape) directly from the running code, so it never drifts from the live API. We are publishing it for self-service access now. Until it is live, the guides above describe the contract for the endpoints in production. Ask your KISS contact if you need the OpenAPI spec or example collections in advance.
+:::
