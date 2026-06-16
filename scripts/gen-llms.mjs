@@ -21,6 +21,7 @@ const GUIDES = [
   {src: 'docs/guides/pms/quickstart.md', route: '/guides/pms/quickstart', title: 'Sync partners', summary: 'For systems that push unit and tenant data into KISS: token setup, identifiers, the event-to-call map, endpoint walkthrough, idempotency, and errors.'},
   {src: 'docs/guides/white-label/quickstart.md', route: '/guides/white-label/quickstart', title: 'App partners', summary: 'For teams building their own tenant app on KISS access: OTP sign-in, the GET /access offline bundle, the NFC SDK, and reporting activity.'},
   {src: 'docs/guides/error-handling.md', route: '/guides/error-handling', title: 'Error handling', summary: 'The response envelope, HTTP status codes, idempotency conflicts, and troubleshooting.'},
+  {src: 'docs/guides/rate-limits.md', route: '/guides/rate-limits', title: 'Rate limits', summary: 'How throttling works (429 + Retry-After), the limits by surface, and tips to stay under them.'},
 ];
 
 /** Strip frontmatter, MDX imports, and JSX so the result reads as plain Markdown. */

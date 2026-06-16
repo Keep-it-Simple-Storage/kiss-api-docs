@@ -61,6 +61,12 @@ const paths: Record<string, ReactNode> = {
       <line x1="12" y1="17" x2="12" y2="21" />
     </>
   ),
+  limits: (
+    <>
+      <path d="M12 14l4-4" />
+      <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+    </>
+  ),
 };
 
 export function Icon({
