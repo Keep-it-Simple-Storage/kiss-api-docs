@@ -10,7 +10,7 @@ import {Cards, Card} from '@site/src/components/Cards';
 
 # Introduction
 
-Welcome to the KISS API. KISS is a smart-lock access platform for self-storage, and this is the one-stop home for everything you need to build on it.
+Welcome to the KISS API. KISS is an access control platform for self-storage, and this is the one-stop home for everything you need to build on it.
 
 ## Overview
 
@@ -27,13 +27,13 @@ https://api-app.keepitsimplestorage.com/api/v2
 ## The KISS platform at a glance
 
 <Cards columns={3}>
-  <Card title="KISS Access app" icon="mobile">
+  <Card title="Tenant mobile app" subtitle="ONELock Access" icon="mobile">
     Tenants sign in with their mobile number and a one-time SMS code, then open their lock with an NFC tap. The app caches a signed access bundle so it keeps working offline.
   </Card>
-  <Card title="KISS Manager app" icon="manager">
+  <Card title="Manager mobile app" subtitle="ONELock Manager" icon="manager">
     Site staff install and assign locks to units, open units when needed, and apply manual overrides such as an on-site lockout or an exemption.
   </Card>
-  <Card title="Web admin portal" icon="admin">
+  <Card title="Web portal" icon="admin">
     A browser console for company settings, locations, units, access logs, and API tokens. Managers sign in with email and password.
   </Card>
 </Cards>
@@ -42,7 +42,7 @@ Your integration is the fourth piece. Your system keeps each unit's business fac
 
 ## One API, many writers
 
-Reduced to its core, the product is a set of unit IDs matched to a set of keys, plus the logic that decides who may use them when. The API is organized around one idea: **the units table is the source of truth.** Every system that feeds KISS is a *writer* to it, and a `source` field records where each unit's data came from.
+The API is organized around one idea: **the units table is the source of truth.** Every system that feeds KISS is a *writer* to it, and a `source` field records where each unit's data came from.
 
 That keeps one mental model no matter who is integrating:
 

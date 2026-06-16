@@ -55,6 +55,14 @@
   line-height: 1.3;
 }
 
+.subtitle {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ifm-color-primary);
+  margin-top: -0.1rem;
+}
+
 .desc {
   font-size: 0.85rem;
   line-height: 1.5;
