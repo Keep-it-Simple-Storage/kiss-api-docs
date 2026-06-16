@@ -1,0 +1,16 @@
+.pill {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #fff;
+  vertical-align: middle;
+}
+
+.get { background: var(--method-get); }
+.post { background: var(--method-post); }
+.put { background: var(--method-put); }
+.patch { background: var(--method-patch); }
+.delete { background: var(--method-delete); }

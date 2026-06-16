@@ -37,6 +37,8 @@ function toMarkdown(raw) {
     return `- ${head}: ${text}`;
   });
   md = md.replace(/<\/?Cards[^>]*>/g, ''); // grid wrappers
+  // <Method m="get" /> -> GET
+  md = md.replace(/<Method\s+m="([^"]*)"\s*\/>/g, (_m, v) => v.toUpperCase());
   md = md.replace(/\n{3,}/g, '\n\n').trim() + '\n';
   return md;
 }
