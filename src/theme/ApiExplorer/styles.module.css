@@ -27,6 +27,13 @@
   margin-bottom: 0.35rem;
 }
 
+/* The copy/expand buttons sit absolutely in the code block's top-right; push the
+   first code line down so they never cover it. */
+.curlBox :global(.openapi-explorer__code-block-lines),
+.curlBox :global(.openapi-explorer__code-block-lines-numbering) {
+  padding-top: 2.5rem;
+}
+
 @media (max-width: 996px) {
   .modalCols {
     grid-template-columns: 1fr;

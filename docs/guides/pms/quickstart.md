@@ -30,7 +30,23 @@ Create the token yourself in the web admin portal: **Company Settings → API**,
 
 ## Identifiers and locations
 
-Units are addressed by **ULID** (`unit_id`, a 26-character ID). Your own key, `crm_unit_id`, is what the bulk sync matches on, so you can write without ever storing KISS IDs. `GET /units` is the authoritative mapping between the two.
+Every unit has **two** IDs, and knowing which endpoint uses which is the one thing worth getting straight up front:
+
+- **`crm_unit_id`** — your own identifier, the one you already store. You set it.
+- **`unit_id`** — the KISS identifier, a 26-character ULID. KISS assigns it.
+
+| Endpoint | Addressed by |
+| --- | --- |
+| `PATCH /units` (bulk) | your **`crm_unit_id`** |
+| `PATCH /units/{unit_id}` (single) | the KISS **`unit_id`** (ULID) |
+| `PUT` / `DELETE /units/{unit_id}/tenancy` | the KISS **`unit_id`** (ULID) |
+| `GET /units/{unit_id}` | the KISS **`unit_id`** (ULID) |
+
+The bulk `PATCH /units` is the **only write keyed on your own IDs**. Because it matches on `crm_unit_id`, you can create units and change any fact (lockout, balance, auction, occupancy, move-in) without ever holding a KISS ID. To change a single unit by your own ID, send a one-item `units` array.
+
+:::tip Do you need to store KISS `unit_id`s?
+Only if you want to call the per-unit endpoints (the single `PATCH`, or assign / remove a primary user). Those are addressed by ULID. If you'd rather key everything off your own IDs, stay on the bulk `PATCH /units` for every fact change. When you do need ULIDs, `GET /units` returns the full `crm_unit_id` ↔ `unit_id` mapping; store it once alongside your records.
+:::
 
 Every unit belongs to a **location**. If your company has one active location, omit it and the API infers it; otherwise pass `location_id` (a ULID) or your own `pms_location_code` (set per location in the admin portal).
 
@@ -51,7 +67,7 @@ These manage a unit's single **primary user** (its owner). Sharing with a **gues
 :::
 
 :::tip Use the right write for the job
-Fire the **per-unit** `PATCH /units/{unit_id}` for individual, real-time changes (an overlock, a payment, a status flag). Reserve the **bulk** `PATCH /units` for the initial roster load and periodic reconciliation. Sending a 500-unit batch to flip one flag is wasteful and slower to take effect.
+Send individual changes (an overlock, a payment, a status flag) in real time as they happen, and reserve full 500-unit batches for the initial load and periodic reconciliation. A big batch to flip one flag is wasteful and slower to take effect. For a single change, either a one-item `PATCH /units` (keyed on your `crm_unit_id`) or `PATCH /units/{unit_id}` (keyed on the ULID) works; pick based on whether you store KISS IDs.
 :::
 
 ## Example: bulk sync

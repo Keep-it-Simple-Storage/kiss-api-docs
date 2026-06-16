@@ -33,14 +33,14 @@ const ALLOW = new Set([
 // them, at which point this map can shrink.
 const META = {
   'v2.access': {
-    summary: 'Get the access bundle',
+    summary: 'Get user access',
     description:
-      "The signed-in user's offline access bundle: their units with evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh.",
+      "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh.",
   },
   'v2.units.index': {
     summary: 'List units',
     description:
-      'Returns every unit in your company with the mapping between your `crm_unit_id` and the KISS `unit_id`. Supports conditional requests via `ETag` / `If-None-Match`.',
+      'Returns every unit in your company, each carrying both IDs: your own `crm_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Supports conditional requests via `ETag` / `If-None-Match`.',
   },
   'v2.units.show': {
     summary: 'Get a unit',
@@ -49,22 +49,22 @@ const META = {
   'v2.units.sync': {
     summary: 'Create or update units',
     description:
-      'Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response.',
+      'Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `crm_unit_id`. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response.',
   },
   'v2.units.patch': {
     summary: 'Update unit facts',
     description:
-      "Sparse update of a unit's access facts (overlock, exemption, auction, unrentable, balance). Send only the fields that changed.",
+      "Sparse update of one unit's access facts (overlock, exemption, auction, unrentable, balance, occupancy). Addressed by the KISS `unit_id` (ULID), so reach for it when you already hold the ULID (from `GET /units`). To update by your own `crm_unit_id` instead, send a one-item batch to `PATCH /units`. Send only the fields that changed.",
   },
   'v2.units.tenancy.put': {
     summary: 'Assign primary user',
     description:
-      "Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint.",
+      "Addressed by the unit's KISS `unit_id` (ULID). Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint.",
   },
   'v2.units.tenancy.delete': {
     summary: 'Remove primary user',
     description:
-      "End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit.",
+      "Addressed by the unit's KISS `unit_id` (ULID). End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit.",
   },
   'v2.locks.logs.store': {
     summary: 'Report lock activity',
