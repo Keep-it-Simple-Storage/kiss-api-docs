@@ -188,12 +188,22 @@ article .markdown > p:first-of-type {
   --method-delete: #b42318;
 }
 
-/* Action buttons on code samples stay visible, not hover-only */
+/* Action buttons on code samples stay visible (opaque, so code never shows through) */
 .openapi-explorer__code-block-btn-group button {
-  opacity: 0.55 !important;
-}
-.openapi-explorer__code-block-btn-group button:hover {
   opacity: 1 !important;
+}
+
+/* cURL box: drop the duplicate "curl" variant tab (we only ship one variant) */
+[role="tablist"]:has(.openapi-explorer__code-item--variant),
+[role="tablist"]:has(.openapi-tabs__code-item--variant) {
+  display: none;
+}
+
+/* Example-response box: fixed height with internal scroll, so toggling status
+   codes doesn't resize the page */
+#kiss-response-slot .openapi-explorer__code-block {
+  height: 24rem;
+  overflow: auto;
 }
 
 /* Colored method indicators in the sidebar (Quo-style) */
