@@ -8,12 +8,13 @@ import TryItModal from '@site/src/components/TryItModal';
 
 import styles from './styles.module.css';
 
-// Swizzled from docusaurus-theme-openapi-docs. The right column shows only the
-// example request (cURL) and the example/live responses. The interactive
-// Request form moves into a "Try it" modal, opened by a button next to the
-// method+path (rendered in MethodEndpoint, left column) via a window event.
-// The modal renders inline under this same Redux Provider, so Send still
-// updates the responses shown here and in the modal.
+// Swizzled from docusaurus-theme-openapi-docs. The right column is reference
+// only: the example request (cURL) on top, and the example responses below —
+// the body's <StatusCodes> portals into #kiss-response-slot (see the StatusCodes
+// swizzle). No interactive controls live here. The interactive Request form +
+// live Response open in a "Try it" modal, triggered by a button next to the
+// method+path (MethodEndpoint, left column) via a window event. The modal
+// renders inline under this same Redux Provider so Send still works.
 export default function ApiExplorer({
   item,
   infoPath,
@@ -40,29 +41,30 @@ export default function ApiExplorer({
       : {},
   );
 
-  const renderPreview = () => (
-    <>
-      {!isEvent && (
-        <CodeSnippets
-          postman={postman}
-          codeSamples={item['x-codeSamples'] ?? []}
-          maskCredentials={mask_credentials}
-        />
-      )}
-      <Response item={item} />
-    </>
-  );
+  const renderCURL = () =>
+    isEvent ? null : (
+      <CodeSnippets
+        postman={postman}
+        codeSamples={item['x-codeSamples'] ?? []}
+        maskCredentials={mask_credentials}
+      />
+    );
 
   return (
     <>
-      {renderPreview()}
+      {renderCURL()}
+      {/* Example responses: the body's <StatusCodes> portals into this slot. */}
+      <div id="kiss-response-slot" />
       {!isEvent && open && (
         <TryItModal item={item} onClose={() => setOpen(false)}>
           <div className={styles.modalCols}>
             <div className={styles.modalForm}>
               <Request item={item} />
             </div>
-            <div className={styles.modalPreview}>{renderPreview()}</div>
+            <div className={styles.modalPreview}>
+              {renderCURL()}
+              <Response item={item} />
+            </div>
           </div>
         </TryItModal>
       )}
