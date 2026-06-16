@@ -122,71 +122,15 @@ If you are reading these docs, you are most likely a **push** integrator or a **
 
 Once a unit exists under one source type it stays there. A push-owned unit is not overwritten by a pull sync, and the reverse is also true; conflicting writes return `409 Conflict`.
 
-## Two ways to write as a push integrator
-
-Pick the shape that matches how your source produces data. Both hit the same fact-apply logic internally and run the same evaluation after every write, so you can mix them.
-
-### State-oriented: `PATCH /units`
-
-Use this when your source can produce the **full current state** of every unit on demand, which is where most PMSs with an API land.
-
-- One endpoint. Bulk upsert, matched on your `crm_unit_id` in the body. Idempotent. Up to 500 units per request.
-- You send each unit's known facts; KISS reconciles.
-- Typical cadence: every 15 minutes, or after a detected change event.
-- Partial failures return `200` with per-unit problems in an `errors` array, so always check it.
-
-### Event-oriented: `PUT/DELETE /units/{unit_id}/tenancy` plus `PATCH /units/{unit_id}`
-
-Use this when your source produces **sparse events** (a move-in email, a payment notification, an MCP tool call) and cannot reconstruct full unit state without a local cache.
-
-- `PUT /units/{unit_id}/tenancy` records a move-in: marks the unit occupied and, when you include a tenant block, sets up the tenant so they can claim the unit in the app.
-- `DELETE /units/{unit_id}/tenancy` records a move-out and resets the unit to vacant.
-- `PATCH /units/{unit_id}` is the workhorse for sparse fact updates such as overlock on delinquency and release on payment.
-- Each call carries only the fields the event actually changed. No state reconstruction required.
-
-Per-unit paths address the unit by its KISS **ULID** (`unit_id`). The bulk endpoint matches on your own `crm_unit_id` in the body, so you can sync without ever storing KISS IDs. The [Sync partners guide](/guides/pms/quickstart) walks through both shapes end to end.
-
-### Idempotency
-
-Every write accepts an `Idempotency-Key` header. Send a fresh opaque value (up to 255 characters; a UUID works well) per logical operation, and reuse the same value when retrying. KISS remembers the key, request, and response for 24 hours, scoped to your company:
-
-- Same key, same payload: the original response is replayed and nothing is applied twice. Safe to retry on timeouts or 5xx.
-- Same key, different payload: `409 Conflict`. Generate a new key for each distinct event.
-
 ## NFC keys
 
-When a tenant's app calls `GET /access`, the response includes a key string for each permitted lock and entry point. That key is the NFC credential: the app passes it to the KISS Flutter SDK, which uses it to talk to the lock during a tap.
+When the tenant app calls `GET /access`, the response includes an NFC key for each permitted lock and entry point. The app passes the key to the KISS SDK to open the lock on a tap, then reports the result. Keys are **served, never exported** (borrowed per tap), so KISS can revoke and rotate them, and the app caches the bundle to keep working offline.
 
-The flow:
+## Where to go next
 
-1. App calls `GET /access` and receives units and entry points with key strings.
-2. App passes the key to the Flutter SDK.
-3. Tenant taps their phone on the lock.
-4. The SDK uses the key to authenticate with the lock over NFC.
-5. App reports the result back to KISS via the logs endpoints.
+That is the whole model: you keep facts current, KISS evaluates them, and the apps act on the result. From here, follow the path that matches what you are building:
 
-Keys are **served, never exported**. The app caches the access bundle for offline use, so tenants can open their lock without connectivity, and refreshes it on the next launch or pull-to-refresh. Because callers borrow keys rather than holding a static dump, KISS can revoke and rotate them.
+- **[Sync partners](/guides/pms/quickstart)** — push unit and tenant facts into KISS from a PMS or any data source.
+- **[App partners](/guides/white-label/quickstart)** — build your own tenant app on the access bundle and NFC keys.
 
-## Putting it together
-
-The same data model serves every path:
-
-**State-oriented PMS integrator**
-
-```text
-Your PMS syncs unit facts -> KISS evaluates access -> Tenant opens lock via app
-```
-
-**Event-driven integrator (email scraper, MCP agent, webhook relay)**
-
-```text
-Event arrives -> You call PUT/DELETE /units/{unit_id}/tenancy or PATCH /units/{unit_id} -> KISS evaluates -> Tenant sees the update
-```
-
-**Mobile app developer**
-
-```text
-Tenant signs in with a one-time password -> App calls GET /access -> SDK handles NFC -> App reports logs
-```
-
-In every case the writer keeps facts current and the app reads the evaluated result. KISS sits in the middle, turning raw facts into access decisions.
+Every endpoint also has its own page in the [API Reference](/reference/kiss-api-reference).
