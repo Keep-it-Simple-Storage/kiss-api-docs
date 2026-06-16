@@ -8,11 +8,6 @@
 .docusaurus
 .cache-loader
 
-# Generated LLM artifacts (rebuilt by scripts/gen-llms.mjs on prebuild)
-/static/md/
-/static/llms.txt
-/static/llms-full.txt
-
 # Misc
 .DS_Store
 .env.local

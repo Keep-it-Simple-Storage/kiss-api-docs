@@ -8,8 +8,6 @@
     "build": "docusaurus build",
     "sync:api": "node scripts/sync-openapi.mjs",
     "gen:api": "docusaurus clean-api-docs kissApi && docusaurus gen-api-docs kissApi",
-    "gen:llms": "node scripts/gen-llms.mjs",
-    "prebuild": "node scripts/gen-llms.mjs",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
