@@ -17,7 +17,7 @@ This guide is for **app partners**: teams building their own holder-facing app o
 A holder app does four things:
 
 1. **Sign the user in.** Users authenticate with their mobile number and a one-time SMS code (OTP), and your app receives a Bearer token. If a number is linked to more than one account, the user picks which one. See [Authentication](/guides/authentication) for the token model.
-2. **Fetch the access bundle.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it on launch and refresh on pull-to-refresh.
+2. **Fetch the user's access.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it on launch and refresh on pull-to-refresh.
 3. **Open the lock.** Pass the NFC key to the KISS Flutter SDK, which talks to the offline lock during a tap. Keys are served per tap, never stored as a static dump.
 4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoints so managers and support see real lock activity.
 
@@ -30,15 +30,15 @@ A holder app does four things:
 | When | Call | What it does |
 | --- | --- | --- |
 | Sign the user in | OTP sign-in *(finalizing)* | Phone + one-time code → a Bearer token. See [Authentication](/guides/authentication); paths are converging under Mobile Migration. |
-| Fetch the access bundle | <Method m="get" /> [`/access`](/reference/v-2-access) | The user's units, NFC keys, entry points, and timezone — everything to operate offline. |
+| Fetch the user's access | <Method m="get" /> [`/access`](/reference/v-2-access) | The user's units, NFC keys, entry points, and timezone — everything to operate offline. |
 | Report a lock tap | <Method m="post" /> [`/locks/{lock}/logs`](/reference/v-2-locks-logs-store) | Record open/close success, failure, or blocked. |
 | Report an entry-point tap | <Method m="post" /> [`/entry-points/{id}/logs`](/reference/v-2-entry-points-logs-store) | Record a gate or door tap. |
 
 Each call links to its reference page. The access bundle is the heart of the integration, so it's detailed below.
 
-## The access bundle: `GET /access`
+## What `GET /access` returns
 
-The offline bundle for the signed-in user. This is the one call your app needs to render the user's units and open locks.
+Everything the signed-in user's app needs to operate offline, in one call: their units and the keys to open locks.
 
 | | |
 | --- | --- |
@@ -92,7 +92,7 @@ Key things to build against:
 - **The lock `key` is encrypted and bound to the bearer token** that fetched it, so only that device can use it. Keys are served per tap, never exported.
 - **Entry-point `zones` carry `access_start_time` / `access_end_time`** so the app can enforce access hours offline.
 
-Because the bundle is self-contained and cached, the app keeps working with no connectivity after the first successful fetch.
+Because the response is self-contained and cached, the app keeps working with no connectivity after the first successful fetch.
 
 :::note Machine schema in the reference
 `GET /access` is in production now. Its full machine-readable schema in the generated reference is being enriched on the API side; until then the shape above is the contract, and the [live spec](https://app.keepitsimplestorage.com/docs/api) reflects the current implementation.

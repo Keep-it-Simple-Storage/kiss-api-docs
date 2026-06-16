@@ -1,11 +1,11 @@
 ---
 id: v-2-access
-title: "Get the access bundle"
-description: "The signed-in user's offline access bundle: their units with evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh."
-sidebar_label: "Get the access bundle"
+title: "Get the user's access"
+description: "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh."
+sidebar_label: "Get the user's access"
 hide_title: true
 hide_table_of_contents: true
-api: eJzlVU1PGzEQ/SuWL22lZJMCp9woAoQqtVWBU5SD453NGnZtY8+GptH+987YSwgBjpUq9bT2fM+bN96tdB6CQuPsVSlncn1UKK0hRjmSqFZRzubyNAsWIxkgemcjkHgrj6ZT/pQQdTCeI5A/uWlnESyyTnnfGJ2iT+4iG2xl1DW0ik+48UAubnkHGsnRB64FTQ7fUk61ghTGbr5XVMnOxXZNI/vR7q5CUBuKYBBadu73dBGDsSvZL/qRLBXuZ35SjSjZm4qeW37oTICSgXgqaQg0uC36ng2PpydvwEGKk+nn14pbqzqsCSaGh6L/DdheNjM6qOA8BBeEW0NYG3gs3m12aO9kevy6i8wMUYI1/34P/aH3TQ0impWFcmys6CKED1G4qmqMBZG3QCw7WzYwEzQrE0RnDUbxaLAWsFZNx6N7soxItxEbCoIgbIR3xpJ1RRVm79/OQswW3y7OxD1s6KZsmSSV0qYxuBFoWmDLQpzuMyRnZcuh0C+gAlBodw+2EGeKsBUGU7wAFW1qLZwVjeqsrsVEeFqZMbrxoCsye2vHS7+CNAOFNV0mu/2nPIRsTIvXhYZ0NaKPs8lEeTOmARf3AJ4QMa1vIKILhHWhXcv6yfqIdo6D6C5QXylKIgDNc77YV10nadwxZH/wnJFLGeRymbomST5cuNAqZCb+uMpQJA4YW7kUxGDDXl+vrq8Fm/yECgJYzTvMvWUiUKmvuWEi45ithWaOxWG45TDZ1kUUdIJVfkAjj6YQF3ng5MOwIKTEsQs0YeJHBEjaeUUDySoPevHxGdr3YS2djoztp4LfFU/pW5UWy6oEziVgiv2Cu4etbZ+39L/fgIFkCL9w4htlLOOaqL4d1mEu1e7vVxPgLNlulyrCbWj6nsUPHQSmNx3XKhi1bDLDyQFUSWRl5lOrw3vpedcYuvTjOnwleS92e3l5fkN0/gM4VKle
+api: eJztVT1v2zAQ/SsEl7aALbtJJm9pkARBgbZoksnwQFMni4lEMuTJqWvov/eOVGznayzQoZPFO97Xu/forXQegkLj7FUpZ3J9VCitIUY5kqhWUc7m8jQbFiMZIHpnI5B5K4+mU/4pIepgPGegeArTziJYZJ/yvjE6ZZ/cRb6wlVHX0Cr+wo0HCnHLO9BIgT5wL2hy+pZqqhWkNHbzvaJOdiG2axrZj3ZnFYLaUAaD0HJwf+CLGIxdyX7Rj2Sp8LDyk2tExd509DzyQ2cClAzEU0tDoiFs0fd88Xh68gYc5DiZfn7tuLWqw5pgYngo+9+A7fkwoxcdnIfggnBrCGsDj8W7ww7jnUyPX0+RmSFKsObfn6F/FU1xG6wpsaBViGhWFsqxsaKLED5EQSMIC1BGgU5kmYBwVdUYCzMOMUF01mAUjwbrlAPWqul4oSKrSESk0yj7LIaN8M5Yiqio75zht7MQ841vF2fiHjZ0UrZMlkpp0xjcCDQt8M1CnB7yZl956PkLqACU2t2DLcSZIsSFwZQvQEX6rYWzolGd1bWYCE9CGqMbD74ic7p2/BSsIG1GYU2Hye5VoDqEW0xy7EJDvhrRx9lkorwZE2bFPYAnVEzrG4joAm2g0K5l/2R9RErkJLoLNFfKkmhBW54vDl3XyRp3vDmkA1fkVga7XKapyZI/LlxoFTI/f1xlKBIzjK1cSmKw4aivV9fXgq/8hAoCWM3K5tkyPajVl4y5qU1kHPNtoZl5cVhuOWy2dREFfcEqP6uRV1OIi7xwimFYiEhcOHaBNkz8iADJO69oIdnlQS8+7qF9H9bS6cjYfir4tfFUvlVJblYlcC4BDxmyW+Sz0bZ77f7XxZu6GKiH8AsnvlHGMtpJANtBJHOpdv+UNa2BLdvtUkW4DU3fs/mhI2iZ6UQ0FYxaNpn3FACqJAqzHmjU4W31rECGLv3JvXxRWS07tV6e3xDJ/wD0a7m3
 sidebar_class_name: "get api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -23,7 +23,7 @@ import Translate from "@docusaurus/Translate";
 <Heading
   as={"h1"}
   className={"openapi__heading"}
-  children={"Get the access bundle"}
+  children={"Get the user's access"}
 >
 </Heading>
 
@@ -37,7 +37,7 @@ import Translate from "@docusaurus/Translate";
 
 
 
-The signed-in user's offline access bundle: their units with evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh.
+Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh.
 
 <ParamsDetails
   parameters={undefined}

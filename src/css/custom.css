@@ -58,6 +58,11 @@
   height: 32px;
 }
 
+/* Nudge the brand/logo in from the far-left edge */
+.navbar__brand {
+  margin-left: 1rem;
+}
+
 /* Search bar - centered in navbar */
 .navbar-search-centered {
   position: absolute;
@@ -217,6 +222,18 @@ article .markdown > p:first-of-type {
 #kiss-response-slot .openapi-explorer__code-block {
   height: 24rem;
   overflow: auto;
+}
+
+/* Example-response code matches the cURL box: the first line clears the
+   top-right buttons, and the text shares the same size/line-height as cURL. */
+#kiss-response-slot .openapi-explorer__code-block-lines,
+#kiss-response-slot .openapi-explorer__code-block-lines-numbering {
+  padding-top: 2.5rem;
+}
+#kiss-response-slot .openapi-explorer__code-block-lines,
+#kiss-response-slot .openapi-explorer__code-block code {
+  font-size: var(--ifm-code-font-size);
+  line-height: 1.55;
 }
 
 /* Colored method indicators in the sidebar (Quo-style) */

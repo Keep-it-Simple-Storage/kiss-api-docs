@@ -94,7 +94,7 @@ const config: Config = {
       respectPrefersColorScheme: false,
     },
     navbar: {
-      title: 'Developer Portal',
+      title: '',
       logo: {
         alt: 'KISS Logo',
         src: 'img/logo.svg',
