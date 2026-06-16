@@ -276,7 +276,7 @@ A `401` on every request usually means your token is wrong or expired. For PMS i
 
 ### 3. Read the error message
 
-KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the [API Reference](https://app.keepitsimplestorage.com/docs/api).
+KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the [API Reference](/reference/kiss-api-reference).
 
 ### 4. Check field paths in validation errors
 

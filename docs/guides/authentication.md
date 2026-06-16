@@ -72,8 +72,8 @@ A few things worth knowing as you build:
 - **No refresh tokens.** Tenant tokens expire. When a request returns `401`, send the tenant back through OTP sign-in to get a new token; cache the token for the session in between.
 - **Keep tenant tokens on the device.** They should never be sent to your backend; your server uses partner API tokens for server-side work.
 
-:::note Endpoints are finalizing under Mobile Migration
-The exact tenant sign-in and `GET /access` paths and payloads are converging onto `/api/v2` now. For current request and response shapes, see the [API Reference](https://app.keepitsimplestorage.com/docs/api) or the [Mobile app integration guide](/guides/white-label/quickstart). The flow above is stable; the URLs are not yet frozen here to avoid drift.
+:::note Sign-in endpoints are still being finalized
+The exact tenant sign-in and `GET /access` paths and payloads are still being finalized on `/api/v2`. For current request and response shapes, see the [API Reference](/reference/kiss-api-reference) or the [Mobile app integration guide](/guides/white-label/quickstart). The flow above is stable; the URLs are not yet frozen here to avoid drift.
 :::
 
 ## Rate limits

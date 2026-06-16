@@ -53,7 +53,7 @@ const config: Config = {
           kissApi: {
             specPath: 'openapi/kiss-api.json',
             outputDir: 'docs/reference',
-            downloadUrl: 'https://app.keepitsimplestorage.com/docs/api.json',
+            downloadUrl: '/openapi/kiss-api.json',
             sidebarOptions: {
               groupPathsBy: 'tag',
             },
