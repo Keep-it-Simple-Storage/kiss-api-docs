@@ -42,7 +42,8 @@ These are the fields you control. Some directly gate access; others are informat
 | `pms_auction` | Yes | Unit is in auction status; tenant access is denied. |
 | `pms_unrentable` | Yes | Unit is out of service; no tenant access. |
 | `move_in_date` | Yes | A future date delays access until that date. |
-| `balance_due` / `paid_through_date` | Optional | KISS can compute delinquency from these against the location's threshold and grace period. Informational if you drive lockouts yourself. |
+| `balance_due` | Optional | The amount the tenant owes. With `paid_through_date`, KISS can compute delinquency against the location's threshold and grace period. Informational if you drive lockouts yourself. |
+| `paid_through_date` | Optional | The date the account is paid through. Pairs with `balance_due` for KISS-computed delinquency. |
 | `pms_status_raw` | No | Your system's own status label, stored verbatim so both support teams see the same word. |
 
 :::tip Pick one delinquency owner

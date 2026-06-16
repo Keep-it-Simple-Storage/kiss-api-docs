@@ -50,6 +50,10 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 These manage a unit's single **primary user** (its owner). Sharing with a **guest** is a separate model and not yet a live API endpoint; today guests are added in the app or admin portal. Guest grants over the API are coming via Access Grants.
 :::
 
+:::tip Use the right write for the job
+Fire the **per-unit** `PATCH /units/{unit_id}` for individual, real-time changes (an overlock, a payment, a status flag). Reserve the **bulk** `PATCH /units` for the initial roster load and periodic reconciliation. Sending a 500-unit batch to flip one flag is wasteful and slower to take effect.
+:::
+
 ## Example: bulk sync
 
 The bulk upsert is the workhorse. Send each unit's known facts; KISS reconciles.
