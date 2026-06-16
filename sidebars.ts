@@ -13,11 +13,13 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Guides',
       collapsible: false,
-      items: [
-        'guides/pms/quickstart',
-        'guides/white-label/quickstart',
-        'guides/error-handling',
-      ],
+      items: ['guides/pms/quickstart', 'guides/white-label/quickstart'],
+    },
+    {
+      type: 'category',
+      label: 'Essentials',
+      collapsible: false,
+      items: ['guides/error-handling', 'guides/rate-limits'],
     },
     {
       type: 'category',

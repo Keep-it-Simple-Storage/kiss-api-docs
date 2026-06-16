@@ -76,18 +76,9 @@ A few things worth knowing as you build:
 The exact tenant sign-in and `GET /access` paths and payloads are converging onto `/api/v2` now. For current request and response shapes, see the [API Reference](https://app.keepitsimplestorage.com/docs/api) or the [Mobile app integration guide](/guides/white-label/quickstart). The flow above is stable; the URLs are not yet frozen here to avoid drift.
 :::
 
-## Rate Limits
+## Rate limits
 
-KISS rate-limits abusive traffic and returns `429 Too Many Requests` with a `Retry-After` header. Design clients for retries: exponential backoff with jitter is the expected behavior.
-
-| Endpoint group | Notes |
-| --- | --- |
-| Tenant OTP sign-in | Limited per phone number |
-| `PATCH /units` (bulk), `PUT/DELETE /units/{unit_id}/tenancy`, `PATCH /units/{unit_id}` | Per company |
-
-:::note Exact limits are a product decision in progress
-Treat `429` with a `Retry-After` header as a recoverable state. Final numbers will be published in the [API Reference](https://app.keepitsimplestorage.com/docs/api) when locked.
-:::
+Every request is subject to rate limits. See **[Rate limits](/guides/rate-limits)** for how throttling works (`429` + `Retry-After`) and the limits by surface.
 
 ## Best practices
 

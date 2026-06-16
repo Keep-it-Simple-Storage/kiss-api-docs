@@ -219,3 +219,25 @@ article .markdown > p:first-of-type {
 .api-method.put > .menu__link::before { content: 'put'; background: var(--method-put); }
 .api-method.patch > .menu__link::before { content: 'patch'; background: var(--method-patch); }
 .api-method.delete > .menu__link::before { content: 'del'; background: var(--method-delete); }
+
+/* Try-it form inputs should read as editable fields (stock border is transparent) */
+.openapi-explorer__form-item-input {
+  border: 1px solid var(--ifm-color-emphasis-300) !important;
+  background-color: var(--ifm-background-color);
+}
+.openapi-explorer__form-item-input:focus {
+  border-color: var(--ifm-color-primary) !important;
+}
+
+/* Right column: stays in view; responses scroll inside the box, not the page */
+@media (min-width: 997px) {
+  .openapi-right-panel__container {
+    position: sticky;
+    top: calc(var(--ifm-navbar-height) + 1rem);
+    align-self: flex-start;
+  }
+}
+.openapi-explorer__response-container {
+  max-height: 70vh;
+  overflow: auto;
+}

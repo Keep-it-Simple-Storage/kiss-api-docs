@@ -206,7 +206,7 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** You've exceeded the rate limit. Wait for the window to reset and retry. See the [rate limits table](./authentication.md#rate-limits) for limits per endpoint. The response includes a `Retry-After` header indicating how long to wait.
+**Fix:** You've exceeded the rate limit. Wait for the window to reset and retry. See [Rate limits](/guides/rate-limits) for limits per surface. The response includes a `Retry-After` header indicating how long to wait.
 
 ---
 

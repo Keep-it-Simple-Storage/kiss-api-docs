@@ -79,6 +79,16 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/social-card.jpg',
+    // Reference code samples: cURL only (Quo-style). Add languages here if a
+    // partner asks for SDK snippets.
+    languageTabs: [
+      {
+        highlight: 'bash',
+        language: 'curl',
+        logoClass: 'bash',
+        options: {longFormat: false, followRedirect: true, trimRequestBody: true},
+      },
+    ],
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: false,
