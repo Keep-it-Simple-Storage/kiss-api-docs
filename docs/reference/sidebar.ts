@@ -55,7 +55,7 @@ const sidebar: SidebarsConfig = {
         {
           type: "doc",
           id: "reference/v-2-access",
-          label: "Get the user's access",
+          label: "Get user access",
           className: "api-method get",
         },
       ],

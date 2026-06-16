@@ -33,7 +33,7 @@ const ALLOW = new Set([
 // them, at which point this map can shrink.
 const META = {
   'v2.access': {
-    summary: "Get the user's access",
+    summary: 'Get user access',
     description:
       "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh.",
   },
