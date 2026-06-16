@@ -18,8 +18,8 @@ const GUIDES = [
   {src: 'docs/intro.md', route: '/', title: 'Introduction', summary: 'What KISS is, the one-table-many-writers model, and how to choose your integration path.'},
   {src: 'docs/guides/concepts.md', route: '/guides/concepts', title: 'How access works', summary: 'The data model: units, facts, the access evaluator and its precedence, entry points, zones, and NFC keys.'},
   {src: 'docs/guides/authentication.md', route: '/guides/authentication', title: 'Authentication', summary: 'Partner API tokens and scopes, OAuth for multi-company partners, and tenant OTP sign-in.'},
-  {src: 'docs/guides/pms/quickstart.md', route: '/guides/pms/quickstart', title: 'PMS integration', summary: 'End-to-end PMS integration: token setup, identifiers, the event-to-call map, endpoint walkthrough, idempotency, and errors.'},
-  {src: 'docs/guides/white-label/quickstart.md', route: '/guides/white-label/quickstart', title: 'Mobile app integration', summary: 'Building a tenant app: OTP sign-in, the GET /access offline bundle, the NFC SDK, and reporting activity.'},
+  {src: 'docs/guides/pms/quickstart.md', route: '/guides/pms/quickstart', title: 'Sync partners', summary: 'For systems that push unit and tenant data into KISS: token setup, identifiers, the event-to-call map, endpoint walkthrough, idempotency, and errors.'},
+  {src: 'docs/guides/white-label/quickstart.md', route: '/guides/white-label/quickstart', title: 'App partners', summary: 'For teams building their own tenant app on KISS access: OTP sign-in, the GET /access offline bundle, the NFC SDK, and reporting activity.'},
   {src: 'docs/guides/error-handling.md', route: '/guides/error-handling', title: 'Error handling', summary: 'The response envelope, HTTP status codes, idempotency conflicts, and troubleshooting.'},
 ];
 

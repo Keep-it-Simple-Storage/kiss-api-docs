@@ -1,20 +1,20 @@
 ---
 sidebar_position: 1
-sidebar_label: "PMS integration"
+sidebar_label: "Sync partners"
 sidebar_custom_props:
   icon: pms
 ---
 
 import {Cards, Card} from '@site/src/components/Cards';
 
-# PMS integration
+# Sync partners
 
-This guide walks a property management system (or any system that knows about units and tenants) through pushing state into KISS: who rents each unit, whether they are paid up, and whether the unit should be overlocked. KISS evaluates what you send and decides whether the tenant's app can open the lock.
+This guide is for **sync partners**: any system that pushes unit and tenant state into KISS, such as a property management system (or any source that knows who holds each unit). You keep each unit's facts current (who holds it, whether they are paid up, whether it should be overlocked) and KISS evaluates them into an access decision the holder's app acts on.
 
 It assumes you have skimmed [How access works](/guides/concepts), which explains the facts-based model and the access evaluator. Here we focus on the integration itself.
 
 :::tip The reference has the exact shapes
-This guide shows the shape of each call with working examples. For the complete, always-current field lists and response schemas, follow the **[API Reference](https://app.keepitsimplestorage.com/docs/api)** links throughout. The reference is generated from the live code, so it never drifts.
+This guide shows the shape of each call with working examples. Every endpoint links to its **full reference page** for the complete, always-current field lists and response schemas. The reference is generated from the live code, so it never drifts.
 :::
 
 ## Before you begin
@@ -38,7 +38,7 @@ You can create the token yourself in the KISS web admin portal:
 | Scope | Grants |
 | --- | --- |
 | `pms:read` | Read your units (discovery) |
-| `pms:write` | Unit sync, move-in, move-out, and unit fact updates |
+| `pms:write` | Unit sync, assigning and removing a unit's primary user, and unit fact updates |
 
 See [Authentication](/guides/authentication) for the full token model.
 
@@ -63,19 +63,23 @@ Every unit belongs to a **location** (a facility). Payloads that create units ac
 
 Every event in your system maps to one call. This table is the heart of the integration.
 
-| Event in your PMS | API call |
+| Event in your system | API call |
 | --- | --- |
 | Initial setup: discover existing units | `GET /units` (store the IDs) |
 | Initial roster load, or periodic reconciliation | `PATCH /units` (bulk, up to 500 units) |
-| New rental / move-in | `PUT /units/{unit_id}/tenancy` |
-| Tenant goes delinquent: overlock | `PATCH /units/{unit_id}` with `pms_lockout: true` |
-| Tenant pays: release overlock | `PATCH /units/{unit_id}` with `pms_lockout: false` |
+| New rental: assign the unit's primary user | `PUT /units/{unit_id}/tenancy` |
+| Holder goes delinquent: overlock | `PATCH /units/{unit_id}` with `pms_lockout: true` |
+| Holder pays: release overlock | `PATCH /units/{unit_id}` with `pms_lockout: false` |
 | Unit moves to auction | `PATCH /units/{unit_id}` with `pms_auction: true` |
-| Move-out / vacate | `DELETE /units/{unit_id}/tenancy` |
+| Move-out: remove the unit's primary user | `DELETE /units/{unit_id}/tenancy` |
+
+:::note Primary user vs. guests
+These endpoints manage a unit's **single primary user** (its owner). Sharing a unit with a **guest** (a secondary holder, friend, vendor, or auction winner) is a separate model and is not yet a live API endpoint; today guests are added by the primary holder in the app or by staff in the admin portal. Guest grants over the API are coming via Access Grants.
+:::
 
 ## Walking through the calls
 
-The examples below are illustrative. For the full field list on each, see the [API Reference](https://app.keepitsimplestorage.com/docs/api).
+Each call links to its full reference page for the complete field list and response schema.
 
 ### Discover your unit IDs
 
@@ -104,6 +108,8 @@ curl https://api-app.keepitsimplestorage.com/api/v2/units \
 
 Responses carry `ETag` and `Cache-Control`; send `If-None-Match` to get a cheap `304` when nothing changed. `crm_unit_id` is `null` for units KISS registered that you have not synced yet.
 
+→ Full reference: [List units](/reference/v-2-units-index)
+
 ### Bulk sync your roster
 
 `PATCH /units` upserts up to 500 units in one call, matched on your `crm_unit_id`: unknown IDs create units, known IDs update them. Use it for the initial roster load and for periodic reconciliation (nightly is typical).
@@ -131,11 +137,13 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
   }'
 ```
 
-A failing item does not abort the batch: it lands in `data.errors` as `{ "crm_unit_id": ..., "error": ... }` and the response is still `200`, so always check that array. The sync maintains unit facts but does not create tenant identities; use the move-in call when a tenant should be able to claim the unit in the app. Full per-item field list: [API Reference → sync units](https://app.keepitsimplestorage.com/docs/api#/operations/v2.units.sync).
+A failing item does not abort the batch: it lands in `data.errors` as `{ "crm_unit_id": ..., "error": ... }` and the response is still `200`, so always check that array. The sync maintains unit facts but does not create user identities; use the assign-primary-user call when someone should be able to claim the unit in the app.
 
-### Move-in
+→ Full reference: [Bulk upsert units](/reference/v-2-units-sync)
 
-`PUT /units/{unit_id}/tenancy` records a new tenancy: marks the unit occupied, clears any lockout, and (when you include the `tenant` block) creates or updates the tenant's identity so they can claim the unit in the KISS Access app. Send the tenant's mobile phone in E.164 format; it is how they authenticate.
+### Assign the unit's primary user
+
+`PUT /units/{unit_id}/tenancy` sets the unit's **single primary user** (its owner): it marks the unit occupied, clears any lockout, and (when you include the `user` block) creates or updates that person's identity so they can claim the unit in the **ONELock Access** app. Send their mobile phone in E.164 format; it is how they authenticate.
 
 ```bash
 curl -X PUT https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M49E661CW41BXE/tenancy \
@@ -155,7 +163,13 @@ curl -X PUT https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M49
   }'
 ```
 
+:::caution This replaces an existing primary user
+If the unit already has a primary user, this call **replaces** them: the prior primary link is overwritten. Any guest / secondary accessors stay attached. This endpoint is for the primary holder only; it does not add a guest.
+:::
+
 `pms_tenant_id` and `ledger_id` are your own references, stored and echoed back for reconciliation. Discover or bulk-sync the unit first; this call expects a unit that already exists.
+
+→ Full reference: [Assign the unit's primary user](/reference/v-2-units-tenancy-put)
 
 ### Overlock, release, and status flags
 
@@ -177,11 +191,23 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M
   -d '{ "pms_lockout": false, "balance_due": 0, "paid_through_date": "2026-08-01", "pms_status_raw": "CURRENT" }'
 ```
 
-Accepted fields are the access flags from [How access works](/guides/concepts#which-facts-gate-access) (`pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`, `balance_due`, `paid_through_date`, `pms_status_raw`). Tenancy fields (`occupied`, `pms_tenant_id`, `move_in_date`) are rejected here with `422`; use the tenancy endpoints for those.
+Accepted fields are the access flags from [How access works](/guides/concepts#which-facts-gate-access) (`pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`, `balance_due`, `paid_through_date`, `pms_status_raw`). Primary-user fields (`occupied`, `pms_tenant_id`, `move_in_date`) are rejected here with `422`; use the tenancy endpoints for those.
 
-### Move-out
+→ Full reference: [Update unit facts](/reference/v-2-units-patch)
 
-`DELETE /units/{unit_id}/tenancy` ends the tenancy. No body; the URL is the whole instruction. KISS resets the unit to vacant, clearing the tenant link, move-in date, balance, paid-through date, and the lockout, lock-exempt, auction, and unrentable flags.
+### Remove the unit's primary user
+
+`DELETE /units/{unit_id}/tenancy` ends the primary tenancy and resets the unit to vacant. No body; the URL is the whole instruction. It clears these unit fields:
+
+- `occupied` → `false`, and the unit's status → vacant
+- the primary-user link and `pms_tenant_id` → cleared
+- `move_in_date` → cleared
+- `balance_due` → `0`, `paid_through_date` → cleared
+- `pms_lockout`, `pms_auction`, `pms_unrentable` → `false`
+- `pms_status_raw` → cleared
+- any **secondary accessors** are detached
+
+It does **not** change `pms_lock_exempt`. Access state is then re-evaluated (the unit becomes vacant).
 
 ```bash
 curl -X DELETE https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4M49E661CW41BXE/tenancy \
@@ -189,7 +215,9 @@ curl -X DELETE https://api-app.keepitsimplestorage.com/api/v2/units/01KTSC4X57H4
   -H "Idempotency-Key: acme-moveout-A142-2026-09-30"
 ```
 
-Returns `404` for an unknown `unit_id`; move-out never creates units.
+Returns `404` for an unknown `unit_id`; this call never creates units.
+
+→ Full reference: [Remove the unit's primary user](/reference/v-2-units-tenancy-delete)
 
 ## Idempotency
 
@@ -224,13 +252,13 @@ Full envelope and troubleshooting: [Error handling](/guides/error-handling).
 1. Create your API token (Company Settings, API tab) with `pms:read` and `pms:write`, and store it in your secrets manager.
 2. If you have more than one location, decide how to address them and, if you choose `pms_location_code`, set the codes in the admin portal.
 3. `GET /units` to see what is registered, then load your roster with `PATCH /units` and store each `unit_id`.
-4. Wire your events: move-in to `PUT .../tenancy`, delinquency and payment to `PATCH /units/{unit_id}`, move-out to `DELETE .../tenancy`.
+4. Wire your events: new rental to `PUT .../tenancy`, delinquency and payment to `PATCH /units/{unit_id}`, move-out to `DELETE .../tenancy`.
 5. Retry on timeout or 5xx with the *same* `Idempotency-Key`; alert on 4xx (those will not succeed on retry).
 6. Run a live test with KISS on the line: overlock a unit, watch access revoke in the app, release it, watch access restore.
 
 ## Beyond the basics
 
-Direct API calls are the right shape to start: your team gets synchronous validation on every call, and the contract above is already in production with multiple partners. As an integration matures, two natural extensions are worth a conversation: an event-feed option, where your system (or your PMS's native webhooks) emits events and KISS handles the mapping, and outbound webhooks from KISS, notifying your systems of activity on our side such as lock events and tenant unit claims.
+Direct API calls are the right shape to start: your team gets synchronous validation on every call, and the contract above is already in production with multiple partners. As an integration matures, two natural extensions are worth a conversation: an event-feed option, where your system (or your PMS's native webhooks) emits events and KISS handles the mapping, and outbound webhooks from KISS, notifying your systems of activity on our side such as lock events and unit claims.
 
 ## Keep going
 
@@ -244,7 +272,7 @@ Direct API calls are the right shape to start: your team gets synchronous valida
   <Card title="Error handling" icon="errors" href="/guides/error-handling">
     Response envelope, status codes, and troubleshooting.
   </Card>
-  <Card title="API Reference" icon="reference" href="https://app.keepitsimplestorage.com/docs/api">
+  <Card title="API Reference" icon="reference" href="/reference/kiss-api-reference">
     The complete, always-current endpoint and schema reference, generated from code.
   </Card>
 </Cards>

@@ -1,38 +1,97 @@
 ---
 sidebar_position: 1
-sidebar_label: "Mobile app integration"
+sidebar_label: "App partners"
 sidebar_custom_props:
   icon: mobile
 ---
 
 import {Cards, Card} from '@site/src/components/Cards';
 
-# Mobile app integration
+# App partners
 
-This path is for teams building their own tenant-facing app on top of KISS access. Your app signs the tenant in, reads their access bundle, opens locks over NFC through the KISS SDK, and reports the result. KISS handles the access decisions; your app handles the experience.
-
-:::note The V2 mobile surface is being finalized
-The tenant sign-in and access endpoints are moving onto the versioned `/api/v2` surface under the Mobile Migration work. The concrete request and response shapes are converging now, so this guide describes the flow rather than freezing endpoint details that would drift. For the exact, current paths and schemas, see the **[API Reference](https://app.keepitsimplestorage.com/docs/api)** or ask your KISS contact. The conceptual model below is stable.
-:::
+This guide is for **app partners**: teams building their own holder-facing app on KISS access. Your app signs the user in, reads their access bundle, opens locks over NFC through the KISS SDK, and reports the result. KISS handles the access decisions; your app handles the experience.
 
 ## The core loop
 
-A tenant app does four things:
+A holder app does four things:
 
-1. **Sign the tenant in.** Tenants authenticate with their mobile number and a one-time SMS code (OTP), and your app receives a Bearer token. If a number is linked to more than one account, the tenant picks which one. See [Authentication](/guides/authentication) for the token model.
-2. **Fetch the access bundle.** A single call (`GET /access`) returns everything the app needs to operate offline: the tenant's units with their evaluated `state` and `reason`, the entry points for their zones, the NFC keys, and the facility timezone. Cache it on launch and refresh on pull-to-refresh.
+1. **Sign the user in.** Users authenticate with their mobile number and a one-time SMS code (OTP), and your app receives a Bearer token. If a number is linked to more than one account, the user picks which one. See [Authentication](/guides/authentication) for the token model.
+2. **Fetch the access bundle.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it on launch and refresh on pull-to-refresh.
 3. **Open the lock.** Pass the NFC key to the KISS Flutter SDK, which talks to the offline lock during a tap. Keys are served per tap, never stored as a static dump.
-4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoint so managers and support see real lock activity.
+4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoints so managers and support see real lock activity.
 
-## What the access bundle gives you
+:::note Sign-in endpoints are still being finalized
+`GET /access` is live (documented below). The tenant OTP **sign-in** endpoints are still converging onto `/api/v2` under the Mobile Migration work, so this guide describes that step conceptually; see [Authentication](/guides/authentication) or ask your KISS contact for current paths.
+:::
 
-The bundle is the same evaluated output described in [How access works](/guides/concepts). For each unit you get the final `access` decision plus the `state` and `reason` behind it, so your UI can explain *why* a unit is locked (for example `delinquent` or `future_move_in`), not just that it is. Entry points carry a `would_have_access` flag so you can tell "denied because of a unit denial in this zone" apart from "no access here at all."
+## The access bundle: `GET /access`
+
+The offline bundle for the signed-in user. This is the one call your app needs to render the user's units and open locks.
+
+| | |
+| --- | --- |
+| Auth | `Authorization: Bearer <token>` — the signed-in user's token |
+| Caching | `ETag` + `Cache-Control: private, max-age=14400` (4 hours); send `If-None-Match` for a cheap `304` |
+
+```bash
+curl https://api-app.keepitsimplestorage.com/api/v2/access \
+  -H "Authorization: Bearer $USER_TOKEN"
+```
+
+The response contains the facility `timezone`, the user's `units`, and the `entry_points` for their zones:
+
+```json
+{
+  "timezone": "America/Denver",
+  "units": [
+    {
+      "unit_id": "01KTSC4X57H4M49E661CW41BXE",
+      "unit_name": "B204",
+      "access_state": "permitted",
+      "access_reason": null,
+      "evaluated_at": "2026-06-16T14:30:00Z",
+      "bundles": [
+        {
+          "id": "01KTSD2Q…",
+          "display_name": "Unit B204",
+          "lock": { "id": "01KTSD…", "name": "B204 Lock", "serial_number": "KEY-ABC", "key": "<encrypted>" }
+        }
+      ]
+    }
+  ],
+  "entry_points": [
+    {
+      "id": "01KTSE…",
+      "name": "Main Gate",
+      "serial_number": "EP-12",
+      "type": "gate",
+      "zones": [
+        { "id": "01KTSZ…", "name": "Building B", "access_start_time": "06:00", "access_end_time": "22:00" }
+      ]
+    }
+  ]
+}
+```
+
+Key things to build against:
+
+- **`access_state` + `access_reason`** per unit are the evaluator's decision (see [How access works](/guides/concepts)). Use the reason to explain *why* a unit is locked, not just that it is.
+- **`bundles` are present only when access is permitted.** A denied, vacant, auction, or unrentable unit returns no bundles, so there is nothing to tap.
+- **The lock `key` is encrypted and bound to the bearer token** that fetched it, so only that device can use it. Keys are served per tap, never exported.
+- **Entry-point `zones` carry `access_start_time` / `access_end_time`** so the app can enforce access hours offline.
 
 Because the bundle is self-contained and cached, the app keeps working with no connectivity after the first successful fetch.
 
+:::note Machine schema in the reference
+`GET /access` is in production now. Its full machine-readable schema in the generated reference is being enriched on the API side; until then the shape above is the contract, and the [live spec](https://app.keepitsimplestorage.com/docs/api) reflects the current implementation.
+:::
+
 ## Reporting lock activity
 
-Each NFC interaction maps to a log event (opened, failed, blocked, and the close-side equivalents) sent to the logs endpoint for the lock or entry point. The exact event keys live in the [API Reference](https://app.keepitsimplestorage.com/docs/api); report every attempt so the activity feed reflects reality.
+Each NFC interaction maps to a log event (opened, failed, blocked, and the close-side equivalents) sent to the logs endpoint for the lock or entry point. Report every attempt so the activity feed reflects reality.
+
+- Lock taps → [Report lock activity](/reference/v-2-locks-logs-store) (`POST /locks/{lock}/logs`)
+- Entry-point taps → [Report entry-point activity](/reference/v-2-entry-points-logs-store) (`POST /entry-points/{entryPoint}/logs`)
 
 ## Keep going
 
@@ -41,9 +100,9 @@ Each NFC interaction maps to a log event (opened, failed, blocked, and the close
     The data model and the precedence rules behind every access decision.
   </Card>
   <Card title="Authentication" icon="auth" href="/guides/authentication">
-    The token model: tenant OTP sign-in and partner API tokens.
+    The token model: user OTP sign-in and partner API tokens.
   </Card>
-  <Card title="API Reference" icon="reference" href="https://app.keepitsimplestorage.com/docs/api">
+  <Card title="API Reference" icon="reference" href="/reference/kiss-api-reference">
     The complete, always-current endpoint and schema reference, generated from code.
   </Card>
 </Cards>
