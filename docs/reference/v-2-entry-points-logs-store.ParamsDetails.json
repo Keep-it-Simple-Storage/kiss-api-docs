@@ -1,0 +1,1 @@
+{"parameters":[{"name":"entryPoint","in":"path","required":true,"description":"The entry point ulid","schema":{"type":"string"}}]}

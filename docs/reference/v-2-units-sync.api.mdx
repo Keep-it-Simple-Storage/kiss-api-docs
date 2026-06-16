@@ -1,0 +1,69 @@
+---
+id: v-2-units-sync
+title: "Bulk upsert units"
+description: "Upsert up to 500 units in one idempotent call, matched on your `crm_unit_id`. Unknown IDs create units; known IDs update them. Per-item failures come back in `data.errors` with a `200` response."
+sidebar_label: "Bulk upsert units"
+hide_title: true
+hide_table_of_contents: true
+api: eJzdV9tuGzcQ/RWCTwkgybIQI6365KQpaqRADV/6UEGQKe5Iy2iX3PBiWxAE9B/6h/2SzpAr7eoWF0GKAvWLteRwbpxzZrjipgIrvDL6KuND/jjoBa2867mllrzDvZg7Phzxe1rk4w6vhBUleLC0vOIaP/DYVQZlZTxouex+hCUeVBqXcxAZWPyy8DkoC2jB2wAdnoGTVlVkFsVQ+ecAjITAeaYy0F7NFFg2M5ZlkIWqUDI6yV6d//XHn4OLCyZzYV2HDd6wnD0pnZmn12jIyRxKwYcr7pcVeea8VXrO1+tx8gINvDPZkiT2nZJGYwSetkS1tXj2yZGTq0PVZvoJpEejlaUkegWOdmP+WmLCWhEz4qF0Lx+XtpyQionKDsPo8FI8/wJ67nM+xCysO9HcJF3DS9IdrkNRiGkBKWQ8XZgU5QlrB/JV6SbbM9JkX2fVSBkqBW2TU2MKEJrjbmkeYaL0JBP+qHosilLgNXES6HqFoZ/wFK9T6H+WyWO5gWwO9mtPT0UhtIRJFtpB6FBOIyJKpVUZSj7sk69CZROfWxPm+TcIGy9oYYI/nt2NwASeEbNfEBJBJnyeEgjaIlyS9VMyzgsf3MSKp69I4rpNHKMdZIzXMYVXCVPnUVX9cdHv758MG/byypN2fovsFintJlEC8kM64yqjXQLioN+nf7tUxb8ZTZTgnJjH1Am9/HUW6XRbJUWBGTxJIevW3obgDlY6HDQV2ChGy6QpqwKJO+th8ih9WEbHiBJTCUc39nK68b9WVB8bp0S+6Z8f5u5ei+Bz4nZMGSr5N1K5n4JdDz5Yiw0F6cU+KnjqnYxpE8VgcBjFb6JQWepFQOr+qzBcOw6867h2zMju2Uvsp14o5DbW2mBmxkDInGHXLTLmc+HZLEk9buPtoTKRZYp+i+J6x/cXet22hk5XUR1ATP36YEKoHNpioWLeMAQ4i4hmCh3XQANDmj48k6IoOgx5EnOe4SZbmmDZQ4s6HnrsXi+0edLs6kfHpAUsxqTvB9ash4poFjMBZY9dg+1SSDEnAVmC0ARsKuSCfHggBPRSAA84jPicCfaA/PHANozSSwDJDQ1ZFblH1y+I+fhZoiccXvA+N4NVsAUNUN5Xbnh2JirVxdLqLQAqlFUEZeeNxdT10BXaP3sccBpyHMhglV9GLbH08AJG4/bWbVx129pslxxZ3MxRkc9B2Niw0o+fNk3o8voK72IBOoKISv2mma4+PAvysDUNjfYGm6a0W/NLs7gzljTLR6aPZrMZKtI4tztGIJ0P3nT7b7uD7+/OL4YX58PBd73+2/Pf+cGo0HKjmQCaxZ3G3j/avF8ytm3QydODltwsb5tws9Ruu81qu9Fu4UY0r/TMxPutW9/Hq9tbRrd3AzNATZLAR2WXkIZVtA++u1w5LORaGkufpAkZDHRWGaURiaWhwR1pcJ4eEwggLHqG5RIFN80nGnbBzoSEDnMQAcZGM+x3aasCOX7VVP3pis+MdFT2ryP7VWi+FJFt61J6F4oFgjjRRo2vnbBWDW3/P+ilBrCHZ39WFULFGSzSyKpmmtYglGPCaGG1mgoH97ZYr2kZEWyJOfDno7AqFdmIyqh+yhGQM+VoA0ExE4Xbf8218/rqpqb61+wbvvGOBrrAV+exdyi2L8IpjwNSEnqf/OvekZ5G4qB1NycupYTKf1F23OL368u79z8TU9QPzTIxFWGzwxNCia9iwiIL1+Mx8so8xAmAJ6X09zdhFG34
+sidebar_class_name: "patch api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Bulk upsert units"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"patch"}
+  path={"/units"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Upsert up to 500 units in one idempotent call, matched on your `crm_unit_id`. Unknown IDs create units; known IDs update them. Per-item failures come back in `data.errors` with a `200` response.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-units-sync.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-units-sync.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-units-sync.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

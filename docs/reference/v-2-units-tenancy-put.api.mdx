@@ -1,0 +1,69 @@
+---
+id: v-2-units-tenancy-put
+title: "Move-in (create or update tenancy)"
+description: "Record a tenancy on a unit: mark it occupied, clear any lockout, and optionally create or update the tenant so they can claim the unit in the app."
+sidebar_label: "Move-in (create or update tenancy)"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWM1uGzcQfhWCJxvQj63GSKtT0yIFjLSo4dg91BAEmjuSGO+SDMm1LQgC+g59wz5JZ8hdaaVdxYljoD3EF6/I+efMxxmuuLHgRFBGn2d8zO9Hg1Kr4AcBtNByObBl4D0exNzz8Q2/pj0+6XErnCgggKPlFdf4A7nLXGVIrTR+WxEW+O3gY6kcoOzgSuhxLxdQCD5e8bC0xOODU3rO1+veRsx5BoU1aIFc9t/Bspa4AJGB65CZgZdOWXICydDGjyUwIgIfmMpABzVT4NjMOJZBVtpcyegyOzr956+/R2dnTC6E8z02esUW7EHpzDwc808ZO0lWoIKfTLYkCmk0WhzoU9iNhuEHT0at2qLM7QeQFFvr6AiCAh/FuGJKJzDFSLb09nghHn8FPcfQjtHsHtdlnovbHFIo1j2em6T4AH+L3hZ+uuGRJoNnaY0Wp9N7Bndh7mGq9DQToVMAnlshMLKcCPpBoZoDnsSsfX7sIJuDey436fdBhNJPnXh4tgg8jLspPGIFhIaMW2NyELrL7+Tz05n19fGZKee/4phz8TXcdmH0U5zfjToYsexU/sm0ShRP2oB/GG0VaIFflOEqQeRlwgGe9h14a7RPIR+dnNC/XXxCRS+EFQV4L+YxKEIvf59FKK5YyHZOmFr9Fs6JiKQBCmJeN/ZqVJug/Vhin6H5IEKhhCcQ7EuwA3eNlKVVkHXUwpPI8Tmg8GUg0KL2pnQSpomuQ3+1v72EPs8GqhS/1BKyqQgdgtfNS/Bmcxy7wW+GthHIvajtx6gZgV3/urxp2TpplEjhqV+4hMQWzwtC992/406d11U2VmyTVGCjk9NvNfWtpr7V1AvW1KuumrrWogwLsgpLKfr48iW2f2q7Frx1Djt2DKy7V/AwOOhT7cVo1PbiD4EzSWr2gcT9V274ph/YlMS1LiW7vG9wYAnYnUDGGhvMzBgIuWCYL3nGwkIENktU9xt/ByhMZJmib5Ff7Nh+AMBaOXQ4iyoHYujX+1ZfgjQuY4JVUyRDkwWjyhmzQrg7pgKra6fHJCKPY4i2jHpfU4Ye/siYscnyfMmkA0xBhslQWiow9BiS7MC8oV9IIzRKEqqIm6SLKR2/8ZAHKeEXhmbcNNLG+XTMh3HcHa5odF0PK3upLPGw6um2dDmNnyFYPx4OhVV9EnkHYJFVFTbH9s84jMtAmoL2h/cjTiOiB1k6FZZRSswrjO7NpLn1Pq76TeI184k01lNoBGmMU8SH9PFL3b++uThnwdyBjhVCeXy5nU3fPgqysDVbbrN1Z2TcLndMhtvNxgXT6MR3bg68qUev+iev+6Mfrk7Pxmen49H3g5PXp3+24LFpy/am2LWkOVm1bNwOTOlBYDsSHVTUnGUa6kXHYjV5bBeqiYKXmCQ/QoovHX0Mv9IzE8+wQux35+/fMzqhS5iBA8R0lECplUoFM2W/eq4WyjNXUzNJwOFjJoPOrFE6eFYYetpAHJunxxvP0JgBw5SIhGgM2oSFQop96WZCQo95SJVzM8PLMW1ZkJOjbWYfzurMSE+pfRzhy6L6QkS4rKL1G1rZx4I7atdqqqnjfT8bTyb/T8CoqjDAYxhaJIzdUcSCVYUeqUvwSDuunr5qAMEKX2CMiGS1uhUerl2+XtMyFqYjQMDPe+FU6lEQHjLl6RuTdCZyv/+q1QzW0WWFyMfskJU1vmuCMrwSSkhN8h0s62e62JlWT2rP1v+Cb22dfiR72++BG5eo405EPyf7+lepraopWjf8luONlGDDJ2knjWvj4vqKoLd67isSIBIe9XhCJWoIY7gimldvQLnQ8zK2CTyJpL9/AavveVY=
+sidebar_class_name: "put api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Move-in (create or update tenancy)"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"put"}
+  path={"/units/{ulid}/tenancy"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Record a tenancy on a unit: mark it occupied, clear any lockout, and optionally create or update the tenant so they can claim the unit in the app.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-units-tenancy-put.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-units-tenancy-put.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-units-tenancy-put.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

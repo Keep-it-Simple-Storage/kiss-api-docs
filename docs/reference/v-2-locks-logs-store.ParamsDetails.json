@@ -1,0 +1,1 @@
+{"parameters":[{"name":"lock","in":"path","required":true,"description":"The lock ulid","schema":{"type":"string"}}]}
