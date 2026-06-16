@@ -1,4 +1,5 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import referenceSidebar from './docs/reference/sidebar';
 
 const sidebars: SidebarsConfig = {
   guidesSidebar: [
@@ -10,15 +11,19 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Integration guides',
+      label: 'Guides',
       collapsible: false,
-      items: ['guides/pms/quickstart', 'guides/white-label/quickstart'],
+      items: [
+        'guides/pms/quickstart',
+        'guides/white-label/quickstart',
+        'guides/error-handling',
+      ],
     },
     {
       type: 'category',
-      label: 'Reference',
+      label: 'API Reference',
       collapsible: false,
-      items: ['guides/error-handling'],
+      items: referenceSidebar,
     },
   ],
 };

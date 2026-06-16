@@ -6,6 +6,8 @@
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",
+    "sync:api": "node scripts/sync-openapi.mjs",
+    "gen:api": "docusaurus clean-api-docs kissApi && docusaurus gen-api-docs kissApi",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",

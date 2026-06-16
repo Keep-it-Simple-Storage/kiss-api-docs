@@ -1,0 +1,69 @@
+---
+id: v-2-locks-logs-store
+title: "Report lock activity"
+description: "Record a lock event (open or close: success, failure, or blocked) after an NFC interaction."
+sidebar_label: "Report lock activity"
+hide_title: true
+hide_table_of_contents: true
+api: eJzVV91v2zYQ/1cIPiWAv+Kl6Oa3rGiBYEET2OkelhoBLZ0kNhSpkZRTz9D/vjtSjm3JyVMHrH6wZd7xPn/3oS03FVjhpdHXKZ/x9XSkTPLk8Dt3I+eNBT7gXuSOzx74DR7y5YBXwooSPFg63XKNf/AuXURmqfG5Er7AZwt/19ICSva2hgFPwSVWVqQOme4LYHSJ1UqmyO2SAkrBZ1vuNxVJdN5KnfOmWUZR4PzvJt0QR1dyYrQH7YkkqkrJJPg0/uZI07Yv2qy+QeJRaWUpAl6CI+oTbPr6u3bfarVhHo1PYS0TYChAjxNlHDCREI9jgiVKoj3MQmWsdyO2ALsGO8xBU7wh/apRl2NnFnKJeoK5A7aqdapggHIScG7oCmHhnOEXe7bSo4dsFVRLy8yz/qozZZ5Rm05ZWTvPtPFsBSwzNgexUoCs1tR5gb/SMdBpZaT2I/QIdF1SSin+I3Lg0dVBZ1YrJO+PMyFVHVCwP1vRI6S7s+D6ifvd80dMUiZt2b3ZUREP9zowjHbzGC3vW9qj7qX1SKdlnjD/LfKRF33G0+qPfVo2hGfRYrMLtlJ8vwGdYwHNLiaTCfIWCGnETfoo/KkLmO6SKDxFYA29LEm7rpUiCMQCaZrDYnwIOMei8tITB19Qod+gcVjh81hoWHXxkqsQ0LE6ppML+jmuBv7Diq/EAIscghi9uc1Cc2mvkDu8Gbz8F9aKDXUbDyVdbg5ou7ZBYcaQHGo+cQ3V+pNN5zhiO+Nake21ZYzS5anAfNGixlLVnuIR0PLj4/R2o/porcFGgX1nLeF59KpPL1780vfiCn0wVv4TTGVAEn8GTy77nnzG5pgZbLA/gf3Tad/+PwWOyf9BGtyhH9jmwtkpJR0g4bj02BwhZQcEZjIGIilYJkGlOKcEJilyrV/8pYEl0lTSs1B3R7a/Uti9an69nlsHQuibrtVzSIxNcZ6HRQXWNNPPaJgwzGfo6jPWzoYBa3v/gGhtr8fhneGihCOaff70geEswPGf7JzCHlIY2rsq40JaaG2a8XHYwcZb+mnGtIrRdhQWiLhx1VYhW+F95WbjsajkENM/egKopHeyrBTQ6obujRJTEn28nnLaohwkNS4SmyAlwAOD9LA8JC3CqXvBzyEsSONuUaP/K8DVhIAYHz7tBtHV3TXz5gl0ADrBcb5f3z5+F2Thy7r12g6ym5B7MB7NQZxG08vh5P1w+tv9xbvZu4vZ9NfR5P3FXwRKqTMT7G4H3B/XiwUjq+aQgQWdUOIpnDHLGJ3+coobk91xs4Qw78LWt1ujHCsxayGledzfHKsdjBiGITBi7NFPD0Gxq20mEsSGAwjUB/RSRVIFyfJsn83XM5maxFE6z0PlEWhKESq9XcHnYduMWCWUrSnVHc+2+67xH6O7BY2H735cKYEvBmh0gO62RXrcPwnds/btQbWvGAUVBNK325Vw8MWqpqFjBJEl8OLjWlgZFxyEciodPWMpZUK57pvGoctn87YJnLPu+8dJe3f9RVMgsSXVEHeePXTjolGASLEUyJhI+hBVDu9JwP5qr0/T4hJvXGGgK/8m7/KgZ9zdLu6p9No3otKkdMeKZ6od/A5mmhCCUM3hbMuV0Hkduj2PMunzL0vR6xI=
+sidebar_class_name: "post api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Report lock activity"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/locks/{lock}/logs"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Record a lock event (open or close: success, failure, or blocked) after an NFC interaction.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-locks-logs-store.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-locks-logs-store.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-locks-logs-store.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

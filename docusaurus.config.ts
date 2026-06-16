@@ -31,6 +31,8 @@ const config: Config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
+          docItemComponent: '@theme/ApiItem',
+          sidebarCollapsed: false,
         },
         blog: false,
         theme: {
@@ -40,9 +42,29 @@ const config: Config = {
     ],
   ],
 
-  plugins: ['docusaurus-node-polyfills'],
+  plugins: [
+    'docusaurus-node-polyfills',
+    [
+      'docusaurus-plugin-openapi-docs',
+      {
+        id: 'api',
+        docsPluginId: 'classic',
+        config: {
+          kissApi: {
+            specPath: 'openapi/kiss-api.json',
+            outputDir: 'docs/reference',
+            downloadUrl: 'https://app.keepitsimplestorage.com/docs/api.json',
+            sidebarOptions: {
+              groupPathsBy: 'tag',
+            },
+          },
+        },
+      },
+    ],
+  ],
 
   themes: [
+    'docusaurus-theme-openapi-docs',
     [
       '@easyops-cn/docusaurus-search-local',
       {
@@ -71,7 +93,7 @@ const config: Config = {
       },
       items: [
         {
-          href: 'https://app.keepitsimplestorage.com/docs/api',
+          to: '/reference/kiss-api-reference',
           label: 'API Reference',
           position: 'left',
         },

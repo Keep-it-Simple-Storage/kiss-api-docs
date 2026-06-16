@@ -1,5 +1,8 @@
 [build]
-  command = "npm run build"
+  # Refresh the curated reference from the live Scramble spec on every deploy,
+  # regenerate the endpoint pages, then build. sync:api falls back to the
+  # committed openapi/kiss-api.json if the live spec is unreachable.
+  command = "npm run sync:api && npm run gen:api && npm run build"
   publish = "build"
 
 [build.environment]

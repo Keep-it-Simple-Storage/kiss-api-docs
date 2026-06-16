@@ -1,0 +1,69 @@
+---
+id: v-2-units-patch
+title: "Update unit facts"
+description: "Sparse update of a unit's access facts (overlock, exemption, auction, unrentable, balance). Send only the fields that changed."
+sidebar_label: "Update unit facts"
+hide_title: true
+hide_table_of_contents: true
+api: eJzVV9tu4zYQ/RWCL00A+RIjwW79lm5TNNgFGiROHxoYBi2NLW4kUktSTgzDwP5D+4X7JZ0hZUu25SQoFlg0L5HJIed2ZuZwxXUBRjip1XXCh3wx6JZKOtsthItTHnEn5pYPH/g9rfJxxAthRA4ODC2vuMIfeK7MZILSUuE3HqWTBr6U0gDe6kwJEbdxCrngwxV3y4LOWGekmvP1Otpec51AXmgHKl52PsJyc2MKIgHTcmcCNjayIPNRDG38UgIjIbCOyQSUkzMJhs20YQkkZZHJ2DvLTs6+ff17cHHB4lQYG7HBOUvZk1SJfjrlLxk7Dlaggl90siSJWCu02NGnKLYaep8tGbU6vEpPP0PsUElhKPhOgqXdqciEimGSlNAQVmU+9a7nUsm8zPmwH+FilolpBiEMa0qKTCYuNbqcp5NEODi0POIYhFygmZwEOk5ixNuuyu0k0/GjLl3jkqnWGQjFGwITeMZkvSAkyjgk5phAqQzGLWg/JmOdcKWdGPHU5lIunj+BmiPehpjLFm90HJeFJMAcHt4FzwgUhn/JEC9ZYtkUMq3mzGl2cz/q/Xr16Wp0xXquEvr29R+EGaWRwTOlXLpsSSZ7ATeRLQorh16WyPUCJlIdyeGaNKAqWrqhAqWqvA1oxE3aNmALrWyA1KDfp3+7jqLn3wmxOVgr5t5OoZZ/zHxD2OI2yzhVdvVbGCN8PTvI6fC6sbfxboz2o+Nv0Ew96lgIY5NPju63QMTLhv7TclsLgBoIfSVdr2a8xZwMkjmYt0pbXRrsGUGuRX+1X7fCt9kgrJvYJXajZCJcOw7rVvywTcdu8JuhbQRyL2r7MWpGYNe/Nm8ObB03KiS3oT7CMZ8vcO0TaMedDa4rNFbHxqHAzvtnhzV1r0TpUrIKS8n7+P1L7OX2dWUMzjgMrFlIeOoe9Wnrxfn/qzO84s5gcOjOnwJJSZj2QNH5UVmxzbRE3Nti25Tsnr1ExuKExGpgjQ2mZwxEnIY5xVwqHJsFqcXW3y5eJpJE0rfIbnZsPxL1g5I4XhSVAz70632r75AfWmBlQcVNxgpGXeAny0Qc4xVobOwsO6GQEIuIWKAReDpiFWOIWM0MIlbxotMuuwOVMK2yJboNm0HtI4AkTs0h6YZaTXUSaKhnsJ6ODnnP89reipjqmnoJpmRDYkuTEct0rrDDXk8UsoPo6D4CFHhE5kWG81Ub9L4b65z2e4sBJyZoIS6NdEt/i0cPxvBh3Ny686t2C68makjjhmz6yQLC+KYWPn7bELbLm2tkIo+gfFkTWm9rCnr1LMjCAwrZb6WFyAkG553+u87g59HZxfDibDh43+2/O/uL71G/QLAPyF69vKV39VKT0NWrTQpXF0o9WOu1xqSsF/dGaIP87QzfxtCTaqZ9lKtB8PH67o5RDG9hBmhhTCim5AfIYi4PyGAqLRK8SprFhFbrUYcQLLRUCOFc0xsD+8k8vJ8sKy10GSbNCyJSMCtYA6TYlgZxj2C2AH73YYZdMGwVEI9Pauwdx12iY0vgO/VtpED1ufBtq3o83YeaI5yHKtt3q/FU+fF1WpWAg2fXKzIhPZ/yhbiqSjbwCvJi6J+XWFQpOk0bq9VUWLg32XpNy1gLhmoQPxfCyABArMhEWvpG1MxEZvffi81wnNxWre6UHbNt0zgVtU3stVRjNDIf8Z1aPYA9g60eq/9Z/3d8xbb6Eew9fGlvXaL5G4Q+BPs6o0C/NhIHo7M+cYngKdyLsuNGj765HH34nfpd9ZTOdUKHqFVEPDQMahU+YL6FVu9ARNq89BOYh0vp7180Gtzj
+sidebar_class_name: "patch api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Update unit facts"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"patch"}
+  path={"/units/{ulid}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Sparse update of a unit's access facts (overlock, exemption, auction, unrentable, balance). Send only the fields that changed.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-units-patch.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-units-patch.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-units-patch.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

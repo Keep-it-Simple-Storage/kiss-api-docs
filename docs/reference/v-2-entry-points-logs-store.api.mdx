@@ -1,0 +1,69 @@
+---
+id: v-2-entry-points-logs-store
+title: "Report entry-point activity"
+description: "Record an entry-point event (gate or door) after an NFC interaction."
+sidebar_label: "Report entry-point activity"
+hide_title: true
+hide_table_of_contents: true
+api: eJzVV0tv2zgQ/isEL5sAfiTeFN11T9kiBYJdtIGT9rCpEdDSSGJDkVqSsusa/u87Q8q2bNnZSw7bHGKJ5Ly/GX5acVOBFV4afZvyMZ+PBqC9XfYrI7V3A2VyN3DeWOA97kXu+PiR/4WLfNrjlbCiBA+WVldc4wuqCPJ3JI4iUuNKJXyBzxb+qaUFNONtDT2egkusrMg2HnoogAVRFkyzWskUhVxSQCn4eMX9siL1zlupc75eT6NGcP4Pky7pxKGBxGiPKmlLVJWSSYhz+M2RwVVXtZl9g4S8rixlxUtwtPsMy679Q/c/abVkHmNIYS4TYKhADxNlHDCR0BnHBEuURH+YhcpY794xB3YOtp+DphpA+lWjLTxogS2s9Og8mwWt0jKz0CxTZuF6TBvPMmNzEDMFuG1NnRf4Kx1mMA3pG6CDoOuSyqVM8jwgf55cnSTgXFYr3N4tZ0KqOlR4tzajR0g3ayGSI/KH60+Y80za8lDywERc3NkIhX+Knnc97ezutHW2jus84v5L23tRdA8eN78f03Td4z+MhidE8X+C5xoNV1h/quoGJNhc0i/ZQvqCfblkZ4QtRLFjpVgicHTKpD9/FyCHTcqk+6otJMamqEbkQmrnw2arp35xCD1n1ByPkG895gxqQdkAqSVg1zlICTu6VorQFVsJYynQNsI0fRL+WDzoeEk7PEUc970soatk3R4Bj6GtsIe99HSC39OQudnODpwxk9jd2OpR1FXYRbElRxeX9LOfRf5qHV8iDEQOQY1efsrCeGtEKCi+7m3fhbViSZPOQ0nC69beZlYRGDAxbctHxNCsPzrp9vO2ca5R2YhNY5aujiXmsxY1QkF7ykfA9Ovn6WWA31iLyDY47OYSFoOTMW2j+LUbxTXGYKz8EVxlQBp/hkiuupF8DPO71j9DJUajrv9fBN7N/4MyuHYcOIzD2jEjB0DCO9rjCMcp2NpgJmMgkoJlElSKo1NgkeKp+TZeGo0iTSU9C3W35/uJxu508+l+bgIIqV8fej0Jw50JzVoEjcGc7oqzHPuaYV1TY+w5ExlyMjr58cN7hqeQXCQb73FYFIaYXmVcyD9xszEftlnfcLXjcOshUUAiYoGrRKZXW4UyhfeVGw+HopJ9LPrgGaCS3smyUkCUEYMaJKak/eF8xImwOUhqutaClgAKTM3jtL11H1bdFjVtMJDFDSek9xkgVSL4xYcPm0vo+u6WefMMOsCbQDjZMcWb74I83DK7U/xoe3vvMLh3CeIlNLrqX7ztj35/uHwzfnM5Hv02uHh7+TdhUerMBMeb2+3P2/t7Rm5NIAMLOqF6Uz5jcTE9XT4s6bpuTrOEoO6aGz1yPKQCWMNQ4DxSeEf394BhHsJBTD4Gisggw662mUjozgcIu48YpopbFSTTs105T5cyNYmjep6HhiMIlSI0eMP9J4HZ7iGUoDenkh8EuNrNjNfCdoMSD9/9sFJIgcjJgNVVg/NH3sY5ioz3vlZU82FTUG/g4dVqJhx8tmq9pmWEkCXo4uMc2VmkNgjkVDp6RqhkQrnDL5t2oGeTpvHP2YnvnaMxbEaLpiziNKoh0p2I31YIgWkUIFLsCvIsHngf7fcfSM1OQWdQE3OJEpGQvnh22pold5/uH6gLm++w0qQkY8WCvvrwf3DWhHyExg5rK66Ezusw7nnUSX//AiUZIeI=
+sidebar_class_name: "post api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Report entry-point activity"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/entry-points/{entryPoint}/logs"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Record an entry-point event (gate or door) after an NFC interaction.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-entry-points-logs-store.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-entry-points-logs-store.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-entry-points-logs-store.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      
