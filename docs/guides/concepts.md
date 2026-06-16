@@ -13,7 +13,7 @@ This page explains the core model behind KISS: units, the facts you write, and h
 
 A **unit** is a storage space (for example "B204") with a smart lock on the door. Units belong to a location (a facility), and locations belong to a company.
 
-A **tenant** is the person renting the unit. They use the KISS Access app to tap their phone on the lock and open the door.
+A **tenant** is the person renting the unit. They use the ONELock Access app to tap their phone on the lock and open the door.
 
 Units persist across tenants. When a tenant moves out, the unit resets (balance cleared, flags removed) but the lock stays. A new tenant can be assigned to the same unit later.
 
@@ -144,7 +144,7 @@ Use this when your source produces **sparse events** (a move-in email, a payment
 - `PATCH /units/{unit_id}` is the workhorse for sparse fact updates such as overlock on delinquency and release on payment.
 - Each call carries only the fields the event actually changed. No state reconstruction required.
 
-Per-unit paths address the unit by its KISS **ULID** (`unit_id`). The bulk endpoint matches on your own `crm_unit_id` in the body, so you can sync without ever storing KISS IDs. The [PMS integration guide](/guides/pms/quickstart) walks through both shapes end to end.
+Per-unit paths address the unit by its KISS **ULID** (`unit_id`). The bulk endpoint matches on your own `crm_unit_id` in the body, so you can sync without ever storing KISS IDs. The [Sync partners guide](/guides/pms/quickstart) walks through both shapes end to end.
 
 ### Idempotency
 

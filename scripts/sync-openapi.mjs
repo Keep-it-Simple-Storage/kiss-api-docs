@@ -51,13 +51,14 @@ const META = {
       "Sparse update of a unit's access facts (overlock, exemption, auction, unrentable, balance). Send only the fields that changed.",
   },
   'v2.units.tenancy.put': {
-    summary: 'Move-in (create or update tenancy)',
+    summary: "Assign the unit's primary user",
     description:
-      'Record a tenancy on a unit: mark it occupied, clear any lockout, and optionally create or update the tenant so they can claim the unit in the app.',
+      "Set the unit's single primary user (the owner): marks it occupied, clears any lockout, and optionally creates or updates that user's identity so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (any guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint.",
   },
   'v2.units.tenancy.delete': {
-    summary: 'Move-out (end tenancy)',
-    description: 'End the tenancy and reset the unit to vacant. No request body.',
+    summary: "Remove the unit's primary user",
+    description:
+      "End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit.",
   },
   'v2.locks.logs.store': {
     summary: 'Report lock activity',

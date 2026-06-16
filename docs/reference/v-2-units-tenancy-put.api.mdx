@@ -1,11 +1,11 @@
 ---
 id: v-2-units-tenancy-put
-title: "Move-in (create or update tenancy)"
-description: "Record a tenancy on a unit: mark it occupied, clear any lockout, and optionally create or update the tenant so they can claim the unit in the app."
-sidebar_label: "Move-in (create or update tenancy)"
+title: "Assign the unit's primary user"
+description: "Set the unit's single primary user (the owner): marks it occupied, clears any lockout, and optionally creates or updates that user's identity so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (any guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint."
+sidebar_label: "Assign the unit's primary user"
 hide_title: true
 hide_table_of_contents: true
-api: eJztWM1uGzcQfhWCJxvQj63GSKtT0yIFjLSo4dg91BAEmjuSGO+SDMm1LQgC+g59wz5JZ8hdaaVdxYljoD3EF6/I+efMxxmuuLHgRFBGn2d8zO9Hg1Kr4AcBtNByObBl4D0exNzz8Q2/pj0+6XErnCgggKPlFdf4A7nLXGVIrTR+WxEW+O3gY6kcoOzgSuhxLxdQCD5e8bC0xOODU3rO1+veRsx5BoU1aIFc9t/Bspa4AJGB65CZgZdOWXICydDGjyUwIgIfmMpABzVT4NjMOJZBVtpcyegyOzr956+/R2dnTC6E8z02esUW7EHpzDwc808ZO0lWoIKfTLYkCmk0WhzoU9iNhuEHT0at2qLM7QeQFFvr6AiCAh/FuGJKJzDFSLb09nghHn8FPcfQjtHsHtdlnovbHFIo1j2em6T4AH+L3hZ+uuGRJoNnaY0Wp9N7Bndh7mGq9DQToVMAnlshMLKcCPpBoZoDnsSsfX7sIJuDey436fdBhNJPnXh4tgg8jLspPGIFhIaMW2NyELrL7+Tz05n19fGZKee/4phz8TXcdmH0U5zfjToYsexU/sm0ShRP2oB/GG0VaIFflOEqQeRlwgGe9h14a7RPIR+dnNC/XXxCRS+EFQV4L+YxKEIvf59FKK5YyHZOmFr9Fs6JiKQBCmJeN/ZqVJug/Vhin6H5IEKhhCcQ7EuwA3eNlKVVkHXUwpPI8Tmg8GUg0KL2pnQSpomuQ3+1v72EPs8GqhS/1BKyqQgdgtfNS/Bmcxy7wW+GthHIvajtx6gZgV3/urxp2TpplEjhqV+4hMQWzwtC992/406d11U2VmyTVGCjk9NvNfWtpr7V1AvW1KuumrrWogwLsgpLKfr48iW2f2q7Frx1Djt2DKy7V/AwOOhT7cVo1PbiD4EzSWr2gcT9V274ph/YlMS1LiW7vG9wYAnYnUDGGhvMzBgIuWCYL3nGwkIENktU9xt/ByhMZJmib5Ff7Nh+AMBaOXQ4iyoHYujX+1ZfgjQuY4JVUyRDkwWjyhmzQrg7pgKra6fHJCKPY4i2jHpfU4Ye/siYscnyfMmkA0xBhslQWiow9BiS7MC8oV9IIzRKEqqIm6SLKR2/8ZAHKeEXhmbcNNLG+XTMh3HcHa5odF0PK3upLPGw6um2dDmNnyFYPx4OhVV9EnkHYJFVFTbH9s84jMtAmoL2h/cjTiOiB1k6FZZRSswrjO7NpLn1Pq76TeI184k01lNoBGmMU8SH9PFL3b++uThnwdyBjhVCeXy5nU3fPgqysDVbbrN1Z2TcLndMhtvNxgXT6MR3bg68qUev+iev+6Mfrk7Pxmen49H3g5PXp3+24LFpy/am2LWkOVm1bNwOTOlBYDsSHVTUnGUa6kXHYjV5bBeqiYKXmCQ/QoovHX0Mv9IzE8+wQux35+/fMzqhS5iBA8R0lECplUoFM2W/eq4WyjNXUzNJwOFjJoPOrFE6eFYYetpAHJunxxvP0JgBw5SIhGgM2oSFQop96WZCQo95SJVzM8PLMW1ZkJOjbWYfzurMSE+pfRzhy6L6QkS4rKL1G1rZx4I7atdqqqnjfT8bTyb/T8CoqjDAYxhaJIzdUcSCVYUeqUvwSDuunr5qAMEKX2CMiGS1uhUerl2+XtMyFqYjQMDPe+FU6lEQHjLl6RuTdCZyv/+q1QzW0WWFyMfskJU1vmuCMrwSSkhN8h0s62e62JlWT2rP1v+Cb22dfiR72++BG5eo405EPyf7+lepraopWjf8luONlGDDJ2knjWvj4vqKoLd67isSIBIe9XhCJWoIY7gimldvQLnQ8zK2CTyJpL9/AavveVY=
+api: eJztWM1u4zYQfhWClyaAYifuBtv61HSRFsEu0CA/PTQwDEYa2dxIpJak7BiGgX2H9gn3STpDSrZsy0k2CdAekktkcmb4zXDmI4dzrgswwkmtzhLe55Nep1TS2Y4DJVQ86xSl4xF3YmR5/4Zf0xwfRLwQRuTgwNDwnCv8gdplJhOUlgq/C+HG+G3gSykNoG1nSoi4jceQC96fczcrSMc6I9WILxbR0sxZAnmhEUE8O/gIs9riGEQCpsVmAjY2siAnUAwxfimBkRBYx2QCyslUgmGpNiyBpCwyGXuX2d7Rt69/946PWTwWxkas946N2VSqRE/3+UNgBwEFLvCrTmYkEWuFiB19imK5QvezJVDzbVP69jPEFNvC0BY4CdabMfmQdmCIkdxaN+K5uP8EaoSh7SPsiKsyy8RtBiEUi4hnOiy8Q39LvsjtcKkT6wSetapHHHbvGdq5nsBQqmEiXKsB3LdcYGQ5CRw4icvs8MRn7fNjB8kIzHO1aX3rhCvt0Ijps03gZtwN4R4rwDVs3GqdgVBtfgefH8+sl8cnlca+YJsz8RLtYqzVY5o/9loUsexk9mBaBYlHMeAfRls6GuDnpbsKFHkReICHeQO20MqGkPcOD+nfOj/hQq/EFTlYK0Y+KELN/kg9FVcqhJ0Tp1a/hTHCM6mDnJQXjbma1QaIH0vsCSvvZCi08AiDfQ934KyO47KQkLTUwqPM8RRS+D4S2JK2ujQxDINcy/rV/OoQehoGqhQ7UzEkQ+FaDC+ah+DNcjvWg98MbSOQG1HbjFEzAuv+tXmzhXXQKJHc0n3hAoKa3y9w7Wf/mjt1XlfZWKkNQoH1Do/eauqtpt5q6hVr6l1bTV0rUboxocJS8j6+folt7to6glNj8MaOgTUTCdPOTp9qL3q9bS/+FNiThMs+kLn/yg3b9AMvJX6sbZF13RNsWBzeTiBhjQmmUwYiHjPMlyxhbiwcS4PUZOlvB42JJJH0LbLzNew7CGwrh3ZnUeWAD/1iE/UlOAQFjGrlB8ssGsuAFUbmwsxYabEX26N5PVVg9vsMh+8sk47VBRWxGOkIg4YczOhGrEsX4Y+E6SL4k81YbAATEwNrWFkk/tNHguzjqqGi3IxZTWBQXig0K2S+xMak8t+YBh12lq7GRYa2kxkbC4SwBjxCIWnZxen5p5MPp5ekkrNvX//xuiiIYGrxTKo7JsPGT410mHRsjxwa+ca0yyxgKiYkKuIYI0tZIgywDFKE4BzuMCT7HXaCu6hGCCQoSsJkgVpwByzN9JTtxTonkYkU7MTbYr8bJB+7HzGlXcAMKim0VK4Tqn+sqeEP/b1v1vu863v/7pz6+EW3egIgjsLMrVv90mTUiztX2H63Kwp5QNG7AyhQVeZFhhC1wSTpICaa7056nPpl9LbEKMy8FV9kmGo3g+bUpR+1yypsFhetWLfk/sTC/PBkGT5+qy/zJ+dnzOk7UJ4uqKgvVo366b0ghFuN9qp01/rn1XBLm7yabJy2jbZk7RjFa0vv3cHh+4Pez1dHx/3jo37vp87h+6O/ts6KJpbVsbmOpNlmbmFcdY/hdWTVH+5cqNnYNZYXLYNVG7YaqNorTsXxC4T40tb78EuVar+H1fH18ezyktEOXUAKBvCAQwuUWoE3MFM2qeSKMtfU0iymYrK+2Op0tizXVBVI6qPwkmWpUjsMU8ILIhjEhKVCC9vSpCKGCAsI/OxNijeFMFVAPNhbZfburE50bCm19z2XF7h8LvzZUUXrxFo5Uk0KbFLIpo+Nt6M35vzfM2dFRw7uXbfAmPg7syfFeUWj4e5oUbZfPYjWTIpUN8ZkIZH5/FZYuDbZYkHDyFCGmBE/J8LIcHNFnkykpW+s1lRkdvOts5k5exfVOb3PdqGsT31FnI4XhRJC63QHs/rx1vcr1UPrs9d/xRfYVj8C3u1X4qVL1IcFoQ8B38FVuGzXElv3vpUGJUHhHpQdNM7P8+srOoOqR+A8nAxEzBEP9Extgg+XP9aql8FMqFHpL488mKS/fwHYWTpc
 sidebar_class_name: "put api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -23,7 +23,7 @@ import Translate from "@docusaurus/Translate";
 <Heading
   as={"h1"}
   className={"openapi__heading"}
-  children={"Move-in (create or update tenancy)"}
+  children={"Assign the unit's primary user"}
 >
 </Heading>
 
@@ -37,7 +37,7 @@ import Translate from "@docusaurus/Translate";
 
 
 
-Record a tenancy on a unit: mark it occupied, clear any lockout, and optionally create or update the tenant so they can claim the unit in the app.
+Set the unit's single primary user (the owner): marks it occupied, clears any lockout, and optionally creates or updates that user's identity so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (any guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint.
 
 <Heading
   id={"request"}

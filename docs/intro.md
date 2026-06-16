@@ -63,11 +63,11 @@ The same endpoints serve every caller; a Bearer token's scope decides what each 
   <Card title="Authentication" icon="auth" href="/guides/authentication">
     Bearer tokens and scopes for partners, one-time-password sign-in for tenants.
   </Card>
-  <Card title="PMS integration" icon="pms" href="/guides/pms/quickstart">
-    Push tenancy, balance, and overlock state from your system, and keep unit facts in sync.
+  <Card title="Sync partners" icon="pms" href="/guides/pms/quickstart">
+    Push unit and tenant data into KISS from a property management system or any data source.
   </Card>
-  <Card title="Mobile app integration" icon="mobile" href="/guides/white-label/quickstart">
-    Authenticate tenants and read their access bundle to build your own app.
+  <Card title="App partners" icon="mobile" href="/guides/white-label/quickstart">
+    Build your own holder-facing app on KISS access: sign users in and read their access bundle.
   </Card>
 </Cards>
 

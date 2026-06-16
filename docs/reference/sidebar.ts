@@ -31,13 +31,13 @@ const sidebar: SidebarsConfig = {
         {
           type: "doc",
           id: "reference/v-2-units-tenancy-put",
-          label: "Move-in (create or update tenancy)",
+          label: "Assign the unit's primary user",
           className: "api-method put",
         },
         {
           type: "doc",
           id: "reference/v-2-units-tenancy-delete",
-          label: "Move-out (end tenancy)",
+          label: "Remove the unit's primary user",
           className: "api-method delete",
         },
         {

@@ -1,11 +1,11 @@
 ---
 id: v-2-units-tenancy-delete
-title: "Move-out (end tenancy)"
-description: "End the tenancy and reset the unit to vacant. No request body."
-sidebar_label: "Move-out (end tenancy)"
+title: "Remove the unit's primary user"
+description: "End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit."
+sidebar_label: "Remove the unit's primary user"
 hide_title: true
 hide_table_of_contents: true
-api: eJzFVsFu2zgQ/RWCpwRw5NRIL74VaAoE7e4WSXMKDIOmxhYbiWRJyllDELD/sH+4X7IzlKzItty6TdGeLGuGw3lv3oym4saCE0EZfZPyKV9PklKr4JMAWmi5SVLIIQAf8SBWnk8f+D2Z+WzErXCiQJuj1xXX+AcDlLlK0VtpfLYiZPjs4EupHGD44EoYcS8zKASfVjxsLJ3xwSm94nU96sLcpFBYg0nIzcV72GwjZiBScAMxU/DSKUs40A1z/FICIyfwgakUdFBLBY4tjWMppKXNlYyo2dmr//75d/L6NZOZcH7EJlcsY09Kp+bpnH8t2Rll4a3RHjzZJ5eX9LObCUaQRiOOQDZhu3vHnz05VL0LhN78tYxctleZxWeQAUNYR1UKqrmoAO/FCgaP6DLPOfHY/hfOichegIIO1z3bFsmsRv5E6IM8cjNJY471PWQDYbpiftQ+iomJRQ5NwdA/+jbVHohmpCytgn6ohTE5CE3WwqxhrvQcsx4+bgs/jwo+OZ0c0hW4U729KZ2EeeM3cH9rfxbeaTkIH+Z+oyWkcxEGG6Qn/IeuHLvk96ntEbnH2j5HfQZ28Q2hOcgVmyGoQFj4x8LTjLiF5lisF4Thft+Bs9V1q8b22Kyn2N/XEAPHXohqVtfkenX56nBq3GtRhozYxmERa3fyEDmZqX017mZw7RxOShSMWyt4So6i6lBcvWz2/eoCfwPOZPK74HQz5DsADuj1eRS9TKUNH3va0ClDdbJ2RWAC/+OXEEJ8S8OHBcPWQuJoSdifpvsOL0y6SZrYmaFto1su4qYw5eO4e4wrWiLqcRufBhDKcLtnlC6nRSAE66fjsbDqAkuRPAJYPKoKm+NNxiGWRJqC7OP1hNPH2oMsnQqbGCWWCvl4mPVNd/Gt72rZbxS6cbsPxM8RCBcnYfPwzriCZjZ/8/EG4T+CjhwrvTQxSDsc39/c3TFyuYUlOFxvCD1ha6jFVPfZ/pQpjwy23kxST/rINOjUGqWDZ4WhLQe1uWpWOc9KDwnDnKIjEmGJ6HixL91SSBgxDxCtD0sUWGOyIGdnz9QepzU10hO350n82uL1hYgt0K5vf2CWF6YM7AxILE0hz/exVc8N9XJRtWUK8HcY21youChEsVStvJoPpkffabulbhWGEsgQA7lU1UJ4uHd5XdNrvMORYvBxLZxqPteon1R5ekYRL0Xu9xfQPrCz27bNztmxLLeNrUnra5GX0IybR1x824069ni7/f7w/T9xLR7E0eR7uLp3kGiKNU5vpAQberaDeUp92Q2Kt9cfrj9dY0f9D3wVZPQ=
+api: eJztV81u4zYQfhVClyaAVs4a2Ytvi20KBFugi2RzCgyBJscW1xLJ5Y9TwzDQd+gb9kk6Q8mK7Chtuim6l54sc4bDmW++GQ53mbHgeFBGX8tslm2mRdQq+CKA5lpsCwk1BMjyLPCVz2b32R2Js3meWe54gzJHy7tM4x80EGslUVtp/LY8VPjt4GtUDtB8cBHyzIsKGp7NdlnYWtrjg1N6le33eW/mWkJjDTohtm8+wvZgsQIuwY3YlOCFU5biQDX08WsERkrgA1MSdFBLBY4tjWMSZLS1Eilqdvb2j99+n757x0TFnc/Z9JJV7EFpaR7Os79ydk5eeGu0B0/y6cUF/Rx7ghaE0RhHIBm3/bmTL54UdoMDuN7+skxYdkeZxRcQAU1YR1kKqj2oAe/5Cka36FjXGeHY/efO8YRegIY27weyQyTzPeLHwzDIZ04mapSY36doYJiuKZ+V58kxvqihTRjqJ9022yPWjBDRKhiaWhhTA9ckbcwGSqVL9Hp8u218mRj8YndqkCtwL9X2JjoBZas3cn4nfyTey3zgPpR+qwXIkofRAhkQ/75PxzH4Q2gHQJ6gdorREIHj+MaieeIrFkNQgWLJPjWeesQNtNtSviCM1/tROAded2zsts0HjP1+BTGy7ZVRzfd7Ur28ePu0a9xpHkNFaGOzSLl7cRN5MVKnbDz24Mo57JRIGLdR8FA8G1UfxeXret9/neC/CWc6/V7h9D3kHwQ4wtfHVvQ6lrZ4nHBDS4bsZNaphrst60YFxnEdb0QISUpNiAXDNlxgi2Fn2vT38cLI7XnBPmA7d54dOlQ+NPomeryta6XXOTtqVDkbtrGcLXiNh0Mp8b4/w+MuznEDV7IMlTNxVXVqZKM2Ym1iaP/wKCic9k/UDtNKvThPUdCaDzxEXzr+0K5JBATz65kHpIGkwLkQCJtxvmA3EKLTnmEhpBmDawRgrc2DTkAULaKVoRmrH6nSfDTLJmnimuxodNpPOjSp7WLxHaar6Goaf0KwfjaZcKveIAGLNYDFraqxNeJqHGawEKYh+WQzzWhEQW+jU2GbrCSCIgvu50PRbVr1PYOH7YFOPExB6RLGlKX+3378ZFxDN1X2/tM1JnsNOjFL6aVJRror4eP17S0jlRtYAkItKHqKrSUUunrKsc+V8siXTpsJ6kQ+EQS0tEbp4JEINNthRa7aAdYzJE3B0KekiEBYAjod7KNbcoHp9QBJer/EsmpFFsT87BHa52GVRnjC9rxIMwYe3/BU+N3QegPEzZ79P/i+RIjNpzHuHtvJ/yX1bSXVkTTAr2Fia67ScJhKZdcVVzskedSddS+TQ31hAVSYQVLZ7Rbcw52r93taRkQd1Qt+brhT7YiG1SOVp28s4SWv/emjY5jOs5uutZ6z57w8NHNNlb7hdYT2ilnjY6d7RaW+3r14vvn8f/EpNBpH6+/T51ofEt1crdJ7zK0NA9mTO5S6Ut8mf7z6+erzFfaTPwGbdRzB
 sidebar_class_name: "delete api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -23,7 +23,7 @@ import Translate from "@docusaurus/Translate";
 <Heading
   as={"h1"}
   className={"openapi__heading"}
-  children={"Move-out (end tenancy)"}
+  children={"Remove the unit's primary user"}
 >
 </Heading>
 
@@ -37,7 +37,7 @@ import Translate from "@docusaurus/Translate";
 
 
 
-End the tenancy and reset the unit to vacant. No request body.
+End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit.
 
 <Heading
   id={"request"}
