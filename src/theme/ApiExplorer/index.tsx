@@ -1,19 +1,19 @@
-import React, {useState, type ReactNode} from 'react';
+import React, {useState, useEffect, type ReactNode} from 'react';
 import {useDoc} from '@docusaurus/plugin-content-docs/client';
 import CodeSnippets from '@theme/ApiExplorer/CodeSnippets';
 import Request from '@theme/ApiExplorer/Request';
 import Response from '@theme/ApiExplorer/Response';
-import SecuritySchemes from '@theme/ApiExplorer/SecuritySchemes';
 import * as sdk from 'postman-collection';
 import TryItModal from '@site/src/components/TryItModal';
 
 import styles from './styles.module.css';
 
-// Swizzled from docusaurus-theme-openapi-docs: the right column shows only the
+// Swizzled from docusaurus-theme-openapi-docs. The right column shows only the
 // example request (cURL) and the example/live responses. The interactive
-// Request form (auth, params, body, Send) moves into a "Try it" modal. The
-// modal renders inline under this same Provider, so Send still updates the
-// response here.
+// Request form moves into a "Try it" modal, opened by a button next to the
+// method+path (rendered in MethodEndpoint, left column) via a window event.
+// The modal renders inline under this same Redux Provider, so Send still
+// updates the responses shown here and in the modal.
 export default function ApiExplorer({
   item,
   infoPath,
@@ -23,8 +23,15 @@ export default function ApiExplorer({
 }): ReactNode {
   const metadata = useDoc();
   const {mask_credentials} = metadata.frontMatter as {mask_credentials?: boolean};
-  const [tryItOpen, setTryItOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener('kiss:tryit', handler);
+    return () => window.removeEventListener('kiss:tryit', handler);
+  }, []);
+
+  const isEvent = item.method === 'event';
   const postman = new sdk.Request(
     item.postman
       ? sdk.Request.isRequest(item.postman)
@@ -33,11 +40,8 @@ export default function ApiExplorer({
       : {},
   );
 
-  const isEvent = item.method === 'event';
-
-  return (
+  const renderPreview = () => (
     <>
-      <SecuritySchemes infoPath={infoPath} />
       {!isEvent && (
         <CodeSnippets
           postman={postman}
@@ -45,16 +49,21 @@ export default function ApiExplorer({
           maskCredentials={mask_credentials}
         />
       )}
-      {!isEvent && (
-        <button type="button" className={styles.tryItButton} onClick={() => setTryItOpen(true)}>
-          Try it
-        </button>
-      )}
       <Response item={item} />
-      {!isEvent && tryItOpen && (
-        <TryItModal title={item.summary ? `Try it: ${item.summary}` : 'Try it'} onClose={() => setTryItOpen(false)}>
-          <Request item={item} />
-          <Response item={item} />
+    </>
+  );
+
+  return (
+    <>
+      {renderPreview()}
+      {!isEvent && open && (
+        <TryItModal item={item} onClose={() => setOpen(false)}>
+          <div className={styles.modalCols}>
+            <div className={styles.modalForm}>
+              <Request item={item} />
+            </div>
+            <div className={styles.modalPreview}>{renderPreview()}</div>
+          </div>
         </TryItModal>
       )}
     </>
