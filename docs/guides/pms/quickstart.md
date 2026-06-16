@@ -63,7 +63,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. |
 
 :::note Primary user vs. guests
-These manage a unit's single **primary user** (its owner). Sharing with a **guest** is a separate model and not yet a live API endpoint; today guests are added in the app or admin portal. Guest grants over the API are coming via Access Grants.
+These manage a unit's single **primary user** (its owner). Sharing with a **guest** is a separate model and not yet a live API endpoint; today guests are added in the app or admin portal.
 :::
 
 :::tip Use the right write for the job

@@ -59,7 +59,7 @@ const META = {
   'v2.units.tenancy.put': {
     summary: 'Assign primary user',
     description:
-      "Addressed by the unit's KISS `unit_id` (ULID). Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint.",
+      "Addressed by the unit's KISS `unit_id` (ULID). Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow, not this endpoint.",
   },
   'v2.units.tenancy.delete': {
     summary: 'Remove primary user',
@@ -174,7 +174,7 @@ async function main() {
       version: spec.info?.version ?? 'v2',
       description:
         'This reference covers the endpoints most integrations use. ' +
-        'For the complete API surface, see the [full API spec](https://app.keepitsimplestorage.com/docs/api).',
+        'Need an endpoint that is not here? Contact your KISS rep.',
     },
     servers: spec.servers,
     tags,
@@ -186,8 +186,14 @@ async function main() {
   downConvert(out);
 
   mkdirSync(dirname(OUT), {recursive: true});
-  writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
-  console.log(`[sync-openapi] wrote ${OUT}: ${kept} operations across ${tags.length} tags`);
+  const serialized = JSON.stringify(out, null, 2) + '\n';
+  writeFileSync(OUT, serialized);
+  // Publish the curated spec as a static download too (the reference "Export"
+  // button points here). Only the curated slice ships, never the full spec.
+  const STATIC_OUT = 'static/openapi/kiss-api.json';
+  mkdirSync(dirname(STATIC_OUT), {recursive: true});
+  writeFileSync(STATIC_OUT, serialized);
+  console.log(`[sync-openapi] wrote ${OUT} (+ ${STATIC_OUT}): ${kept} operations across ${tags.length} tags`);
 }
 
 main();

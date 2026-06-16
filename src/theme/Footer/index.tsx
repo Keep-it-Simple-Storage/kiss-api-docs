@@ -50,13 +50,7 @@ function FooterLinks() {
         {label: 'Sync partners', to: '/guides/pms/quickstart'},
         {label: 'App partners', to: '/guides/white-label/quickstart'},
         {label: 'Error handling', to: '/guides/error-handling'},
-      ],
-    },
-    {
-      title: 'Reference',
-      links: [
         {label: 'API Reference', to: '/reference/kiss-api-reference'},
-        {label: 'Full API spec', href: 'https://app.keepitsimplestorage.com/docs/api'},
       ],
     },
   ];
