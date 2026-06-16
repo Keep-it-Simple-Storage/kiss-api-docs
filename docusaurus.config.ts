@@ -103,19 +103,9 @@ const config: Config = {
       },
       items: [
         {
-          to: '/reference/kiss-api-reference',
-          label: 'API Reference',
-          position: 'left',
-        },
-        {
           type: 'search',
           position: 'right',
           className: 'navbar-search-centered',
-        },
-        {
-          href: 'https://github.com/Keep-it-Simple-Storage',
-          label: 'GitHub',
-          position: 'right',
         },
       ],
     },

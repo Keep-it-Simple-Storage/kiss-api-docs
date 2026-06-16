@@ -15,6 +15,7 @@ const OUT = 'openapi/kiss-api.json';
 
 // Curated, partner-facing endpoints (by Scramble operationId).
 const ALLOW = new Set([
+  'v2.access',
   'v2.units.index',
   'v2.units.show',
   'v2.units.sync',
@@ -31,6 +32,11 @@ const ALLOW = new Set([
 // here. Ideal long-term home is the controller docblocks so Scramble emits
 // them, at which point this map can shrink.
 const META = {
+  'v2.access': {
+    summary: 'Get the access bundle',
+    description:
+      "The signed-in user's offline access bundle: their units with evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh.",
+  },
   'v2.units.index': {
     summary: 'List units',
     description:
@@ -41,9 +47,9 @@ const META = {
     description: 'Fetch a single unit by its KISS `unit_id` (ULID).',
   },
   'v2.units.sync': {
-    summary: 'Bulk upsert units',
+    summary: 'Create or update units',
     description:
-      'Upsert up to 500 units in one idempotent call, matched on your `crm_unit_id`. Unknown IDs create units; known IDs update them. Per-item failures come back in `data.errors` with a `200` response.',
+      'Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response.',
   },
   'v2.units.patch': {
     summary: 'Update unit facts',
@@ -51,12 +57,12 @@ const META = {
       "Sparse update of a unit's access facts (overlock, exemption, auction, unrentable, balance). Send only the fields that changed.",
   },
   'v2.units.tenancy.put': {
-    summary: "Assign the unit's primary user",
+    summary: 'Assign primary user',
     description:
-      "Set the unit's single primary user (the owner): marks it occupied, clears any lockout, and optionally creates or updates that user's identity so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (any guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint.",
+      "Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint.",
   },
   'v2.units.tenancy.delete': {
-    summary: "Remove the unit's primary user",
+    summary: 'Remove primary user',
     description:
       "End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit.",
   },
@@ -77,7 +83,7 @@ const META = {
 };
 
 // Sidebar/category order for the kept tags.
-const TAG_ORDER = ['Units', 'Logs', 'Health'];
+const TAG_ORDER = ['Units', 'Access', 'Logs', 'Health'];
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
 

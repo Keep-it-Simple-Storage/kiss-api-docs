@@ -43,11 +43,14 @@ export default function ApiExplorer({
 
   const renderCURL = () =>
     isEvent ? null : (
-      <CodeSnippets
-        postman={postman}
-        codeSamples={item['x-codeSamples'] ?? []}
-        maskCredentials={mask_credentials}
-      />
+      <div className={styles.curlBox}>
+        <div className={styles.curlHeader}>cURL</div>
+        <CodeSnippets
+          postman={postman}
+          codeSamples={item['x-codeSamples'] ?? []}
+          maskCredentials={mask_credentials}
+        />
+      </div>
     );
 
   return (

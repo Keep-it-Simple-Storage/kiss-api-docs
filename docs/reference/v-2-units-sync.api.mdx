@@ -1,11 +1,11 @@
 ---
 id: v-2-units-sync
-title: "Bulk upsert units"
-description: "Upsert up to 500 units in one idempotent call, matched on your `crm_unit_id`. Unknown IDs create units; known IDs update them. Per-item failures come back in `data.errors` with a `200` response."
-sidebar_label: "Bulk upsert units"
+title: "Create or update units"
+description: "Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response."
+sidebar_label: "Create or update units"
 hide_title: true
 hide_table_of_contents: true
-api: eJzdV9tuGzcQ/RWCTwkgybIQI6365KQpaqRADV/6UEGQKe5Iy2iX3PBiWxAE9B/6h/2SzpAr7eoWF0GKAvWLteRwbpxzZrjipgIrvDL6KuND/jjoBa2867mllrzDvZg7Phzxe1rk4w6vhBUleLC0vOIaP/DYVQZlZTxouex+hCUeVBqXcxAZWPyy8DkoC2jB2wAdnoGTVlVkFsVQ+ecAjITAeaYy0F7NFFg2M5ZlkIWqUDI6yV6d//XHn4OLCyZzYV2HDd6wnD0pnZmn12jIyRxKwYcr7pcVeea8VXrO1+tx8gINvDPZkiT2nZJGYwSetkS1tXj2yZGTq0PVZvoJpEejlaUkegWOdmP+WmLCWhEz4qF0Lx+XtpyQionKDsPo8FI8/wJ67nM+xCysO9HcJF3DS9IdrkNRiGkBKWQ8XZgU5QlrB/JV6SbbM9JkX2fVSBkqBW2TU2MKEJrjbmkeYaL0JBP+qHosilLgNXES6HqFoZ/wFK9T6H+WyWO5gWwO9mtPT0UhtIRJFtpB6FBOIyJKpVUZSj7sk69CZROfWxPm+TcIGy9oYYI/nt2NwASeEbNfEBJBJnyeEgjaIlyS9VMyzgsf3MSKp69I4rpNHKMdZIzXMYVXCVPnUVX9cdHv758MG/byypN2fovsFintJlEC8kM64yqjXQLioN+nf7tUxb8ZTZTgnJjH1Am9/HUW6XRbJUWBGTxJIevW3obgDlY6HDQV2ChGy6QpqwKJO+th8ih9WEbHiBJTCUc39nK68b9WVB8bp0S+6Z8f5u5ei+Bz4nZMGSr5N1K5n4JdDz5Yiw0F6cU+KnjqnYxpE8VgcBjFb6JQWepFQOr+qzBcOw6867h2zMju2Uvsp14o5DbW2mBmxkDInGHXLTLmc+HZLEk9buPtoTKRZYp+i+J6x/cXet22hk5XUR1ATP36YEKoHNpioWLeMAQ4i4hmCh3XQANDmj48k6IoOgx5EnOe4SZbmmDZQ4s6HnrsXi+0edLs6kfHpAUsxqTvB9ash4poFjMBZY9dg+1SSDEnAVmC0ARsKuSCfHggBPRSAA84jPicCfaA/PHANozSSwDJDQ1ZFblH1y+I+fhZoiccXvA+N4NVsAUNUN5Xbnh2JirVxdLqLQAqlFUEZeeNxdT10BXaP3sccBpyHMhglV9GLbH08AJG4/bWbVx129pslxxZ3MxRkc9B2Niw0o+fNk3o8voK72IBOoKISv2mma4+PAvysDUNjfYGm6a0W/NLs7gzljTLR6aPZrMZKtI4tztGIJ0P3nT7b7uD7+/OL4YX58PBd73+2/Pf+cGo0HKjmQCaxZ3G3j/avF8ytm3QydODltwsb5tws9Ruu81qu9Fu4UY0r/TMxPutW9/Hq9tbRrd3AzNATZLAR2WXkIZVtA++u1w5LORaGkufpAkZDHRWGaURiaWhwR1pcJ4eEwggLHqG5RIFN80nGnbBzoSEDnMQAcZGM+x3aasCOX7VVP3pis+MdFT2ryP7VWi+FJFt61J6F4oFgjjRRo2vnbBWDW3/P+ilBrCHZ39WFULFGSzSyKpmmtYglGPCaGG1mgoH97ZYr2kZEWyJOfDno7AqFdmIyqh+yhGQM+VoA0ExE4Xbf8218/rqpqb61+wbvvGOBrrAV+exdyi2L8IpjwNSEnqf/OvekZ5G4qB1NycupYTKf1F23OL368u79z8TU9QPzTIxFWGzwxNCia9iwiIL1+Mx8so8xAmAJ6X09zdhFG34
+api: eJztV9tuGzcQ/RWCTzEgybIQI63e3DRBjRSo4UsfKggyRY60jHfJDcm1LQgC8g/tF+ZLOkOutKtbXAQp+lK9SBoOORfOnDlccluCE0Fbc6n4kD8OepXRwff8wkje4UHMPR+O+B0J+bjDS+FEAQEciZfc4B/cdqmgKG0AIxfdD7DAjdqgOAOhwOE/B58q7QAtBFdBhyvw0umSzKIaHv6pAkZK4APTCkzQMw2OzaxjClRV5lpGJ9mrsy+f/xycnzOZCec7bPCaZexJG2WfTtCQlxkUgg+XPCxK8swHp82cr1bj5AUa+MmqBWnsOiWtwQgCLYlyY/H0oycnl/tH2+lHkAGNlo6SGDR4Wo35a6kJ50TMSIDCv7xdumJCR0y02g+jwwvx/CuYecj4ELOw6kRzk3QNL2l3uKnyXExzSCHj7tymKI9Y29MvCz/Z7JFWfZtVK2VVamibnFqbgzAcVwv7CBNtJkqEg8djURQCr4mTQjdoDP2Ip3idwvyzTB7KDag5uG/dPRW5MBImqmoHYapiGjui0EYXVcGHffJVaDUJmbPVPPsOYeMFPdgqHM7uWmECz9izX1ESlUz9eUyhMg7bJVk/puODCJWfOPH0DUlctYFjtNUZ41VM4WXqqbN4VP3nvN/f3Vmt0SvoQKfzG0S3CGnXCRIQH9IeX1rjUyMO+n362oYq/t1gogDvxTymTpjFb7MIp5sqyXPM4FEIWbXW1gC3J+lwMFRgoxgtk7YocwRu1cPkUfqwjA4BJaYSDi7s5HTtf31QvW2cEvm6f7afuzsjqpARtmPK8JB/I5W7Kdj24J1zOFAQXtyjhqfe0ZjWUQwG+1H8LnKt0iwCOu6/CsO348C7jrJDRrb3XuA8DUIjtrHWArMzBkJmDKdurljIRGCzpPW4ibeHhwmlNP0W+dWW7y/Muk0NHa+iOoCY+tWu128dYMkwvLyqJPjDLxYsw1ZnsbeZxhAMEHVIPCQwKfK8wxAxMfsKF9nCVo7dt0Dknn35/BfufzD2ybDLnz2TyUw8ssMaeW0Ui1cjJxES+RG782guRIaCcnQA8yJy5qxHcsRyKxQTRjHMkbZKS2Q3WCZS5zrlkl2B61KaYp4rRB7qUGBTIR8omnvqql5Kyj0SnJAxwe4Rk+7ZGqV6qekyS8StpECppAShKT9NkIeECGtkTdYqlxMpC6H0w9NTUeoulmvvAaBEXU3w4IN1eB09dIXWTx8HnIiTB1k5HRbxlFjOeKmjcXvpJkr9pt7bZUwW19wszggQLg7B9OP9erBdXF3irT6AiY1J7XPdMLZ3z4I8bDGs0Q5ZatqlxYka4RbVacQHGE2z2BCVRBG3qQmOiMHrbv9Nd/Dj7dn58PxsOPih139z9gffox8tNxpW0Qi3yEL/ICF4ydhm6CdP98Z8I94M9kbUHuWNtD28Ny1Mo0ObmY33W4/TD5c3N4xu7xpmgCdJamgqu9S9WEW7DX2baY+FXGtj6ZN2bCQwqrTaYE8Xlh4DCK3z9EDBPsSiZ+/rjlsPtGjYVw77EjrMQ+xTNprhDE1LJcjxq6bqj1e8stJT2Z9ERC3RfCEigteltI9CdZNtxbZs5sH/uHUMt2pkCPAcTstc6EgYIz4tawhrsbYMfSPBcjkVHu5cvlqRGKHBESThz0fhdKreEdVn/e4khFDa0wJ220zkfvfp2b6rV9f1XDph3/FBejDQB3wiH3o046wlAOCRzSWlt8m/7i2d02js8Yxmx4WUUIav6o5bg+Pq4vbtLwRB9au4SBBITd/hqfUJCGPCIrzXXB4Ba15FusLTofT5G9FLrrU=
 sidebar_class_name: "patch api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -23,7 +23,7 @@ import Translate from "@docusaurus/Translate";
 <Heading
   as={"h1"}
   className={"openapi__heading"}
-  children={"Bulk upsert units"}
+  children={"Create or update units"}
 >
 </Heading>
 
@@ -37,7 +37,7 @@ import Translate from "@docusaurus/Translate";
 
 
 
-Upsert up to 500 units in one idempotent call, matched on your `crm_unit_id`. Unknown IDs create units; known IDs update them. Per-item failures come back in `data.errors` with a `200` response.
+Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response.
 
 <Heading
   id={"request"}

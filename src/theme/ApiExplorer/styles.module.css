@@ -13,6 +13,20 @@
   min-width: 0;
 }
 
+/* cURL box: "cURL" sits as a header above the box; the box itself is just the
+   code (the in-box language/variant tabs are hidden in custom.css, so the
+   copy/expand buttons land in its true upper-right corner). */
+.curlBox {
+  margin-bottom: 1rem;
+}
+
+.curlHeader {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 0.35rem;
+}
+
 @media (max-width: 996px) {
   .modalCols {
     grid-template-columns: 1fr;

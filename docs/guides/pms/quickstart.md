@@ -41,8 +41,8 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | When | Call | What it does |
 | --- | --- | --- |
 | Discover your unit IDs | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `crm_unit_id` ↔ `unit_id` mapping. Supports `ETag` / `If-None-Match`. |
-| Initial load, or nightly reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Bulk upsert up to 500 units, matched on `crm_unit_id`. Per-item errors return in `data.errors` with a `200`. |
-| New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the unit's primary user (replaces an existing one). Include a `tenant` block so they can claim it in the app. |
+| Initial load, or nightly reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `crm_unit_id`. Per-item errors return in `data.errors` with a `200`. |
+| New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user — sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`pms_lockout`, `pms_auction`, `pms_unrentable`, `balance_due`, …). Send only what changed. |
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. |
 
