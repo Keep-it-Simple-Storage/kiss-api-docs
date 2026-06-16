@@ -15,6 +15,9 @@
       "name": "Units"
     },
     {
+      "name": "Access"
+    },
+    {
       "name": "Logs"
     },
     {
@@ -22,6 +25,80 @@
     }
   ],
   "paths": {
+    "/access": {
+      "get": {
+        "operationId": "v2.access",
+        "tags": [
+          "Access"
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "array",
+                          "items": {}
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "304": {
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Error overview."
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get the access bundle",
+        "description": "The signed-in user's offline access bundle: their units with evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh."
+      }
+    },
     "/health": {
       "get": {
         "operationId": "v2.health",
@@ -589,8 +666,8 @@
             "$ref": "#/components/responses/ValidationException"
           }
         },
-        "summary": "Bulk upsert units",
-        "description": "Upsert up to 500 units in one idempotent call, matched on your `crm_unit_id`. Unknown IDs create units; known IDs update them. Per-item failures come back in `data.errors` with a `200` response."
+        "summary": "Create or update units",
+        "description": "Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response."
       }
     },
     "/units/{ulid}/tenancy": {
@@ -709,8 +786,8 @@
             "$ref": "#/components/responses/ValidationException"
           }
         },
-        "summary": "Assign the unit's primary user",
-        "description": "Set the unit's single primary user (the owner): marks it occupied, clears any lockout, and optionally creates or updates that user's identity so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (any guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint."
+        "summary": "Assign primary user",
+        "description": "Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow (coming via Access Grants), not this endpoint."
       },
       "delete": {
         "operationId": "v2.units.tenancy.delete",
@@ -879,7 +956,7 @@
             }
           }
         },
-        "summary": "Remove the unit's primary user",
+        "summary": "Remove primary user",
         "description": "End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit."
       }
     },

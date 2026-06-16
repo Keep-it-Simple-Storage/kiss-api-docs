@@ -1,7 +1,7 @@
 .footer {
   background: var(--ifm-background-surface-color);
   border-top: 1px solid var(--ifm-color-emphasis-200);
-  padding-top: 3.5rem;
+  padding-top: 2.25rem;
 }
 
 [data-theme='dark'] .footer {
@@ -11,7 +11,7 @@
 .footerInner {
   display: flex;
   gap: 4rem;
-  padding-bottom: 3rem;
+  padding-bottom: 2rem;
 }
 
 /* Brand column */
@@ -129,7 +129,7 @@
 /* Bottom bar */
 .bottom {
   border-top: 1px solid var(--ifm-color-emphasis-200);
-  padding: 1.25rem 0;
+  padding: 0.9rem 0;
 }
 
 .bottomInner {

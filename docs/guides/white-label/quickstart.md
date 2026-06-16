@@ -6,6 +6,7 @@ sidebar_custom_props:
 ---
 
 import {Cards, Card} from '@site/src/components/Cards';
+import Method from '@site/src/components/Method';
 
 # App partners
 
@@ -23,6 +24,17 @@ A holder app does four things:
 :::note Sign-in endpoints are still being finalized
 `GET /access` is live (documented below). The tenant OTP **sign-in** endpoints are still converging onto `/api/v2` under the Mobile Migration work, so this guide describes that step conceptually; see [Authentication](/guides/authentication) or ask your KISS contact for current paths.
 :::
+
+## Endpoints
+
+| When | Call | What it does |
+| --- | --- | --- |
+| Sign the user in | OTP sign-in *(finalizing)* | Phone + one-time code → a Bearer token. See [Authentication](/guides/authentication); paths are converging under Mobile Migration. |
+| Fetch the access bundle | <Method m="get" /> [`/access`](/reference/v-2-access) | The user's units, NFC keys, entry points, and timezone — everything to operate offline. |
+| Report a lock tap | <Method m="post" /> [`/locks/{lock}/logs`](/reference/v-2-locks-logs-store) | Record open/close success, failure, or blocked. |
+| Report an entry-point tap | <Method m="post" /> [`/entry-points/{id}/logs`](/reference/v-2-entry-points-logs-store) | Record a gate or door tap. |
+
+Each call links to its reference page. The access bundle is the heart of the integration, so it's detailed below.
 
 ## The access bundle: `GET /access`
 
@@ -85,13 +97,6 @@ Because the bundle is self-contained and cached, the app keeps working with no c
 :::note Machine schema in the reference
 `GET /access` is in production now. Its full machine-readable schema in the generated reference is being enriched on the API side; until then the shape above is the contract, and the [live spec](https://app.keepitsimplestorage.com/docs/api) reflects the current implementation.
 :::
-
-## Reporting lock activity
-
-Each NFC interaction maps to a log event (opened, failed, blocked, and the close-side equivalents) sent to the logs endpoint for the lock or entry point. Report every attempt so the activity feed reflects reality.
-
-- Lock taps → [Report lock activity](/reference/v-2-locks-logs-store) (`POST /locks/{lock}/logs`)
-- Entry-point taps → [Report entry-point activity](/reference/v-2-entry-points-logs-store) (`POST /entry-points/{entryPoint}/logs`)
 
 ## Keep going
 

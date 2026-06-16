@@ -193,10 +193,23 @@ article .markdown > p:first-of-type {
   opacity: 1 !important;
 }
 
-/* cURL box: drop the duplicate "curl" variant tab (we only ship one variant) */
-[role="tablist"]:has(.openapi-explorer__code-item--variant),
-[role="tablist"]:has(.openapi-tabs__code-item--variant) {
+/* cURL box: hide the in-box language + variant tabs entirely ("cURL" renders as
+   a header above the box now), so the box is just the code and the copy/expand
+   buttons sit in its upper-right corner. */
+[role="tablist"]:has([class*="openapi-tabs__code-item"]) {
   display: none;
+}
+
+/* One red across the page: remap the danger palette (required badges, the Send
+   button, 4xx/5xx response tabs) to the brand-red primary. */
+:root {
+  --ifm-color-danger: var(--ifm-color-primary);
+  --ifm-color-danger-dark: var(--ifm-color-primary-dark);
+  --ifm-color-danger-darker: var(--ifm-color-primary-darker);
+  --ifm-color-danger-darkest: var(--ifm-color-primary-darkest);
+  --ifm-color-danger-light: var(--ifm-color-primary-light);
+  --ifm-color-danger-lighter: var(--ifm-color-primary-lighter);
+  --ifm-color-danger-lightest: var(--ifm-color-primary-lightest);
 }
 
 /* Example-response box: fixed height with internal scroll, so toggling status

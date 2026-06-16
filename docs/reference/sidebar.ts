@@ -25,19 +25,19 @@ const sidebar: SidebarsConfig = {
         {
           type: "doc",
           id: "reference/v-2-units-sync",
-          label: "Bulk upsert units",
+          label: "Create or update units",
           className: "api-method patch",
         },
         {
           type: "doc",
           id: "reference/v-2-units-tenancy-put",
-          label: "Assign the unit's primary user",
+          label: "Assign primary user",
           className: "api-method put",
         },
         {
           type: "doc",
           id: "reference/v-2-units-tenancy-delete",
-          label: "Remove the unit's primary user",
+          label: "Remove primary user",
           className: "api-method delete",
         },
         {
@@ -45,6 +45,18 @@ const sidebar: SidebarsConfig = {
           id: "reference/v-2-units-patch",
           label: "Update unit facts",
           className: "api-method patch",
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Access",
+      items: [
+        {
+          type: "doc",
+          id: "reference/v-2-access",
+          label: "Get the access bundle",
+          className: "api-method get",
         },
       ],
     },
