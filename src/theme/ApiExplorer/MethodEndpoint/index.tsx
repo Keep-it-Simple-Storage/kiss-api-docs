@@ -82,6 +82,17 @@ export default function MethodEndpoint({
             {() => <EndpointUrl path={display} />}
           </BrowserOnly>
         )}
+        {!isEvent && context !== 'callback' && (
+          <button
+            type="button"
+            className={styles.tryIt}
+            onClick={() => window.dispatchEvent(new CustomEvent('kiss:tryit'))}>
+            Try it
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+        )}
       </div>
       <div className="openapi__divider" />
     </>

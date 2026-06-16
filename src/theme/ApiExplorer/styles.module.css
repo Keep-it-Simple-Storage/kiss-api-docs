@@ -1,24 +1,20 @@
-.tryItButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0.25rem 0 1.25rem;
-  padding: 0.5rem 1.15rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--ifm-color-primary);
-  border: 0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+/* Two-column modal body: interactive form on the left, cURL + responses on the right */
+.modalCols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 1.5rem;
 }
 
-.tryItButton:hover {
-  background: var(--ifm-color-primary-dark);
-  color: #fff;
+.modalForm {
+  min-width: 0;
 }
 
-.tryItButton:active {
-  transform: translateY(1px);
+.modalPreview {
+  min-width: 0;
+}
+
+@media (max-width: 996px) {
+  .modalCols {
+    grid-template-columns: 1fr;
+  }
 }
