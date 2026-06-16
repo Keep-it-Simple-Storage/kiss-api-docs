@@ -1,0 +1,24 @@
+.tryItButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0 1.25rem;
+  padding: 0.5rem 1.15rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--ifm-color-primary);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.tryItButton:hover {
+  background: var(--ifm-color-primary-dark);
+  color: #fff;
+}
+
+.tryItButton:active {
+  transform: translateY(1px);
+}
