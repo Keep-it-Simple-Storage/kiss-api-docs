@@ -12,19 +12,9 @@ import Method from '@site/src/components/Method';
 
 This guide is for **app partners**: teams building their own tenant-facing app on KISS access. Your app signs the user in, reads their access bundle, opens locks over NFC through the KISS SDK, and reports the result. KISS handles the access decisions; your app handles the experience.
 
-## Two ways to integrate
+## What KISS handles for you
 
-App partners fall into two camps. The difference is **who owns access decisions**: whether KISS evaluates them for you, or you run that logic yourself.
-
-### Back Office (recommended)
-
-You build the tenant app and let KISS run the back office. You keep each unit's facts current (or let one of KISS's prebuilt PMS integrations do it for you), and KISS turns those facts into access decisions for you: the evaluation stack that handles delinquency, overlocks, auctions, and move-in timing; access grants for sharing a unit with guests; and employee management, including keeping staff out of units they should not enter based on a unit's status. Locks, units, tenants, and logs are managed in the ONELock Manager app and web portal. Your code does only the tenant-app loop below: sign in, read access, open locks, report taps. This is the standard path and the right choice for almost every partner.
-
-### API-Only (enterprise, by arrangement)
-
-In the API-Only model you own **all** of the access logic and decisions in your own systems, and KISS becomes a key service: it issues, serves, and revokes the keys your app taps with, and little else. You give up what Back Office provides out of the box, the evaluation stack, access grants, and employee controls, and rebuild that side yourself. It is a substantial undertaking, so we reserve it for a small number of deep enterprise integrations.
-
-If you think API-Only fits your business, talk to your KISS contact; the detailed integration guide is shared directly with qualified enterprise partners.
+You build the tenant app; KISS runs the back office. You keep each unit's facts current (or let one of KISS's prebuilt PMS integrations do it for you), and KISS turns those facts into access decisions: the evaluation stack that handles delinquency, overlocks, auctions, and move-in timing; access grants for sharing a unit with guests; and employee management, including keeping staff out of units they should not enter based on a unit's status. Locks, units, tenants, and logs are managed in the ONELock Manager app and web portal. Your code does only the tenant-app loop below: sign in, read access, open locks, report taps.
 
 Operators who use the KISS tenant app (ONELock Access) instead of building their own are on the Full Platform model and do not need this guide.
 
