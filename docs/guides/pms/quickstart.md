@@ -60,10 +60,14 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | Initial load, or nightly reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `crm_unit_id`. Per-item errors return in `data.errors` with a `200`. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user — sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`pms_lockout`, `pms_auction`, `pms_unrentable`, `balance_due`, …). Send only what changed. |
-| Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. |
+| Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. Guests with inherited access are removed automatically. |
 
 :::note Primary user vs. guests
-These manage a unit's single **primary user** (its owner). Sharing with a **guest** is a separate model and not yet a live API endpoint; today guests are added in the app or admin portal.
+These endpoints set a unit's single **primary user** (its owner). The primary can also share access with **guests**, managed in the app or admin portal rather than through these tenancy endpoints. Guests come in two scopes: **inherited** (access follows the primary user's, the common case) and **direct** (independent, for a vendor or an auction winner). When you move the primary user out, inherited guests lose access automatically, so you never need to remove them first; direct guests persist until separately revoked.
+:::
+
+:::note Phone number format
+Store tenant phone numbers as plain digits, country code plus number, with no `+`, spaces, or punctuation (for example `15550101234`). KISS matches a tenant's sign-in number against what you sync, so a stored `+1 555 010 1234` will not match a sign-in of `15550101234`.
 :::
 
 :::tip Use the right write for the job
@@ -95,9 +99,29 @@ A failing item does not abort the batch: it lands in `data.errors` and the respo
 
 Every write requires an `Idempotency-Key` header (any opaque string up to 255 characters). Retry with the **same** key after a timeout or 5xx; the original response replays and nothing is applied twice. The same key with a different body returns `409`.
 
+## When changes take effect
+
+Every write is evaluated immediately: the moment you set `pms_lockout`, the unit's access state flips on our side. Holder apps, though, operate **offline**: each device caches its access bundle and keys for up to **4 hours** (the `GET /access` cache window). So a change you write can take up to 4 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
+
+In practice:
+
+- **Granting access** is effectively immediate, once the holder's app next refreshes.
+- **Revoking access** (an overlock, auction, or move-out) takes effect on our side at once, but a device that already pulled a key keeps working until it refreshes or its 4-hour cache expires. Treat 4 hours as the worst case for a revocation to reach every device.
+
+There is no callback to force an offline device to refresh sooner; the cache window is the contract. If a revocation is time-critical, that timing is worth discussing with your KISS contact.
+
 ## Errors
 
 Responses use the `{ message, data, meta }` envelope; validation failures add a field-keyed `errors` object on `422`. The two `409` cases (idempotency-key reuse vs. a unit owned by another sync source) are distinguishable by `message`. Full status table: [Error handling](/guides/error-handling).
+
+## Testing your integration
+
+Before you wire up production data:
+
+- **Check connectivity** with the public health endpoint: `GET /health` returns `200` when the API is up.
+- **Isolate problems** by starting from a minimal payload (one unit, required fields only) and adding fields back until a `422` appears; validation errors name the exact field path. See [Error handling](/guides/error-handling).
+- **Work against a non-production roster.** Ask your KISS contact to set you up with a test company and a scoped token so you can exercise move-in, overlock, and move-out without touching live tenants. A self-serve partner sandbox is on the way; until then KISS provisions a test company for you.
+- **Run the end-to-end check** in the checklist below: overlock a unit and watch access revoke in the app, then release it and watch it restore.
 
 ## Integration checklist
 
@@ -107,9 +131,11 @@ Responses use the `{ message, data, meta }` envelope; validation failures add a 
 4. Retry on timeout / 5xx with the *same* `Idempotency-Key`; alert on 4xx.
 5. Run a live test with KISS: overlock a unit, watch access revoke in the app, release it, watch it restore.
 
-## Beyond the basics
+## Staying in sync: events and webhooks
 
-Direct API calls are the right shape to start. As an integration matures, two extensions are worth a conversation: an event-feed option (your system or your PMS's native webhooks emit events and KISS maps them), and outbound webhooks from KISS for activity on our side (lock events, unit claims).
+You drive KISS by writing facts as your events happen, so there is nothing to poll for access decisions. To learn about activity **on KISS's side** (a holder claimed a unit in the app, a lock was opened), today you reconcile by reading: poll `GET /units` on a schedule, cheaply, with `ETag` / `If-None-Match` so unchanged data comes back as a `304`. **Outbound webhooks** (KISS calling you on lock events and unit claims) are on the roadmap and will replace that polling; webhook registration returns `501` until then, so ask your KISS contact about availability for your integration.
+
+As an integration matures, an event-feed option is also worth a conversation: your system or your PMS's native webhooks emit events and KISS maps them.
 
 ## Keep going
 
