@@ -64,16 +64,34 @@ A partner that serves many companies (a PMS vendor with dozens of operators, for
 
 ## Tenant sign-in (mobile apps)
 
-Tenant apps authenticate the end user with a **phone number plus a one-time password**. The app sends the tenant's mobile number, the tenant receives a 6-digit SMS code, the app submits that code, and KISS returns a Bearer token the app uses for subsequent requests.
+Tenant apps sign the end user in with a phone number and a one-time SMS code, in two calls.
+
+**1. Request a code.** Send the tenant's country code and phone number; KISS texts a 6-digit code.
+
+```bash
+curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/otp \
+  -H "Content-Type: application/json" \
+  -d '{"country_code": "1", "phone_number": "5551234567"}'
+```
+
+**2. Exchange the code for a token.** Submit the phone and code with `grant: otp`. KISS returns a Bearer token and the signed-in user.
+
+```bash
+curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/tokens \
+  -H "Content-Type: application/json" \
+  -d '{"grant": "otp", "country_code": "1", "phone_number": "5551234567", "otp": "123456"}'
+```
+
+The app stores that token and sends it as `Authorization: Bearer <token>` on every later call, starting with `GET /access`. To resolve the current user and company on relaunch, call `GET /auth/me`; to sign out, call `DELETE /auth/tokens/current`.
 
 A few things worth knowing as you build:
 
-- **Multiple accounts.** If a phone number is linked to more than one tenant account (for example, the same person renting at two facilities), KISS returns the list of accounts instead of a token. Prompt the tenant to choose, then complete sign-in for the selected account.
-- **No refresh tokens.** Tenant tokens expire. When a request returns `401`, send the tenant back through OTP sign-in to get a new token; cache the token for the session in between.
+- **Multiple accounts.** If a phone is linked to more than one tenant account (the same person renting at two facilities), the token call returns a `duplicated_tenants` list instead of a token, so the app can prompt the tenant to choose.
+- **No refresh tokens.** Tenant tokens expire. On a `401`, send the tenant back through the two calls above; cache the token for the session in between.
 - **Keep tenant tokens on the device.** They should never be sent to your backend; your server uses partner API tokens for server-side work.
 
-:::note Sign-in endpoints are still being finalized
-The exact tenant sign-in and `GET /access` paths and payloads are still being finalized on `/api/v2`. For current request and response shapes, see the [API Reference](/reference/kiss-api-reference) or the [Mobile app integration guide](/guides/white-label/quickstart). The flow above is stable; the URLs are not yet frozen here to avoid drift.
+:::note Manager sign-in uses the same token endpoint
+Managers authenticate with `grant: password` (email plus password) on the same `POST /auth/tokens` call. Holder apps use `grant: otp`.
 :::
 
 ## Rate limits
