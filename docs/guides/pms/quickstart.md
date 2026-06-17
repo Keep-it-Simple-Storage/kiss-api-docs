@@ -66,6 +66,10 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 These endpoints set a unit's single **primary user** (its owner). The primary can also share access with **guests**, managed in the app or admin portal rather than through these tenancy endpoints. Guests come in two scopes: **inherited** (access follows the primary user's, the common case) and **direct** (independent, for a vendor or an auction winner). When you move the primary user out, inherited guests lose access automatically, so you never need to remove them first; direct guests persist until separately revoked.
 :::
 
+:::info Coming soon (KEEP-757)
+A bundle-grants API for managing guests programmatically exists but is behind a feature flag and is not in this reference yet. Ask your KISS contact if you need it enabled for your company.
+:::
+
 :::note Phone number format
 Store tenant phone numbers as plain digits, country code plus number, with no `+`, spaces, or punctuation (for example `15550101234`). KISS matches a tenant's sign-in number against what you sync, so a stored `+1 555 010 1234` will not match a sign-in of `15550101234`.
 :::
@@ -101,18 +105,18 @@ Every write requires an `Idempotency-Key` header (any opaque string up to 255 ch
 
 ## When changes take effect
 
-Every write is evaluated immediately: the moment you set `pms_lockout`, the unit's access state flips on our side. Tenant apps, though, operate **offline**: each device caches its access bundle and keys for up to **4 hours** (the `GET /access` cache window). So a change you write can take up to 4 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
+Every write is evaluated immediately: the moment you set `pms_lockout`, the unit's access state flips on our side. Tenant apps, though, operate **offline**: each device caches its access bundle and keys for up to **8 hours** (the `GET /access` cache window). So a change you write can take up to 8 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
 
 In practice:
 
 - **Granting access** is effectively immediate, once the tenant's app next refreshes.
-- **Revoking access** (an overlock, auction, or move-out) takes effect on our side at once, but a device that already pulled a key keeps working until it refreshes or its 4-hour cache expires. Treat 4 hours as the worst case for a revocation to reach every device.
+- **Revoking access** (an overlock, auction, or move-out) takes effect on our side at once, but a device that already pulled a key keeps working until it refreshes or its 8-hour cache expires. Treat 8 hours as the worst case for a revocation to reach every device.
 
 There is no callback to force an offline device to refresh sooner; the cache window is the contract. If a revocation is time-critical, that timing is worth discussing with your KISS contact.
 
 ## Errors
 
-Responses use the `{ message, data, meta }` envelope; validation failures add a field-keyed `errors` object on `422`. The two `409` cases (idempotency-key reuse vs. a unit owned by another sync source) are distinguishable by `message`. Full status table: [Error handling](/guides/error-handling).
+Responses use the `{ message, data, meta }` envelope; validation failures add a field-keyed `errors` object on `422`. The two `409` cases (idempotency-key reuse vs. a unit owned by a pull-mode integration) are distinguishable by `message`. Full status table: [Error handling](/guides/error-handling).
 
 ## Testing your integration
 
@@ -133,7 +137,7 @@ Before you wire up production data:
 
 ## Staying in sync: events and webhooks
 
-You drive KISS by writing facts as your events happen, so there is nothing to poll for access decisions. To learn about activity **on KISS's side** (a tenant claimed a unit in the app, a lock was opened), today you reconcile by reading: poll `GET /units` on a schedule, cheaply, with `ETag` / `If-None-Match` so unchanged data comes back as a `304`. **Outbound webhooks** (KISS calling you on lock events and unit claims) are on the roadmap and will replace that polling; webhook registration returns `501` until then, so ask your KISS contact about availability for your integration.
+You drive KISS by writing facts as your events happen, so there is nothing to poll for access decisions. To learn about activity **on KISS's side** (a tenant claimed a unit in the app, a lock was opened), today you reconcile by reading: poll `GET /units` on a schedule, cheaply, with `ETag` / `If-None-Match` so unchanged data comes back as a `304`. **Outbound webhooks** (KISS calling you on lock events and unit claims) are on the roadmap and will replace that polling; ask your KISS contact about availability for your integration.
 
 As an integration matures, an event-feed option is also worth a conversation: your system or your PMS's native webhooks emit events and KISS maps them.
 

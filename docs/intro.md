@@ -74,5 +74,5 @@ The same endpoints serve every caller; a Bearer token's scope decides what each 
 These paths describe how much KISS runs for you: from running everything (Full Platform) to running the back office while you bring your own tenant app (Back Office).
 
 :::info Looking for the API reference?
-The reference pages are generated directly from the running code, so they never drift from the live API. Browse the **[API Reference](/reference/kiss-api-reference)** for the endpoints most integrations use.
+The **[API Reference](/reference/kiss-api-reference)** covers the endpoints most integrations use and is kept in step with the API. It is a curated subset rather than the full surface; if you need an endpoint that is not listed, contact your KISS rep.
 :::
