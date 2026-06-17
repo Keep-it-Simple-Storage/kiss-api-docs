@@ -67,11 +67,11 @@ The same endpoints serve every caller; a Bearer token's scope decides what each 
     Push unit and tenant data into KISS from a property management system or any data source.
   </Card>
   <Card title="App partners" icon="mobile" href="/guides/white-label/quickstart">
-    Build your own holder-facing app on KISS access: sign users in and read their access bundle.
+    Build your own tenant-facing app on KISS access: sign users in and read their access bundle.
   </Card>
 </Cards>
 
-These paths describe the deepest layer KISS operates for you: from running everything (Full Platform), to running the back office while you bring your own tenant app (Back Office), to serving keys and logs into your own stack (API-Only). The contract is the same across all of them.
+These paths describe how much KISS runs for you: from running everything (Full Platform), to running the back office while you bring your own tenant app (Back Office), to acting as a key service while you run the access logic yourself (API-Only, offered for select enterprise integrations).
 
 :::info Looking for the API reference?
 The reference pages are generated directly from the running code, so they never drift from the live API. Browse the **[API Reference](/reference/kiss-api-reference)** for the endpoints most integrations use.

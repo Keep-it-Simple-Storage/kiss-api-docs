@@ -128,7 +128,7 @@ Once a unit exists under one source type it stays there. A push-owned unit is no
 When the tenant app calls `GET /access`, the response includes an NFC key for each permitted lock and entry point. The app passes the key to the KISS SDK to open the lock on a tap, then reports the result. Keys are **served, never exported** (borrowed per tap), so KISS can revoke and rotate them, and the app caches the bundle to keep working offline.
 
 :::note Locks are installed in the Manager app
-The API manages unit facts and tenancy, not lock hardware. Installing a physical lock and pairing it to a unit (the unit-and-lock pairing KISS calls a **bundle**) is done on-site with the ONELock Manager app, which registers the lock over NFC. There is no API call to attach a lock to a unit; once a lock is paired, its key flows to permitted holders through `GET /access`.
+The API manages unit facts and tenancy, not lock hardware. Installing a physical lock and pairing it to a unit (the unit-and-lock pairing KISS calls a **bundle**) is done on-site with the ONELock Manager app, which registers the lock over NFC. There is no API call to attach a lock to a unit; once a lock is paired, its key flows to permitted tenants through `GET /access`.
 :::
 
 ## Where to go next

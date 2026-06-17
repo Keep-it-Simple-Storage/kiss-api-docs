@@ -10,7 +10,7 @@ import Method from '@site/src/components/Method';
 
 # Sync partners
 
-This guide is for **sync partners**: any system that pushes unit and tenant state into KISS, such as a property management system (or any source that knows who holds each unit). You keep each unit's facts current; KISS evaluates them into an access decision the holder's app acts on. Read [How access works](/guides/concepts) first for the model — this is the high-level integration overview.
+This guide is for **sync partners**: any system that pushes unit and tenant state into KISS, such as a property management system (or any source that knows who holds each unit). You keep each unit's facts current; KISS evaluates them into an access decision the tenant's app acts on. Read [How access works](/guides/concepts) first for the model — this is the high-level integration overview.
 
 :::tip Every call has a reference page
 This guide is the overview. Each endpoint below links to its **reference page** for the full parameters, schema, and a Try it console.
@@ -101,11 +101,11 @@ Every write requires an `Idempotency-Key` header (any opaque string up to 255 ch
 
 ## When changes take effect
 
-Every write is evaluated immediately: the moment you set `pms_lockout`, the unit's access state flips on our side. Holder apps, though, operate **offline**: each device caches its access bundle and keys for up to **4 hours** (the `GET /access` cache window). So a change you write can take up to 4 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
+Every write is evaluated immediately: the moment you set `pms_lockout`, the unit's access state flips on our side. Tenant apps, though, operate **offline**: each device caches its access bundle and keys for up to **4 hours** (the `GET /access` cache window). So a change you write can take up to 4 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
 
 In practice:
 
-- **Granting access** is effectively immediate, once the holder's app next refreshes.
+- **Granting access** is effectively immediate, once the tenant's app next refreshes.
 - **Revoking access** (an overlock, auction, or move-out) takes effect on our side at once, but a device that already pulled a key keeps working until it refreshes or its 4-hour cache expires. Treat 4 hours as the worst case for a revocation to reach every device.
 
 There is no callback to force an offline device to refresh sooner; the cache window is the contract. If a revocation is time-critical, that timing is worth discussing with your KISS contact.
@@ -133,7 +133,7 @@ Before you wire up production data:
 
 ## Staying in sync: events and webhooks
 
-You drive KISS by writing facts as your events happen, so there is nothing to poll for access decisions. To learn about activity **on KISS's side** (a holder claimed a unit in the app, a lock was opened), today you reconcile by reading: poll `GET /units` on a schedule, cheaply, with `ETag` / `If-None-Match` so unchanged data comes back as a `304`. **Outbound webhooks** (KISS calling you on lock events and unit claims) are on the roadmap and will replace that polling; webhook registration returns `501` until then, so ask your KISS contact about availability for your integration.
+You drive KISS by writing facts as your events happen, so there is nothing to poll for access decisions. To learn about activity **on KISS's side** (a tenant claimed a unit in the app, a lock was opened), today you reconcile by reading: poll `GET /units` on a schedule, cheaply, with `ETag` / `If-None-Match` so unchanged data comes back as a `304`. **Outbound webhooks** (KISS calling you on lock events and unit claims) are on the roadmap and will replace that polling; webhook registration returns `501` until then, so ask your KISS contact about availability for your integration.
 
 As an integration matures, an event-feed option is also worth a conversation: your system or your PMS's native webhooks emit events and KISS maps them.
 
