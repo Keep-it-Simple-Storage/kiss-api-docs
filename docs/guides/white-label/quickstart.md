@@ -14,7 +14,11 @@ This guide is for **app partners**: teams building their own tenant-facing app o
 
 ## What KISS handles for you
 
-You build the tenant app; KISS runs the back office. You keep each unit's facts current (or let one of KISS's prebuilt PMS integrations do it for you), and KISS turns those facts into access decisions: the evaluation stack that handles delinquency, overlocks, auctions, and move-in timing; access grants for sharing a unit with guests; and employee management, including keeping staff out of units they should not enter based on a unit's status. Locks, units, tenants, and logs are managed in the ONELock Manager app and web portal. Your code does only the tenant-app loop below: sign in, read access, open locks, report taps.
+You build the tenant app; KISS runs the back office. You keep each unit's facts current, and KISS turns those facts into access decisions: the evaluation stack that handles delinquency, overlocks, auctions, and move-in timing; access grants for sharing a unit with guests; and employee management, including keeping staff out of units they should not enter based on a unit's status. Locks, units, tenants, and logs are managed in the ONELock Manager app and web portal.
+
+:::note Keeping the facts current
+KISS decides access from each unit's facts (who rents it, whether they are paid up, whether it is overlocked). If your facilities run on a property management system KISS already integrates with, that prebuilt integration keeps those facts current for you, and your app only needs the tenant-app loop below. **If not, you (or your PMS) have to push unit and tenant facts into KISS yourself**, following the [Sync partners](/guides/pms/quickstart) approach. In that case you build both halves: the sync that keeps facts fresh, and the tenant app that reads access and opens locks.
+:::
 
 Operators who use the KISS tenant app (ONELock Access) instead of building their own are on the Full Platform model and do not need this guide.
 
