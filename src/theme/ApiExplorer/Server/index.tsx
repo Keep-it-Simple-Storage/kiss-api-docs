@@ -1,5 +1,6 @@
 import React, {type ReactNode} from 'react';
 import {useTypedSelector} from '@theme/ApiItem/hooks';
+import {API_BASE_URL} from '@site/src/lib/apiBase';
 
 // Swizzled to render the server URL read-only. The stock component offers an
 // "Edit / Hide" toggle for editing server variables; our API has a single
@@ -17,13 +18,13 @@ export default function Server(): ReactNode {
     url = value.url.replace(/\/$/, '');
   }
 
-  if (!url) {
-    return null;
-  }
+  // Static reference pages may not have a server value in the store; fall
+  // back to the fixed base URL so the base is always shown.
+  const finalUrl = url || API_BASE_URL;
 
   return (
-    <span className="openapi-explorer__server-url" title={url}>
-      {url}
+    <span className="openapi-explorer__server-url" title={finalUrl}>
+      {finalUrl}
     </span>
   );
 }
