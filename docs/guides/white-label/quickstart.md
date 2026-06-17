@@ -112,6 +112,24 @@ Because the response is self-contained and cached, the app keeps working with no
 `GET /access` is live in production and its contract is settled. Build against the shape above; its [API Reference](/reference/v-2-access) page mirrors the same endpoint.
 :::
 
+## The lock SDK
+
+The NFC key from `GET /access` is not something your app sends to the lock directly. A KISS lock is an **offline device with no network**, and opening it is a secure exchange over NFC. The **KISS lock SDK** is the piece that runs that exchange: you hand it the key for a permitted lock, and it performs the tap, runs the key-exchange protocol with the lock, handles antenna alignment and retries, and returns a clear success or failure result you can show the user and report back through the logs endpoints.
+
+What the SDK does:
+
+- Talks to the offline lock over NFC and runs the secure key exchange (the part you cannot build without the lock protocol).
+- Works against the cached access bundle, so a tap succeeds with no connectivity.
+- Surfaces structured results and errors (wrong lock, weak or misaligned tap, hardware faults) so your UI can guide the user.
+
+What it does not do: your sign-in, your API calls, or your UI. Those stay in your app; the SDK is only the lock-communication layer.
+
+It is built as **native iOS and Android** components, so you can integrate it directly in a native app or wrap it for Flutter or React Native. The lock protocol ships as a closed-source binary, so the sensitive part stays inside the SDK while you build against a small, documented API.
+
+:::info Coming soon (KEEP-959)
+The partner-distributable SDK is in development and is not self-serve yet. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to request access**, and we will provide the binaries, supported versions, and the integration guide.
+:::
+
 ## Keep going
 
 <Cards>
