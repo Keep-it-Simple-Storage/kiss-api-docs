@@ -91,7 +91,7 @@ A few things worth knowing as you build:
 - **Keep tenant tokens on the device.** They should never be sent to your backend; your server uses partner API tokens for server-side work.
 
 :::note Manager sign-in uses the same token endpoint
-Managers authenticate with `grant: password` (email plus password) on the same `POST /auth/tokens` call. Holder apps use `grant: otp`.
+Managers authenticate with `grant: password` (email plus password) on the same `POST /auth/tokens` call. Tenant apps use `grant: otp`.
 :::
 
 ## Rate limits
