@@ -281,3 +281,27 @@ article .markdown > p:first-of-type {
   max-height: 70vh;
   overflow: auto;
 }
+
+/* ============================================================================
+   Reference: flatten the request section (Quo-style).
+   The top-level "Path/Query/Header Parameters" and "Body" render as open-by-
+   default <details> accordions with a disclosure chevron. Present them as
+   static section headings instead. Nested object schemas live deeper in the
+   tree (not a direct child of the left panel, and not .mime), so they keep
+   their show/hide-children collapse.
+   ============================================================================ */
+.openapi-left-panel__container > .openapi-markdown__details > summary,
+.openapi-markdown__details.mime > summary {
+  cursor: default;
+  pointer-events: none; /* not collapsible: the section stays open */
+}
+.openapi-left-panel__container > .openapi-markdown__details > summary::before,
+.openapi-markdown__details.mime > summary::before {
+  display: none !important; /* drop the disclosure chevron */
+}
+/* Clean hairline under the section header, so it reads as a heading */
+.openapi-markdown__details-summary-header-params,
+.openapi-markdown__details-summary-header-body {
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+}
