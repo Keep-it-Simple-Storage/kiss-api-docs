@@ -26,6 +26,10 @@ You can self-serve in the KISS web admin portal:
 3. Name the token (for example `acme-pms-integration`), select the scopes the integration needs, and create it.
 4. **Copy the token immediately.** It is shown once; store it in a secrets manager.
 
+:::note No account yet?
+If you do not have a KISS account, email [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com) with your company details and why you want to integrate, and we will set you up with a sandbox company to build against.
+:::
+
 :::caution
 API tokens grant access to your company's data. Never expose them in client-side code, public repos, or logs. Revoke a token from the same **API** tab if it is ever exposed; revocation takes effect immediately.
 :::
