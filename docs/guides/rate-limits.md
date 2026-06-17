@@ -27,7 +27,7 @@ Treat `429` as a normal, recoverable signal, not an error to surface to users:
 
 | Surface | Scope | Limit |
 | --- | --- | --- |
-| Tenant OTP sign-in (`POST /auth/otp`, `POST /auth/tokens`) | Per IP address | 5 attempts per minute |
+| Authentication (token requests, `POST /auth/tokens`) | Per IP address | 5 attempts per minute |
 
 Other surfaces (unit writes and reads) are **not** rate-limited today, but that may change. Build your client to handle `429` everywhere regardless, and keep reads cheap with `ETag` / `If-None-Match`.
 

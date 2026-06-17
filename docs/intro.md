@@ -28,7 +28,7 @@ https://api-app.keepitsimplestorage.com/api/v2
 
 <Cards columns={3}>
   <Card title="Tenant mobile app" subtitle="ONELock Access" icon="mobile">
-    Tenants sign in with their mobile number and a one-time SMS code, then open their lock with an NFC tap. The app caches a signed access bundle so it keeps working offline.
+    Tenants sign in on their phone, then open their lock with an NFC tap. The app caches a signed access bundle so it keeps working offline.
   </Card>
   <Card title="Manager mobile app" subtitle="ONELock Manager" icon="manager">
     Site staff install and assign locks to units, open units when needed, and apply manual overrides such as an on-site lockout or an exemption.
@@ -61,7 +61,7 @@ The same endpoints serve every caller; a Bearer token's scope decides what each 
     The data model: units, tenants, facts, access states, entry points, and NFC keys.
   </Card>
   <Card title="Authentication" icon="auth" href="/guides/authentication">
-    Bearer tokens and scopes for partners, one-time-password sign-in for tenants.
+    Bearer tokens and scopes for partners, and how your tenants get a KISS access token.
   </Card>
   <Card title="Sync partners" icon="pms" href="/guides/pms/quickstart">
     Push unit and tenant data into KISS from a property management system or any data source.
