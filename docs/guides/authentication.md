@@ -10,7 +10,7 @@ Every request carries `Authorization: Bearer <token>`. How you obtain that token
 
 | Caller | Token | Who authenticates |
 | --- | --- | --- |
-| **Partner / PMS server** | Per-company API token (or OAuth 2.0 for multi-company partners) | Your server |
+| **Partner / PMS server** | Per-company API token | Your server |
 | **Tenant app** | Phone + one-time password (OTP) | Your app's end user |
 
 ## Partner API tokens
@@ -51,9 +51,9 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
 Every write accepts an `Idempotency-Key` header: any opaque string up to 255 characters (a UUID works well). The server stores the request hash and response for 24 hours, so retrying the same key with the same payload returns the cached response without a second write. Retrying the same key with a *different* payload returns `409 Conflict`. Use a fresh value per logical operation; reuse it only when retrying that operation.
 :::
 
-### Multi-company partners (OAuth 2.0)
+### Multi-company partners
 
-A partner that serves many companies (a PMS vendor with dozens of operators, for example) uses OAuth 2.0 rather than a per-company token, with cross-tenant scopes and refresh tokens. If that is you, contact KISS to set up an OAuth client. All flavors accept the same scopes and hit the same routes.
+A partner that serves many companies (a PMS vendor with dozens of operators, for example) still authenticates with a per-company token: you hold one token per company and send the matching one on each request. There is no cross-company token or refresh-token flow today. If you are integrating at this scale, contact KISS so we can help you provision and manage tokens across your operators. All tokens accept the same scopes and hit the same routes.
 
 ### Errors
 
@@ -96,7 +96,7 @@ Managers authenticate with `grant: password` (email plus password) on the same `
 
 ## Rate limits
 
-Every request is subject to rate limits. See **[Rate limits](/guides/rate-limits)** for how throttling works (`429` + `Retry-After`) and the limits by surface.
+Some requests are subject to rate limits. See **[Rate limits](/guides/rate-limits)** for how throttling works (`429` responses) and what is throttled today.
 
 ## Best practices
 

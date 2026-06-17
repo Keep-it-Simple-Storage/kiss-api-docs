@@ -63,7 +63,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. |
 
 :::note Primary user vs. guests
-These manage a unit's single **primary user** (its owner). Sharing with a **guest** is a separate model and not yet a live API endpoint; today guests are added in the app or admin portal.
+These manage a unit's single **primary user** (its owner). Sharing with a **guest** is a separate model. A bundle-grants API exists but is currently behind a feature flag and not part of this reference yet; if you need programmatic guest sharing, ask your KISS contact to enable it. Otherwise, guests are added in the app or admin portal today.
 :::
 
 :::tip Use the right write for the job

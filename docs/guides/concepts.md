@@ -55,15 +55,16 @@ If your system owns the delinquency rules, drive the overlock explicitly: set `p
 After every write, KISS evaluates a unit's facts in a fixed order. The **first** rule that matches decides the outcome:
 
 1. A manager's on-site override (lockout or exemption), when present, beats everything below it.
-2. `pms_unrentable`, then `pms_auction`: access denied.
-3. Vacant unit (no active tenancy): no tenant access.
-4. `move_in_date` in the future: access starts on that date.
+2. `pms_unrentable`, then `pms_auction`: the unit resolves to that state (`unrentable` or `auction`) and the tenant cannot unlock.
+3. Vacant unit (no active tenancy, or the tenant record cannot be resolved): no tenant access.
+4. `move_in_date` in the future: access denied until that date.
 5. `pms_lock_exempt`: access allowed.
-6. `pms_lockout`: access denied.
+6. `pms_lockout`: access denied (subject to a short grace window just after move-in).
 7. Balance past the location's threshold and grace period: access denied as delinquent.
-8. Otherwise: access allowed.
+8. `blanket_delinquency`: tenant is delinquent on another unit at the same location: access denied.
+9. Otherwise: access allowed.
 
-Location policy toggles (for example, whether the location respects `pms_lockout`) can adjust which rules apply. Your KISS contact configures those per location with you.
+Several rules are gated by location policy toggles (for example, whether the location respects `pms_lockout` or `pms_lock_exempt`, and whether blanket delinquency applies). Your KISS contact configures those per location with you.
 
 ## Access states and reasons
 
@@ -77,15 +78,7 @@ The evaluator resolves every unit with a lock into a `state` and a `reason`. Thi
 | `auction` | Unit is in the auction process | No |
 | `unrentable` | Unit is marked as not available for rent (maintenance, damage) | No |
 
-The `reason` field explains why a unit ended up in its state.
-
-**Permitted reasons**
-
-| Reason | What happened |
-| --- | --- |
-| `active` | All checks passed; tenant is in good standing |
-| `pms_exempt` | The PMS exempted this unit from lockout despite other flags |
-| `system_exempt` | An operator exempted this unit via an override |
+The `reason` field explains why a unit ended up in its state. It is populated only when a unit is **denied** (`tenant_denied`); for `tenant_permitted`, `vacant`, `auction`, and `unrentable`, `reason` is `null`.
 
 **Denied reasons**
 
@@ -98,7 +91,7 @@ The `reason` field explains why a unit ended up in its state.
 | `system_lockout` | An operator locked out the unit via the dashboard |
 
 :::note Exact shapes live in the reference
-This guide explains the model. The exact field names and enum values for any endpoint come from the API reference, which is generated from the live code. When a guide and the reference disagree, the reference wins.
+This guide explains the model. The exact field names and enum values for any endpoint come from the API reference. When a guide and the reference disagree, the reference wins.
 :::
 
 ## Entry points and zones
@@ -107,7 +100,7 @@ This guide explains the model. The exact field names and enum values for any end
 
 A **zone** is a grouping within a location. A unit belongs to a zone, and entry points are assigned to zones. If a tenant has access to a unit in Zone B, they also get access to Zone B's entry points (for example, "Building B Door").
 
-Entry point access depends on unit access. If a tenant is denied on all their units in a zone, they lose entry point access for that zone too. Reads include a `would_have_access` field on entry points so you can distinguish "access denied because of a unit denial" from "no access at all."
+Entry point access depends on unit access. If a tenant is denied on all their units in a zone, they lose entry point access for that zone too.
 
 ## How unit data gets in: source types
 
@@ -121,7 +114,7 @@ KISS supports three integration models. A `source` field records which one owns 
 
 If you are reading these docs, you are most likely a **push** integrator or a **mobile app** developer. Pull integrations are configured server-side by the KISS team and need no API calls from you.
 
-Once a unit exists under one source type it stays there. A push-owned unit is not overwritten by a pull sync, and the reverse is also true; conflicting writes return `409 Conflict`.
+A push write will not silently take over a unit owned by a pull-mode integration: that conflict returns `409 Conflict`. Units with no integration owner (standalone, managed only in the dashboard) are adopted by the first push write.
 
 ## NFC keys
 

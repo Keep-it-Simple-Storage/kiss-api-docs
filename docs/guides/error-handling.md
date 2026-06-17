@@ -27,12 +27,12 @@ For validation errors, the response includes field-level details:
   "message": "Validation failed.",
   "errors": {
     "units.0.crm_unit_id": ["The crm_unit_id field is required."],
-    "units.0.occupied": ["The occupied field is required."]
+    "units.2.crm_unit_id": ["The crm_unit_id field is required."]
   }
 }
 ```
 
-The `errors` object maps field paths to arrays of error messages. For nested fields, the path uses dot notation (e.g., `units.0.tenant.phone`).
+The `errors` object maps field paths to arrays of error messages. For items in an array, the path includes the index in dot notation (e.g., `units.2.crm_unit_id` is the third unit in the array).
 
 ---
 
@@ -47,85 +47,68 @@ The `errors` object maps field paths to arrays of error messages. For nested fie
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
 | `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
-| `409` | Conflict | Source-type collision (a push write against a pull-owned unit, or vice versa) **or** `Idempotency-Key` reused with a different payload. |
+| `409` | Conflict | Source-type collision (a push write against a pull-owned unit) **or** `Idempotency-Key` reused with a different payload. |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
-| `501` | Not Implemented | Endpoint exists but isn't available yet (e.g., webhook registration) |
 
 ---
 
 ## Common Mistakes and Fixes
 
-### Syncing a unit without required fields
+### Syncing a unit without `crm_unit_id`
 
 **Error:**
 ```json
 {
   "message": "Validation failed.",
   "errors": {
-    "units.0.crm_unit_id": ["The crm_unit_id field is required."],
-    "units.0.occupied": ["The occupied field is required."]
+    "units.0.crm_unit_id": ["The crm_unit_id field is required."]
   }
 }
 ```
 
-**Fix:** Every unit in the sync payload must include `crm_unit_id` and `occupied`. If `occupied` is `true`, you also need a `tenant` object with `pms_tenant_id`, `first_name`, and `last_name`.
-
----
-
-### Syncing an occupied unit without tenant info
-
-**Error:**
-```json
-{
-  "message": "Validation failed.",
-  "errors": {
-    "units.0.tenant": ["The tenant field is required when occupied is true."]
-  }
-}
-```
-
-**Fix:** When `occupied` is `true`, include the `tenant` object:
+**Fix:** `crm_unit_id` is the **only** required field on a sync item. Everything else (`occupied`, `move_in_date`, `pms_tenant_id`, `balance_due`, the `pms_*` flags) is optional, so send only what you know. To mark a unit occupied, set `occupied: true` and include the tenant's `pms_tenant_id`. Note that `pms_tenant_id` is a **flat** field on the unit, not a nested `tenant` object:
 ```json
 {
   "crm_unit_id": "PMS-U-1001",
   "occupied": true,
-  "tenant": {
-    "pms_tenant_id": "PMS-T-5001",
-    "first_name": "Jane",
-    "last_name": "Smith"
-  }
+  "pms_tenant_id": "PMS-T-5001",
+  "move_in_date": "2026-06-01"
 }
 ```
 
 ---
 
-### Syncing a move-in without move_in_date
+### Sending duplicate `crm_unit_id` values, or both location fields
 
 **Error:**
 ```json
 {
   "message": "Validation failed.",
   "errors": {
-    "units.0.move_in_date": ["The move_in_date field is required when occupied is true."]
+    "units": ["Duplicate crm_unit_id values are not allowed."]
   }
 }
 ```
 
-**Fix:** When `occupied` is `true`, include `move_in_date` alongside the `tenant` object.
+**Fix:** Each `crm_unit_id` may appear at most once per `PATCH /units` request, so de-duplicate the batch before sending. Separately, a single item may set `location_id` **or** `pms_location_code` to place a unit, but not both; sending both fails with `The units.0.location_id field cannot be present together with units.0.pms_location_code.`
 
 ---
 
 ### Using an expired or invalid OTP
 
-**Error:**
+**Error:** the message depends on what went wrong, and is one of:
 ```json
-{
-  "message": "The OTP code is invalid or has expired."
-}
+{ "message": "Invalid otp." }
+```
+```json
+{ "message": "Otp expired. Please request a new one." }
+```
+```json
+{ "message": "No otp request found. Please resend the login link." }
 ```
 
-**Fix:** The OTP has expired or was entered incorrectly. Request a new one through the OTP sign-in flow and try again.
+**Fix:** Request a fresh code through the OTP sign-in flow and try again.
 
 ---
 
@@ -171,29 +154,29 @@ Authorization: Bearer YOUR_TOKEN
 
 ---
 
-### Lock not found
+### Lock not found or not accessible
 
-**Error:**
+A `lock` ID in the URL that doesn't exist returns `404` with a generic not-found message. A lock that exists but isn't yours returns `403`:
 ```json
 {
-  "message": "Lock not found."
+  "message": "You do not have access to this lock."
 }
 ```
 
-**Fix:** The `lock_id` in the URL doesn't match any resource. Double-check the ID from the access response (`GET /access`).
+**Fix:** Use the lock `id` from the access response (`GET /access`). If you own the lock and still get `404`, double-check the ULID.
 
 ---
 
-### Entry point not found
+### Entry point not found or not accessible
 
-**Error:**
+An `entryPoint` ID that doesn't exist returns `404` with a generic not-found message. An entry point that exists but isn't yours returns `403`:
 ```json
 {
-  "message": "Entry point not found."
+  "message": "You do not have access to this entry point."
 }
 ```
 
-**Fix:** The `entry_point_id` in the URL doesn't match any resource. Double-check the ID from the access response (`GET /access`).
+**Fix:** Use the entry-point `id` from the access response (`GET /access`). If you own it and still get `404`, double-check the ULID.
 
 ---
 
@@ -232,29 +215,29 @@ Authorization: Bearer YOUR_TOKEN
 }
 ```
 
-**Fix:** The unit you're trying to write to was created by a different integration mode (pull, standalone). A push write cannot silently take over a pull-owned unit — the source-of-truth rule protects partner data. If you need to migrate a unit between source types, reach out to KISS support.
+**Fix:** The unit you're trying to write to is owned by a pull-mode integration. A push write cannot silently take it over; the source-of-truth rule protects partner data. (Standalone units, managed only in the dashboard, are adopted by a push write and do not conflict.) If you need to migrate a pull-owned unit to push, reach out to KISS support.
 
 ---
 
-### Sending duplicate sync data
+### Re-sending the same sync data
 
-This is **not** an error. The sync endpoint is idempotent. Posting the same data multiple times produces the same result with no side effects. The response will show `unchanged` for units that didn't change:
+This is **not** an error. `PATCH /units` is an upsert keyed on `crm_unit_id`, so re-sending your current roster is safe: KISS reconciles each unit to the state you send. There is no separate "unchanged" count; a unit that already exists is reported under `updated`:
 
 ```json
 {
   "message": "Sync completed.",
+  "meta": {},
   "data": {
     "synced_at": "2026-04-07T14:30:00Z",
     "total": 3,
     "created": 0,
-    "updated": 0,
-    "unchanged": 3,
+    "updated": 3,
     "errors": []
   }
 }
 ```
 
-No need to check if a unit or tenant exists before syncing. Just send your current state and KISS reconciles.
+No need to check whether a unit exists before syncing. Send your current state and KISS reconciles.
 
 ---
 
