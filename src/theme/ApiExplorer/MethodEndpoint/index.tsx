@@ -2,6 +2,7 @@ import React, {useState, type ReactNode} from 'react';
 import clsx from 'clsx';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import {useTypedSelector} from '@theme/ApiItem/hooks';
+import {API_BASE_URL} from '@site/src/lib/apiBase';
 
 import styles from './styles.module.css';
 
@@ -35,7 +36,9 @@ function EndpointUrl({path}: {path: string}): ReactNode {
   } else if (serverValue?.url) {
     base = serverValue.url.replace(/\/$/, '');
   }
-  const url = base + path;
+  // Fall back to the fixed base URL: on static reference pages the server
+  // value can be empty, and we always want to show/copy the full URL.
+  const url = (base || API_BASE_URL) + path;
 
   function copy() {
     navigator.clipboard?.writeText(url).then(() => {
@@ -76,7 +79,7 @@ export default function MethodEndpoint({
           <BrowserOnly
             fallback={
               <span className={styles.urlBox}>
-                <code className={styles.url}>{display}</code>
+                <code className={styles.url}>{API_BASE_URL + display}</code>
               </span>
             }>
             {() => <EndpointUrl path={display} />}

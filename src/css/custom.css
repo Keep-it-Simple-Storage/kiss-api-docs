@@ -281,3 +281,63 @@ article .markdown > p:first-of-type {
   max-height: 70vh;
   overflow: auto;
 }
+
+/* ============================================================================
+   Reference: flatten the request section (Quo-style).
+   The top-level "Path/Query/Header Parameters" and "Body" render as open-by-
+   default <details> accordions with a disclosure chevron. Present them as
+   static section headings instead. Nested object schemas live deeper in the
+   tree (not a direct child of the left panel, and not .mime), so they keep
+   their show/hide-children collapse.
+   ============================================================================ */
+.openapi-left-panel__container > .openapi-markdown__details > summary,
+.openapi-markdown__details.mime > summary {
+  cursor: default;
+  pointer-events: none; /* not collapsible: the section stays open */
+}
+.openapi-left-panel__container > .openapi-markdown__details > summary::before,
+.openapi-markdown__details.mime > summary::before {
+  display: none !important; /* drop the disclosure chevron */
+}
+/* Clean hairline under the section header, so it reads as a heading */
+.openapi-markdown__details-summary-header-params,
+.openapi-markdown__details-summary-header-body {
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+}
+
+/* ----------------------------------------------------------------------------
+   Nested object / array schemas: render the collapse toggle as a clean
+   bordered "Show / Hide child attributes" bar (Quo-style). Scoped to a
+   details inside another details, so the flattened top-level sections above
+   are untouched and nested objects keep their expand/collapse.
+   ---------------------------------------------------------------------------- */
+.openapi-markdown__details .openapi-markdown__details {
+  margin: 0.5rem 0;
+}
+.openapi-markdown__details .openapi-markdown__details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color);
+  cursor: pointer;
+  pointer-events: auto; /* nested toggles stay interactive */
+}
+.openapi-markdown__details .openapi-markdown__details > summary:hover {
+  border-color: var(--ifm-color-emphasis-400);
+}
+/* The "Show child attributes" / "Hide child attributes" label, pushed right */
+.openapi-markdown__details .openapi-markdown__details > summary::after {
+  content: "Show child attributes";
+  margin-left: auto;
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.openapi-markdown__details .openapi-markdown__details[data-collapsed="false"] > summary::after,
+.openapi-markdown__details .openapi-markdown__details[open] > summary::after {
+  content: "Hide child attributes";
+}
