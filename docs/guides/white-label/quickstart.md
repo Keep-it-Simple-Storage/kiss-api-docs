@@ -10,7 +10,7 @@ import Method from '@site/src/components/Method';
 
 # App partners
 
-This guide is for **app partners**: teams building their own tenant-facing app on KISS access. Your app signs the user in, reads their access bundle, opens locks over NFC through the KISS SDK, and reports the result. KISS handles the access decisions; your app handles the experience.
+This guide is for **app partners**: teams building their own tenant-facing app on KISS access. Your app signs users in with your own authentication, reads their access bundle, opens locks over NFC through the KISS SDK, and reports the result. KISS handles the access decisions; you own the sign-in and the whole customer experience.
 
 ## What KISS handles for you
 
@@ -26,22 +26,24 @@ Operators who use the KISS tenant app (ONELock Access) instead of building their
 
 The tenant app does four things:
 
-1. **Sign the user in.** Request a code with `POST /auth/otp`, then exchange the user's phone number and code for a Bearer token with `POST /auth/tokens`. See [Authentication](/guides/authentication) for the full flow, including phones linked to more than one account.
+1. **Sign the user in.** Your users sign in through your app's own authentication, with no second KISS login. Your backend obtains a short-lived KISS access token for the signed-in user (see [Authentication](/guides/authentication)); the app uses it for the calls below.
 2. **Fetch the user's access.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it on launch and refresh on pull-to-refresh.
 3. **Open the lock.** Pass the NFC key to the KISS Flutter SDK, which talks to the offline lock during a tap. Keys are served per tap, never stored as a static dump.
 4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoints so managers and support see real lock activity.
+
+:::info Coming soon (KEEP-958)
+Step 1 keeps your own login: a partner-brokered token mint (your backend exchanges its company token for a tenant access token) is being built so you never stack a second sign-in on top of your app's. Until it ships, set up tenant auth with your KISS contact. See [Authentication](/guides/authentication).
+:::
 
 ## Endpoints
 
 | When | Call | What it does |
 | --- | --- | --- |
-| Request a sign-in code | <Method m="post" /> `/auth/otp` | Send the user's phone number; KISS texts a 6-digit code. |
-| Exchange the code for a token | <Method m="post" /> `/auth/tokens` | Phone plus code (`grant: otp`) returns the Bearer token your app uses for every call below. |
 | Fetch the user's access | <Method m="get" /> [`/access`](/reference/v-2-access) | The user's units, NFC keys, entry points, and timezone: everything to operate offline. |
 | Report a lock tap | <Method m="post" /> [`/locks/{lock}/logs`](/reference/v-2-locks-logs-store) | Record open/close success, failure, or blocked. |
 | Report an entry-point tap | <Method m="post" /> [`/entry-points/{id}/logs`](/reference/v-2-entry-points-logs-store) | Record a gate or door tap. |
 
-The access and log calls link to their reference pages; the sign-in calls are walked through in [Authentication](/guides/authentication). The access bundle is the heart of the integration, so it's detailed below.
+Each call links to its reference page; tenant sign-in is covered in [Authentication](/guides/authentication). The access bundle is the heart of the integration, so it's detailed below.
 
 ## What `GET /access` returns
 
@@ -117,7 +119,7 @@ Because the response is self-contained and cached, the app keeps working with no
     The data model and the precedence rules behind every access decision.
   </Card>
   <Card title="Authentication" icon="auth" href="/guides/authentication">
-    The token model: user OTP sign-in and partner API tokens.
+    The token model: partner API tokens and how your tenants get a KISS access token.
   </Card>
   <Card title="API Reference" icon="reference" href="/reference/kiss-api-reference">
     Endpoint and schema reference for the core integration surface.

@@ -95,23 +95,6 @@ The `errors` object maps field paths to arrays of error messages. For items in a
 
 ---
 
-### Using an expired or invalid OTP
-
-**Error:** the message depends on what went wrong, and is one of:
-```json
-{ "message": "Invalid otp." }
-```
-```json
-{ "message": "Otp expired. Please request a new one." }
-```
-```json
-{ "message": "No otp request found. Please resend the login link." }
-```
-
-**Fix:** Request a fresh code through the OTP sign-in flow and try again.
-
----
-
 ### Using an expired Bearer token
 
 **Error:**
@@ -121,7 +104,7 @@ The `errors` object maps field paths to arrays of error messages. For items in a
 }
 ```
 
-**Fix:** The tenant's Bearer token has expired. Re-authenticate through the OTP sign-in flow to get a new token. There is no refresh token mechanism.
+**Fix:** The tenant's Bearer token has expired. Obtain a fresh access token and retry. There is no refresh-token mechanism.
 
 ---
 
@@ -255,7 +238,7 @@ If this returns a `200`, the API is up and the issue is in your request. If it d
 
 ### 2. Check your token
 
-A `401` on every request usually means your token is wrong or expired. For PMS integrators, verify the API token in the KISS dashboard under Company > API. For tenant tokens, re-run the OTP flow.
+A `401` on every request usually means your token is wrong or expired. For PMS integrators, verify the API token in the KISS dashboard under Company > API. For tenant tokens, obtain a fresh access token.
 
 ### 3. Read the error message
 

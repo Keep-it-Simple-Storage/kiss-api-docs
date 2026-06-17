@@ -11,7 +11,7 @@ Every request carries `Authorization: Bearer <token>`. How you obtain that token
 | Caller | Token | Who authenticates |
 | --- | --- | --- |
 | **Partner / PMS server** | Per-company API token | Your server |
-| **Tenant app** | Phone + one-time password (OTP) | Your app's end user |
+| **Tenant (your app's user)** | A short-lived KISS access token your backend obtains for them | Your app's own login, then your backend |
 
 ## Partner API tokens
 
@@ -66,36 +66,14 @@ OAuth 2.0 for multi-company partners (cross-company scopes and refresh tokens) i
 | `401 Unauthorized` | Missing or invalid token |
 | `403 Forbidden` | Token is valid but lacks the required scope |
 
-## Tenant sign-in (mobile apps)
+## Signing in your tenants
 
-Tenant apps sign the end user in with a phone number and a one-time SMS code, in two calls.
+Your tenants sign in through **your own app's authentication**. KISS does not add a second login. Instead, your backend turns the user it has already authenticated into a KISS session: holding your company API token, it requests a short-lived, tenant-scoped KISS access token for that tenant, and hands it to your app. The app then sends that token as `Authorization: Bearer <token>` on `GET /access` and the lock SDK.
 
-**1. Request a code.** Send the tenant's country code and phone number; KISS texts a 6-digit code.
+Because the token is minted server to server from a tenant your system already knows, the user never sees a KISS login screen, and you keep full control of the experience in your own app.
 
-```bash
-curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/otp \
-  -H "Content-Type: application/json" \
-  -d '{"country_code": "1", "phone_number": "5551234567"}'
-```
-
-**2. Exchange the code for a token.** Submit the phone and code with `grant: otp`. KISS returns a Bearer token and the signed-in user.
-
-```bash
-curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/tokens \
-  -H "Content-Type: application/json" \
-  -d '{"grant": "otp", "country_code": "1", "phone_number": "5551234567", "otp": "123456"}'
-```
-
-The app stores that token and sends it as `Authorization: Bearer <token>` on every later call, starting with `GET /access`. To resolve the current user and company on relaunch, call `GET /auth/me`; to sign out, call `DELETE /auth/tokens/current`.
-
-A few things worth knowing as you build:
-
-- **Multiple accounts.** If a phone is linked to more than one tenant account (the same person renting at two facilities), the token call returns a `duplicated_tenants` list instead of a token, so the app can prompt the tenant to choose.
-- **No refresh tokens.** Tenant tokens expire. On a `401`, send the tenant back through the two calls above; cache the token for the session in between.
-- **Keep tenant tokens on the device.** They should never be sent to your backend; your server uses partner API tokens for server-side work.
-
-:::note Manager sign-in uses the same token endpoint
-Managers authenticate with `grant: password` (email plus password) on the same `POST /auth/tokens` call. Tenant apps use `grant: otp`.
+:::info Coming soon (KEEP-958)
+This partner-brokered token mint (your backend exchanges its company token plus a tenant identifier for a tenant access token) is being built so Back Office partners never have to stack a second login on top of their own. Until it ships, your tenant auth is set up directly with your KISS contact during onboarding.
 :::
 
 ## Rate limits
