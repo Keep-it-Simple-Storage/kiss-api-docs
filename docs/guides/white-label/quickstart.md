@@ -50,45 +50,50 @@ Everything the signed-in user's app needs to operate offline, in one call: their
 | | |
 | --- | --- |
 | Auth | `Authorization: Bearer <token>` — the signed-in user's token |
-| Caching | `ETag` + `Cache-Control: private, max-age=14400` (4 hours); send `If-None-Match` for a cheap `304` |
+| Caching | `ETag` + `Cache-Control: private, max-age=28800` (8 hours); send `If-None-Match` for a cheap `304` |
 
 ```bash
 curl https://api-app.keepitsimplestorage.com/api/v2/access \
   -H "Authorization: Bearer $USER_TOKEN"
 ```
 
-The response contains the facility `timezone`, the user's `units`, and the `entry_points` for their zones:
+The response uses the standard `{ message, data, meta }` envelope; the facility `timezone`, the user's `units`, and the `entry_points` for their zones all live under `data`:
 
 ```json
 {
-  "timezone": "America/Denver",
-  "units": [
-    {
-      "unit_id": "01KTSC4X57H4M49E661CW41BXE",
-      "unit_name": "B204",
-      "access_state": "permitted",
-      "access_reason": null,
-      "evaluated_at": "2026-06-16T14:30:00Z",
-      "bundles": [
-        {
-          "id": "01KTSD2Q…",
-          "display_name": "Unit B204",
-          "lock": { "id": "01KTSD…", "name": "B204 Lock", "serial_number": "KEY-ABC", "key": "<encrypted>" }
-        }
-      ]
-    }
-  ],
-  "entry_points": [
-    {
-      "id": "01KTSE…",
-      "name": "Main Gate",
-      "serial_number": "EP-12",
-      "type": "gate",
-      "zones": [
-        { "id": "01KTSZ…", "name": "Building B", "access_start_time": "06:00", "access_end_time": "22:00" }
-      ]
-    }
-  ]
+  "message": "...",
+  "meta": {},
+  "data": {
+    "timezone": "America/Denver",
+    "units": [
+      {
+        "unit_id": "01KTSC4X57H4M49E661CW41BXE",
+        "unit_name": "B204",
+        "access_state": "tenant_permitted",
+        "access_reason": null,
+        "evaluated_at": "2026-06-16T14:30:00Z",
+        "bundles": [
+          {
+            "id": "01KTSD2Q…",
+            "display_name": "Unit B204",
+            "lock": { "id": "01KTSD…", "name": "B204 Lock", "serial_number": "KEY-ABC", "key": "<encrypted>" }
+          }
+        ]
+      }
+    ],
+    "entry_points": [
+      {
+        "id": "01KTSE…",
+        "name": "Main Gate",
+        "serial_number": "EP-12",
+        "type": "gate",
+        "key": "<encrypted>",
+        "zones": [
+          { "id": "01KTSZ…", "name": "Building B", "display_name": "Building B", "access_start_time": "06:00", "access_end_time": "22:00" }
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -115,6 +120,6 @@ Because the response is self-contained and cached, the app keeps working with no
     The token model: user OTP sign-in and partner API tokens.
   </Card>
   <Card title="API Reference" icon="reference" href="/reference/kiss-api-reference">
-    The complete, always-current endpoint and schema reference, generated from code.
+    Endpoint and schema reference for the core integration surface.
   </Card>
 </Cards>

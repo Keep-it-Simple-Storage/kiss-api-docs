@@ -7,33 +7,37 @@ sidebar_custom_props:
 
 # Rate limits
 
-The KISS API is rate-limited to keep it fast and fair for everyone. Stay within the limits and design your client to back off when it hits them. Sustained abuse can get a token throttled or revoked.
+The KISS API may rate-limit requests to keep it fast and fair for everyone. Design your client to back off when it hits a limit. Sustained abuse can get a token throttled or revoked.
 
 ## How throttling works
 
-When you exceed a limit, the API responds with `429 Too Many Requests` and a `Retry-After` header (seconds to wait). Treat `429` as a normal, recoverable signal, not an error to surface to users:
+When you exceed a limit, the API responds with `429 Too Many Requests`. The body is the standard envelope and tells you how long to wait:
 
-- Wait the `Retry-After` duration, then retry.
+```json
+{ "message": "Too many attempts. Please try again in 60 seconds." }
+```
+
+Treat `429` as a normal, recoverable signal, not an error to surface to users:
+
+- Wait for the window to reset (the message states the delay), then retry.
 - Use **exponential backoff with jitter** for repeated `429`s.
 - Never retry in a tight loop.
 
-The body is the standard envelope: `{ "message": "Too many attempts. Please try again in 60 seconds." }`.
+## What is throttled today
 
-## Limits by surface
-
-| Surface | Scope | Notes |
+| Surface | Scope | Limit |
 | --- | --- | --- |
-| Tenant OTP sign-in | Per phone number | Protects the SMS pipeline |
-| Unit writes: `PATCH /units`, `PUT`/`DELETE /units/{unit_id}/tenancy`, `PATCH /units/{unit_id}` | Per company | A bulk `PATCH /units` counts as one request regardless of item count |
-| Reads: `GET /units`, `GET /access` | Per company / per token | Use `ETag` / `If-None-Match` so unchanged data does not burn quota |
+| Tenant OTP sign-in (`POST /auth/otp`, `POST /auth/tokens`) | Per IP address | 5 attempts per minute |
 
-:::note Exact numbers are being finalized
-Specific request counts and windows are a product decision in progress and will be published here (and in the [API Reference](/reference/kiss-api-reference)) once locked. Design for retries and treat `429` + `Retry-After` as the contract.
+Other surfaces (unit writes and reads) are **not** rate-limited today, but that may change. Build your client to handle `429` everywhere regardless, and keep reads cheap with `ETag` / `If-None-Match`.
+
+:::info Coming soon (KEEP-952)
+Throttling on writes and reads, plus the exact counts and windows, is a product decision in progress and will be published here (and in the [API Reference](/reference/kiss-api-reference)) once locked. Design for retries and treat `429` as the contract.
 :::
 
 ## Staying well under the limits
 
-- **Cache reads** with `ETag` / `If-None-Match`. A `304 Not Modified` is cheap and does not count against you the same way.
+- **Cache reads** with `ETag` / `If-None-Match`. A `304 Not Modified` is cheap and avoids re-downloading unchanged data.
 - **Batch unit updates** through `PATCH /units` (bulk) instead of many per-unit calls.
 - **Schedule full reconciliations off-peak**; use targeted events (assign/remove primary user, fact patches) the rest of the time.
 - **Reuse one token per integration** rather than minting many.
