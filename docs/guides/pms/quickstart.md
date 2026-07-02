@@ -30,10 +30,10 @@ Create the token yourself in the web admin portal: **Company Settings → API**,
 
 ## Identifiers and locations
 
-Every unit has **two** IDs, and knowing which endpoint uses which is the one thing worth getting straight up front:
+Every unit has **two** IDs:
 
-- **`crm_unit_id`** — your own identifier, the one you already store. You set it.
-- **`unit_id`** — the KISS identifier, a 26-character ULID. KISS assigns it.
+- **`unit_id`**: the KISS identifier, a 26-character ULID. KISS assigns it, and it never changes for the life of the unit.
+- **`crm_unit_id`**: your own identifier, stored on the unit as reference metadata. You set it.
 
 | Endpoint | Addressed by |
 | --- | --- |
@@ -42,10 +42,10 @@ Every unit has **two** IDs, and knowing which endpoint uses which is the one thi
 | `PUT` / `DELETE /units/{unit_id}/tenancy` | the KISS **`unit_id`** (ULID) |
 | `GET /units/{unit_id}` | the KISS **`unit_id`** (ULID) |
 
-The bulk `PATCH /units` is the **only write keyed on your own IDs**. Because it matches on `crm_unit_id`, you can create units and change any fact (lockout, balance, auction, occupancy, move-in) without ever holding a KISS ID. To change a single unit by your own ID, send a one-item `units` array.
+**Key your integration on `unit_id`.** It is the durable handle for every per-unit call, and it survives events your own IDs may not: it stays the same even when an operator moves to new management software and every external ID for the facility gets rebuilt. The flow is: load your roster with the bulk `PATCH /units` (which creates units and matches items on `crm_unit_id`), then call `GET /units` once and store the `crm_unit_id` ↔ `unit_id` mapping alongside your records, and address units by `unit_id` from then on.
 
-:::tip Do you need to store KISS `unit_id`s?
-Only if you want to call the per-unit endpoints (the single `PATCH`, or assign / remove a primary user). Those are addressed by ULID. If you'd rather key everything off your own IDs, stay on the bulk `PATCH /units` for every fact change. When you do need ULIDs, `GET /units` returns the full `crm_unit_id` ↔ `unit_id` mapping; store it once alongside your records.
+:::tip What is `crm_unit_id` for, then?
+It is your reference label: KISS stores it so you (and KISS support) can correlate a unit with your records, and it is how the bulk `PATCH /units` matches items. Keep it current, but treat it as metadata rather than the key your integration depends on. If you ever lose your mapping, `GET /units` returns both IDs for every unit.
 :::
 
 Every unit belongs to a **location**. If your company has one active location, omit it and the API infers it; otherwise pass `location_id` (a ULID) or your own `pms_location_code` (set per location in the admin portal).
@@ -75,7 +75,7 @@ Store tenant phone numbers as plain digits, country code plus number, with no `+
 :::
 
 :::tip Use the right write for the job
-Send individual changes (an overlock, a payment, a status flag) in real time as they happen, and reserve full 500-unit batches for the initial load and periodic reconciliation. A big batch to flip one flag is wasteful and slower to take effect. For a single change, either a one-item `PATCH /units` (keyed on your `crm_unit_id`) or `PATCH /units/{unit_id}` (keyed on the ULID) works; pick based on whether you store KISS IDs.
+Send individual changes (an overlock, a payment, a status flag) in real time as they happen, and reserve full 500-unit batches for the initial load and periodic reconciliation. A big batch to flip one flag is wasteful and slower to take effect. For a single change, prefer `PATCH /units/{unit_id}`; a one-item `PATCH /units` (matched on `crm_unit_id`) also works when you don't have the ULID at hand.
 :::
 
 ## Example: bulk sync
