@@ -38,10 +38,10 @@ These are the fields you control. Some directly gate access; others are informat
 | Field | Gates access? | Meaning |
 | --- | --- | --- |
 | `pms_lockout` | Yes | The overlock switch. `true` revokes the tenant's lock access; `false` restores it. |
-| `pms_lock_exempt` | Yes | Never deny this tenant for billing reasons, regardless of other flags. |
+| `pms_lock_exempt` | Yes | Never deny this tenant for billing or overlock reasons: skips the balance checks and `pms_lockout`. Auction, out-of-service, and a future `move_in_date` still apply. |
 | `pms_auction` | Yes | Unit is in auction status; tenant access is denied. |
 | `pms_unrentable` | Yes | Unit is out of service; no tenant access. |
-| `move_in_date` | Yes | A future date delays access until that date. |
+| `move_in_date` | Yes | A future date delays access until that date. Compared as a calendar date in the facility's timezone, so access starts at the beginning of the move-in day. |
 | `balance_due` | Optional | The amount the tenant owes. With `paid_through_date`, KISS can compute delinquency against the location's threshold and grace period. Informational if you drive lockouts yourself. |
 | `paid_through_date` | Optional | The date the account is paid through. Pairs with `balance_due` for KISS-computed delinquency. |
 | `pms_status_raw` | No | Your system's own status label, stored verbatim so both support teams see the same word. |
@@ -68,7 +68,7 @@ Several rules are gated by location policy toggles (for example, whether the loc
 
 ## Access states and reasons
 
-The evaluator resolves every unit with a lock into a `state` and a `reason`. This is what a read returns.
+The evaluator resolves every unit that has a lock, or that sits in a zone with an entry point, into an `access_state` and an `access_reason`. This is what a read returns. A unit with neither a lock nor an entry point is not evaluated: both fields are `null`.
 
 | State | Meaning | Tenant can unlock? |
 | --- | --- | --- |
@@ -78,7 +78,15 @@ The evaluator resolves every unit with a lock into a `state` and a `reason`. Thi
 | `auction` | Unit is in the auction process | No |
 | `unrentable` | Unit is marked as not available for rent (maintenance, damage) | No |
 
-The `reason` field explains why a unit ended up in its state. It is populated only when a unit is **denied** (`tenant_denied`); for `tenant_permitted`, `vacant`, `auction`, and `unrentable`, `reason` is `null`.
+The `access_reason` field explains why a unit ended up in its state. It is populated whenever a tenant is assigned, so for both `tenant_permitted` and `tenant_denied`; for `vacant`, `auction`, and `unrentable` it is `null`.
+
+**Permitted reasons**
+
+| Reason | What happened |
+| --- | --- |
+| `active` | All checks passed; tenant is in good standing |
+| `pms_exempt` | The `pms_lock_exempt` flag skipped the billing checks |
+| `system_exempt` | An operator granted access via an on-site override |
 
 **Denied reasons**
 
@@ -100,7 +108,7 @@ This guide explains the model. The exact field names and enum values for any end
 
 A **zone** is a grouping within a location. A unit belongs to a zone, and entry points are assigned to zones. If a tenant has access to a unit in Zone B, they also get access to Zone B's entry points (for example, "Building B Door").
 
-Entry point access depends on unit access. If a tenant is denied on all their units in a zone, they lose entry point access for that zone too.
+Entry point access depends on unit access. If a tenant is denied on all their units in a zone, they lose entry point access for that zone too. A unit does not need its own smart lock for this: a unit without a lock still counts toward its zone's entry points, so keeping its facts current matters even when there is no lock on the door.
 
 ## How unit data gets in: source types
 

@@ -72,7 +72,7 @@ The response uses the standard `{ message, data, meta }` envelope; the facility 
         "unit_id": "01KTSC4X57H4M49E661CW41BXE",
         "unit_name": "B204",
         "access_state": "tenant_permitted",
-        "access_reason": null,
+        "access_reason": "active",
         "evaluated_at": "2026-06-16T14:30:00Z",
         "bundles": [
           {
