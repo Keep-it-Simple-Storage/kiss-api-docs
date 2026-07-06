@@ -204,7 +204,7 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 
 ### Re-sending the same sync data
 
-This is **not** an error. `PATCH /units` is an upsert keyed on `crm_unit_id`, so re-sending your current roster is safe: KISS reconciles each unit to the state you send. There is no separate "unchanged" count; a unit that already exists is reported under `updated`:
+This is **not** an error. `PATCH /units` is a bulk upsert, matched on `crm_unit_id` today, so re-sending your current roster is safe: KISS reconciles each unit to the state you send. Reach for it to bootstrap and reconcile; for real-time changes, address units per-unit by `unit_id`. There is no separate "unchanged" count; a unit that already exists is reported under `updated`:
 
 ```json
 {

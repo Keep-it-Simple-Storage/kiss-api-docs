@@ -59,7 +59,7 @@ Every write accepts an `Idempotency-Key` header: any opaque string up to 255 cha
 
 A partner that serves many companies (a PMS vendor with dozens of operators, for example) still authenticates with a per-company token: you hold one token per company and send the matching one on each request. There is no cross-company token or refresh-token flow today. If you are integrating at this scale, contact KISS so we can help you provision and manage tokens across your operators. All tokens accept the same scopes and hit the same routes.
 
-:::info Coming soon (KEEP-579)
+:::info Coming soon
 OAuth 2.0 for multi-company partners (cross-company scopes and refresh tokens) is planned. Until it ships, use one per-company token each as above.
 :::
 
@@ -76,7 +76,7 @@ Your tenants sign in through **your own app's authentication**. KISS does not ad
 
 Because the token is minted server to server from a tenant your system already knows, the user never sees a KISS login screen, and you keep full control of the experience in your own app.
 
-:::info Coming soon (KEEP-958)
+:::info Coming soon
 This partner-brokered token mint (your backend exchanges its company token plus a tenant identifier for a tenant access token) is being built so Back Office partners never have to stack a second login on top of their own. Until it ships, your tenant auth is set up directly with your KISS contact during onboarding.
 :::
 
