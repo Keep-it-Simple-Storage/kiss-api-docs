@@ -31,7 +31,7 @@ The tenant app does four things:
 3. **Open the lock.** Pass the NFC key to the KISS SDK, which talks to the offline lock during a tap. Keys are served per tap, never stored as a static dump.
 4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoints so managers and support see real lock activity.
 
-:::info Coming soon (KEEP-958)
+:::info Coming soon
 Step 1 keeps your own login: a partner-brokered token mint (your backend exchanges its company token for a tenant access token) is being built so you never stack a second sign-in on top of your app's. Until it ships, set up tenant auth with your KISS contact. See [Authentication](/guides/authentication).
 :::
 
@@ -126,7 +126,7 @@ What it does not do: your sign-in, your API calls, or your UI. Those stay in you
 
 It is built as **native iOS and Android** components, so you can integrate it directly in a native app or wrap it for Flutter or React Native. The lock protocol ships as a closed-source binary, so the sensitive part stays inside the SDK while you build against a small, documented API.
 
-:::info Coming soon (KEEP-959)
+:::info Coming soon
 The partner-distributable SDK is in development and is not self-serve yet. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to request access**, and we will provide the binaries, supported versions, and the integration guide.
 :::
 

@@ -57,7 +57,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | When | Call | What it does |
 | --- | --- | --- |
 | Discover your unit IDs | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `crm_unit_id` ↔ `unit_id` mapping. Supports `ETag` / `If-None-Match`. |
-| Initial load, or nightly reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `crm_unit_id`. Per-item errors return in `data.errors` with a `200`. |
+| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `crm_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Per-item errors return in `data.errors` with a `200`. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user — sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`pms_lockout`, `pms_auction`, `pms_unrentable`, `balance_due`, …). Send only what changed. |
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. Guests with inherited access are removed automatically. |
@@ -66,7 +66,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 These endpoints set a unit's single **primary user** (its owner). The primary can also share access with **guests**, managed in the app or admin portal rather than through these tenancy endpoints. Guests come in two scopes: **inherited** (access follows the primary user's, the common case) and **direct** (independent, for a vendor or an auction winner). When you move the primary user out, inherited guests lose access automatically, so you never need to remove them first; direct guests persist until separately revoked.
 :::
 
-:::info Coming soon (KEEP-757)
+:::info Coming soon
 A bundle-grants API for managing guests programmatically exists but is behind a feature flag and is not in this reference yet. Ask your KISS contact if you need it enabled for your company.
 :::
 
