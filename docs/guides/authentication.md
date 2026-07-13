@@ -34,7 +34,7 @@ If you do not have a KISS account, email [help@keepitsimplestorage.com](mailto:h
 API tokens grant access to your company's data. Never expose them in client-side code, public repos, or logs. Revoke a token from the same **API** tab if it is ever exposed; revocation takes effect immediately.
 :::
 
-For PMS integrations, scope the token to `pms:read` and `pms:write`. See the [PMS integration guide](/guides/pms/quickstart) for the end-to-end flow.
+For unit-data integrations, scope the token to `units:read` and `units:write`. Tokens created earlier with the legacy `pms:read` / `pms:write` scopes keep working unchanged — they are accepted as aliases of the new names, so no re-mint is needed. See the [PMS integration guide](/guides/pms/quickstart) for the end-to-end flow.
 
 ### Use the token
 

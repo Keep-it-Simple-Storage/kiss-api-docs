@@ -23,10 +23,10 @@ Every request is JSON over HTTPS with a company-scoped Bearer token.
 | | |
 | --- | --- |
 | Base URL | `https://api-app.keepitsimplestorage.com/api/v2` |
-| Auth | `Authorization: Bearer <token>` (scopes `pms:read`, `pms:write`) |
+| Auth | `Authorization: Bearer <token>` (scopes `units:read`, `units:write`) |
 | Writes | Require an `Idempotency-Key` header |
 
-Create the token yourself in the web admin portal: **Company Settings → API**, name it, select the `pms:read` and `pms:write` scopes, and copy it (shown once). See [Authentication](/guides/authentication) for the full model.
+Create the token yourself in the web admin portal: **Company Settings → API**, name it, select the `units:read` and `units:write` scopes, and copy it (shown once). Existing tokens carrying the legacy `pms:read` / `pms:write` scopes keep working — they are accepted as aliases. See [Authentication](/guides/authentication) for the full model.
 
 ## Identifiers and locations
 
@@ -37,15 +37,15 @@ Every unit has **two** IDs:
 
 | Endpoint | Addressed by |
 | --- | --- |
-| `PATCH /units` (bulk) | your **`crm_unit_id`** |
+| `PATCH /units` (bulk) | per item: the KISS **`unit_id`**, or your **`crm_unit_id`** — exactly one |
 | `PATCH /units/{unit_id}` (single) | the KISS **`unit_id`** (ULID) |
 | `PUT` / `DELETE /units/{unit_id}/tenancy` | the KISS **`unit_id`** (ULID) |
 | `GET /units/{unit_id}` | the KISS **`unit_id`** (ULID) |
 
-**Key your integration on `unit_id`.** It is the durable handle for every per-unit call, and it survives events your own IDs may not: it stays the same even when an operator moves to new management software and every external ID for the facility gets rebuilt. The flow is: load your roster with the bulk `PATCH /units` (which creates units and matches items on `crm_unit_id`), then call `GET /units` once and store the `crm_unit_id` ↔ `unit_id` mapping alongside your records, and address units by `unit_id` from then on.
+**Key your integration on `unit_id`.** It is the durable handle for every call, and it survives events your own IDs may not: it stays the same even when an operator moves to new management software and every external ID for the facility gets rebuilt. The flow is: load your roster with the bulk `PATCH /units` (items keyed by your `crm_unit_id`; unknown ids create units), then call `GET /units` once and store the `crm_unit_id` ↔ `unit_id` mapping alongside your records, and address units by `unit_id` from then on — in per-unit calls and bulk items alike.
 
 :::tip What is `crm_unit_id` for, then?
-It is your reference label: KISS stores it so you (and KISS support) can correlate a unit with your records, and it is how the bulk `PATCH /units` matches items. Keep it current, but treat it as metadata rather than the key your integration depends on. If you ever lose your mapping, `GET /units` returns both IDs for every unit.
+It is your reference label: KISS stores it so you (and KISS support) can correlate a unit with your records, it matches bulk items that are not keyed by `unit_id`, and it is the only key that can **create** a unit in bulk (callers cannot mint `unit_id`s — an unknown one is a per-item `unit_not_found` error). Keep it current, but treat it as metadata rather than the key your integration depends on. If you ever lose your mapping, `GET /units` returns both IDs for every unit.
 :::
 
 Every unit belongs to a **location**. If your company has one active location, omit it and the API infers it; otherwise pass `location_id` (a ULID) or your own `pms_location_code` (set per location in the admin portal).
@@ -57,7 +57,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | When | Call | What it does |
 | --- | --- | --- |
 | Discover your unit IDs | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `crm_unit_id` ↔ `unit_id` mapping. Supports `ETag` / `If-None-Match`. |
-| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `crm_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Per-item errors return in `data.errors` with a `200`. |
+| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units. Key each item by `unit_id` (update-only; an unknown `unit_id` returns a per-item `unit_not_found` error, never a create) or by your `crm_unit_id` (creates the unit when new) — exactly one per item. Per-item errors return in `data.errors` with a `200`. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user — sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`pms_lockout`, `pms_auction`, `pms_unrentable`, `balance_due`, …). Send only what changed. |
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. Guests with inherited access are removed automatically. |
@@ -75,12 +75,12 @@ Store tenant phone numbers as plain digits, country code plus number, with no `+
 :::
 
 :::tip Use the right write for the job
-Send individual changes (an overlock, a payment, a status flag) in real time as they happen, and reserve full 500-unit batches for the initial load and periodic reconciliation. A big batch to flip one flag is wasteful and slower to take effect. For a single change, prefer `PATCH /units/{unit_id}`; a one-item `PATCH /units` (matched on `crm_unit_id`) also works when you don't have the ULID at hand.
+Send individual changes (an overlock, a payment, a status flag) in real time as they happen, and reserve full 500-unit batches for the initial load and periodic reconciliation. A big batch to flip one flag is wasteful and slower to take effect. For a single change, prefer `PATCH /units/{unit_id}`; a one-item `PATCH /units` keyed by `unit_id` — or by `crm_unit_id` when you don't have the ULID at hand — also works.
 :::
 
 ## Example: bulk sync
 
-The bulk upsert is the workhorse. Send each unit's known facts; KISS reconciles.
+The bulk upsert is the workhorse. Send each unit's known facts; KISS reconciles. Key items by `unit_id` once you hold the mapping; use `crm_unit_id` for units KISS hasn't seen yet.
 
 ```bash
 curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
@@ -89,7 +89,7 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
   -H "Idempotency-Key: acme-roster-2026-06-12" \
   -d '{
     "units": [
-      { "crm_unit_id": "A-142", "unit_name": "142", "occupied": true,
+      { "unit_id": "01J8MZK3QFV2Q9WXAY5T8NHJ2D", "occupied": true,
         "pms_tenant_id": "T-883920", "move_in_date": "2026-06-01",
         "balance_due": 0, "pms_lockout": false },
       { "crm_unit_id": "A-143", "unit_name": "143", "occupied": false }
@@ -129,7 +129,7 @@ Before you wire up production data:
 
 ## Integration checklist
 
-1. Create your token (Company Settings → API) with `pms:read` + `pms:write`.
+1. Create your token (Company Settings → API) with `units:read` + `units:write`.
 2. `GET /units` to see what is registered; load your roster with `PATCH /units` and store each `unit_id`.
 3. Wire your events to the calls in the table above.
 4. Retry on timeout / 5xx with the *same* `Idempotency-Key`; alert on 4xx.

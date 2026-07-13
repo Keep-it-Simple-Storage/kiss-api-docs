@@ -26,13 +26,13 @@ For validation errors, the response includes field-level details:
 {
   "message": "Validation failed.",
   "errors": {
-    "units.0.crm_unit_id": ["The crm_unit_id field is required."],
-    "units.2.crm_unit_id": ["The crm_unit_id field is required."]
+    "units.0.unit_id": ["The units.0 item must provide exactly one of unit_id or crm_unit_id."],
+    "units.2.unit_id": ["The units.2 item must provide exactly one of unit_id or crm_unit_id."]
   }
 }
 ```
 
-The `errors` object maps field paths to arrays of error messages. For items in an array, the path includes the index in dot notation (e.g., `units.2.crm_unit_id` is the third unit in the array).
+The `errors` object maps field paths to arrays of error messages. For items in an array, the path includes the index in dot notation (e.g., `units.2.unit_id` is the third unit in the array).
 
 ---
 
@@ -55,19 +55,19 @@ The `errors` object maps field paths to arrays of error messages. For items in a
 
 ## Common Mistakes and Fixes
 
-### Syncing a unit without `crm_unit_id`
+### Syncing a unit without a key — or with both keys
 
 **Error:**
 ```json
 {
   "message": "Validation failed.",
   "errors": {
-    "units.0.crm_unit_id": ["The crm_unit_id field is required."]
+    "units.0.unit_id": ["The units.0 item must provide exactly one of unit_id or crm_unit_id."]
   }
 }
 ```
 
-**Fix:** `crm_unit_id` is the **only** required field on a sync item. Everything else (`occupied`, `move_in_date`, `pms_tenant_id`, `balance_due`, the `pms_*` flags) is optional, so send only what you know. To mark a unit occupied, set `occupied: true` and include the tenant's `pms_tenant_id`. Note that `pms_tenant_id` is a **flat** field on the unit, not a nested `tenant` object:
+**Fix:** every sync item must be keyed by **exactly one** of `unit_id` (the KISS ULID — updates only) or `crm_unit_id` (your reference — creates the unit when new). Sending neither, or both, fails the whole request with the error above. Everything else (`occupied`, `move_in_date`, `pms_tenant_id`, `balance_due`, the `pms_*` flags) is optional, so send only what you know. To mark a unit occupied, set `occupied: true` and include the tenant's `pms_tenant_id`. Note that `pms_tenant_id` is a **flat** field on the unit, not a nested `tenant` object:
 ```json
 {
   "crm_unit_id": "PMS-U-1001",
@@ -79,7 +79,7 @@ The `errors` object maps field paths to arrays of error messages. For items in a
 
 ---
 
-### Sending duplicate `crm_unit_id` values, or both location fields
+### Sending duplicate unit keys, or both location fields
 
 **Error:**
 ```json
@@ -91,7 +91,7 @@ The `errors` object maps field paths to arrays of error messages. For items in a
 }
 ```
 
-**Fix:** Each `crm_unit_id` may appear at most once per `PATCH /units` request, so de-duplicate the batch before sending. Separately, a single item may set `location_id` **or** `pms_location_code` to place a unit, but not both; sending both fails with `The units.0.location_id field cannot be present together with units.0.pms_location_code.`
+**Fix:** Each `crm_unit_id` — and likewise each `unit_id` — may appear at most once per `PATCH /units` request (the `unit_id` variant fails with `Duplicate unit_id values are not allowed.`), so de-duplicate the batch before sending. Separately, a single item may set `location_id` **or** `pms_location_code` to place a unit, but not both; sending both fails with `The units.0.location_id field cannot be present together with units.0.pms_location_code.`
 
 ---
 
@@ -204,7 +204,7 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 
 ### Re-sending the same sync data
 
-This is **not** an error. `PATCH /units` is a bulk upsert, matched on `crm_unit_id` today, so re-sending your current roster is safe: KISS reconciles each unit to the state you send. Reach for it to bootstrap and reconcile; for real-time changes, address units per-unit by `unit_id`. There is no separate "unchanged" count; a unit that already exists is reported under `updated`:
+This is **not** an error. `PATCH /units` is a bulk upsert — items keyed by `crm_unit_id` create-or-update, items keyed by `unit_id` update — so re-sending your current roster is safe: KISS reconciles each unit to the state you send. Reach for it to bootstrap and reconcile; for real-time changes, address units per-unit by `unit_id`. There is no separate "unchanged" count; a unit that already exists is reported under `updated`:
 
 ```json
 {
@@ -242,7 +242,7 @@ A `401` on every request usually means your token is wrong or expired. For PMS i
 
 ### 3. Read the error message
 
-KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the [API Reference](/reference/kiss-api-reference).
+KISS error messages are specific. "The units.0 item must provide exactly one of unit_id or crm_unit_id." tells you exactly what's wrong and where. Check your payload against the [API Reference](/reference/kiss-api-reference).
 
 ### 4. Check field paths in validation errors
 
