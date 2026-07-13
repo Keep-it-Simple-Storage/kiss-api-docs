@@ -57,7 +57,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | When | Call | What it does |
 | --- | --- | --- |
 | Discover your unit IDs | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `crm_unit_id` ↔ `unit_id` mapping. Supports `ETag` / `If-None-Match`. |
-| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units. Key each item by `unit_id` (update-only; an unknown `unit_id` returns a per-item `unit_not_found` error, never a create) or by your `crm_unit_id` (creates the unit when new) — exactly one per item. Per-item errors return in `data.errors` with a `200`. |
+| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units. Key each item by `unit_id` (update-only; an unknown `unit_id` returns a per-item `unit_not_found` error, never a create) or by your `crm_unit_id` (creates the unit when new) — exactly one per item. Per-item errors return in `data.errors` with a `200`; when **every** item fails, the same body comes back as a `422`. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user — sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`pms_lockout`, `pms_auction`, `pms_unrentable`, `balance_due`, …). Send only what changed. |
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. Guests with inherited access are removed automatically. |
@@ -97,7 +97,7 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
   }'
 ```
 
-A failing item does not abort the batch: it lands in `data.errors` and the response is still `200`, so always check that array. Full field list on the [reference page](/reference/v-2-units-sync).
+A failing item does not abort the batch: it lands in `data.errors` and the response is still `200`, so always check that array — the message and `data.failed` carry the outcome counts. The one exception: when **every** item fails (nothing was applied), the response is a `422` with the identical body shape, so status-code-only monitoring can't mistake a fully failed sync for a success. Full field list on the [reference page](/reference/v-2-units-sync).
 
 ## Idempotency
 

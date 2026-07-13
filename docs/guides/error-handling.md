@@ -46,7 +46,7 @@ The `errors` object maps field paths to arrays of error messages. For items in a
 | `401` | Unauthorized | Missing, invalid, or expired token |
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
-| `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
+| `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values). Also returned by bulk `PATCH /units` when **every** item in the batch failed — same body shape as the `200`, check `data.errors`. |
 | `409` | Conflict | Source-type collision (a push write against a pull-owned unit) **or** `Idempotency-Key` reused with a different payload. |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
