@@ -208,13 +208,14 @@ This is **not** an error. `PATCH /units` is a bulk upsert — items keyed by `cr
 
 ```json
 {
-  "message": "Sync completed.",
+  "message": "Sync completed: 0 created, 3 updated, 0 failed.",
   "meta": {},
   "data": {
     "synced_at": "2026-04-07T14:30:00Z",
     "total": 3,
     "created": 0,
     "updated": 3,
+    "failed": 0,
     "errors": []
   }
 }
