@@ -103,6 +103,8 @@ A failing item does not abort the batch: it lands in `data.errors` and the respo
 
 Every write requires an `Idempotency-Key` header (any opaque string up to 255 characters). Retry with the **same** key after a timeout or 5xx; the original response replays and nothing is applied twice. The same key with a different body returns `409`.
 
+Only **successful** outcomes are cached: if a write was rejected (a `409` conflict, a `422`), retrying with the same key re-evaluates the request — so once the blocker clears (a unit released, a location created), the same retried request succeeds instead of replaying the stale rejection.
+
 ## When changes take effect
 
 Every write is evaluated immediately: the moment you set `pms_lockout`, the unit's access state flips on our side. Tenant apps, though, operate **offline**: each device caches its access bundle and keys for up to **8 hours** (the `GET /access` cache window). So a change you write can take up to 8 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
