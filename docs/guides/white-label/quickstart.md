@@ -51,7 +51,7 @@ Everything the signed-in user's app needs to operate offline, in one call: their
 
 | | |
 | --- | --- |
-| Auth | `Authorization: Bearer <token>` — the signed-in user's token |
+| Auth | `Authorization: Bearer <token>`, the signed-in user's token |
 | Caching | `ETag` + `Cache-Control: private, max-age=28800` (8 hours); send `If-None-Match` for a cheap `304` |
 
 ```bash

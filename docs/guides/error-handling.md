@@ -34,6 +34,10 @@ For validation errors, the response includes field-level details:
 
 The `errors` object maps field paths to arrays of error messages. For items in an array, the path includes the index in dot notation (e.g., `units.2.crm_unit_id` is the third unit in the array).
 
+:::note Validation messages still use the older field names
+If you send `external_unit_id` and something fails validation, the error will name `crm_unit_id` instead. The two are the same field, and the validator reports the older name. The same goes for `external_location_code`, which appears as `pms_location_code` in error text. Match on the path rather than the exact wording if you parse these.
+:::
+
 ---
 
 ## HTTP Status Codes
@@ -185,7 +189,7 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 }
 ```
 
-**Fix:** You sent two requests with the same `Idempotency-Key` header but different bodies. The key is tied to a specific logical operation — reusing it with different data is a client-side bug. Generate a new unique value for each new logical operation; reuse the same value only when retrying the *exact same* request.
+**Fix:** You sent two requests with the same `Idempotency-Key` header but different bodies. The key is tied to a specific logical operation, so reusing it with different data is a client-side bug. Generate a new unique value for each new logical operation; reuse the same value only when retrying the *exact same* request.
 
 ---
 

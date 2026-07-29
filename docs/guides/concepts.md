@@ -37,17 +37,23 @@ These are the fields you control. Some directly gate access; others are informat
 
 | Field | Gates access? | Meaning |
 | --- | --- | --- |
-| `pms_lockout` | Yes | The overlock switch. `true` revokes the tenant's lock access; `false` restores it. |
-| `pms_lock_exempt` | Yes | Never deny this tenant for billing or overlock reasons: skips the balance checks and `pms_lockout`. Auction, out-of-service, and a future `move_in_date` still apply. |
-| `pms_auction` | Yes | Unit is in auction status; tenant access is denied. |
-| `pms_unrentable` | Yes | Unit is out of service; no tenant access. |
+| `lockout` | Yes | The overlock switch. `true` revokes the tenant's lock access; `false` restores it. |
+| `lock_exempt` | Yes | Never deny this tenant for billing or overlock reasons: skips the balance checks and `lockout`. Auction, out-of-service, and a future `move_in_date` still apply. |
+| `auction` | Yes | Unit is in auction status; tenant access is denied. |
+| `unrentable` | Yes | Unit is out of service; no tenant access. |
 | `move_in_date` | Yes | A future date delays access until that date. Compared as a calendar date in the facility's timezone, so access starts at the beginning of the move-in day. |
 | `balance_due` | Optional | The amount the tenant owes. With `paid_through_date`, KISS can compute delinquency against the location's threshold and grace period. Informational if you drive lockouts yourself. |
 | `paid_through_date` | Optional | The date the account is paid through. Pairs with `balance_due` for KISS-computed delinquency. |
-| `pms_status_raw` | No | Your system's own status label, stored verbatim so both support teams see the same word. |
+| `status_raw` | No | Your system's own status label, stored verbatim so both support teams see the same word. |
+
+:::note New to self-storage terms?
+An **overlock** is the industry practice of adding a second lock to a unit so the tenant cannot get in, usually for non-payment. `lockout` is the digital equivalent: flip it on and the tenant's phone stops opening the door.
+
+You may also see these fields written as `pms_lockout`, `pms_lock_exempt`, `pms_auction`, `pms_unrentable`, and `pms_status_raw`. Those are the older names for the same fields and they still work. Build on the shorter names above.
+:::
 
 :::tip Pick one delinquency owner
-If your system owns the delinquency rules, drive the overlock explicitly: set `pms_lockout` on delinquency, clear it on payment, and treat `balance_due` / `paid_through_date` as informational. If you would rather KISS compute delinquency, send `balance_due` and `paid_through_date` on every change and KISS applies the location's threshold and grace period. Driving the overlock yourself is the recommended default.
+If your system owns the delinquency rules, drive the overlock explicitly: set `lockout` on delinquency, clear it on payment, and treat `balance_due` / `paid_through_date` as informational. If you would rather KISS compute delinquency, send `balance_due` and `paid_through_date` on every change and KISS applies the location's threshold and grace period. Driving the overlock yourself is the recommended default.
 :::
 
 ## The evaluator: precedence order
@@ -55,16 +61,16 @@ If your system owns the delinquency rules, drive the overlock explicitly: set `p
 After every write, KISS evaluates a unit's facts in a fixed order. The **first** rule that matches decides the outcome:
 
 1. A manager's on-site override (lockout or exemption), when present, beats everything below it.
-2. `pms_unrentable`, then `pms_auction`: the unit resolves to that state (`unrentable` or `auction`) and the tenant cannot unlock.
+2. `unrentable`, then `auction`: the unit resolves to that state and the tenant cannot unlock.
 3. Vacant unit (no active tenancy, or the tenant record cannot be resolved): no tenant access.
 4. `move_in_date` in the future: access denied until that date.
-5. `pms_lock_exempt`: access allowed.
-6. `pms_lockout`: access denied (subject to a short grace window just after move-in).
+5. `lock_exempt`: access allowed.
+6. `lockout`: access denied (subject to a short grace window just after move-in).
 7. Balance past the location's threshold and grace period: access denied as delinquent.
-8. `blanket_delinquency`: tenant is delinquent on another unit at the same location: access denied.
+8. Blanket delinquency: tenant is delinquent on another unit at the same location, so access is denied here too.
 9. Otherwise: access allowed.
 
-Several rules are gated by location policy toggles (for example, whether the location respects `pms_lockout` or `pms_lock_exempt`, and whether blanket delinquency applies). Your KISS contact configures those per location with you.
+Several rules are gated by location policy toggles (for example, whether the location respects `lockout` or `lock_exempt`, and whether blanket delinquency applies). Your KISS contact configures those per location with you.
 
 ## Access states and reasons
 
@@ -85,7 +91,7 @@ The `access_reason` field explains why a unit ended up in its state. It is popul
 | Reason | What happened |
 | --- | --- |
 | `active` | All checks passed; tenant is in good standing |
-| `pms_exempt` | The `pms_lock_exempt` flag skipped the billing checks |
+| `pms_exempt` | The `lock_exempt` flag skipped the billing checks |
 | `system_exempt` | An operator granted access via an on-site override |
 
 **Denied reasons**
@@ -136,7 +142,7 @@ The API manages unit facts and tenancy, not lock hardware. Installing a physical
 
 That is the whole model: you keep facts current, KISS evaluates them, and the apps act on the result. From here, follow the path that matches what you are building:
 
-- **[Sync partners](/guides/pms/quickstart)** — push unit and tenant facts into KISS from a PMS or any data source.
-- **[App partners](/guides/white-label/quickstart)** — build your own tenant app on the access bundle and NFC keys.
+- **[Sync partners](/guides/pms/quickstart)**: push unit and tenant facts into KISS from a PMS or any data source.
+- **[App partners](/guides/white-label/quickstart)**: build your own tenant app on the access bundle and NFC keys.
 
 Every endpoint also has its own page in the [API Reference](/reference/kiss-api-reference).
