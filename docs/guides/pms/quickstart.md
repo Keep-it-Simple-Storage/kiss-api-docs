@@ -36,7 +36,7 @@ Every unit has **two** IDs:
 - **`external_unit_id`**: your own identifier, stored on the unit as reference metadata. You set it.
 
 :::note You may see `crm_unit_id` in older examples
-`external_unit_id` and `crm_unit_id` are the same field. The `crm_` name still works and is not going away without notice, but the neutral names are the ones to build on. The same applies to `external_tenant_id` (was `pms_tenant_id`) and `external_location_code` (was `pms_location_code`).
+`external_unit_id` and `crm_unit_id` are the same field. Both are accepted, and responses carry both, so existing integrations keep working. New ones should use `external_unit_id`. The same applies to `external_tenant_id` (was `pms_tenant_id`) and `external_location_code` (was `pms_location_code`).
 :::
 
 | Endpoint | Addressed by |
