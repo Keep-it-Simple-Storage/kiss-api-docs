@@ -7,10 +7,13 @@
 // renders as Quo-style endpoint pages. The "Full API spec" link points callers
 // at the complete surface.
 
-import {writeFileSync, existsSync, mkdirSync} from 'node:fs';
+import {writeFileSync, readFileSync, existsSync, mkdirSync} from 'node:fs';
 import {dirname} from 'node:path';
 
-const SOURCE = 'https://app.keepitsimplestorage.com/docs/api.json';
+// The live spec is access-gated, so a build cannot always reach it. Point
+// OPENAPI_SOURCE at a local file (e.g. the output of `php artisan
+// scramble:export` in kiss-api) to regenerate from a spec you have in hand.
+const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/api.json';
 const OUT = 'openapi/kiss-api.json';
 
 // Curated, partner-facing endpoints (by Scramble operationId).
@@ -116,12 +119,21 @@ function downConvert(node) {
   for (const key of Object.keys(node)) downConvert(node[key]);
 }
 
+async function loadSpec() {
+  if (!/^https?:/.test(SOURCE)) {
+    return JSON.parse(readFileSync(SOURCE, 'utf8'));
+  }
+
+  const res = await fetch(SOURCE);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  return res.json();
+}
+
 async function main() {
   let spec;
   try {
-    const res = await fetch(SOURCE);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    spec = await res.json();
+    spec = await loadSpec();
   } catch (err) {
     if (existsSync(OUT)) {
       console.warn(`[sync-openapi] fetch failed (${err.message}); keeping existing ${OUT}`);
