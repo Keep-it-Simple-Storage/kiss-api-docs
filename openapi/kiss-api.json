@@ -792,10 +792,7 @@
                               }
                             },
                             "required": [
-                              "crm_unit_id",
-                              "unit_id",
-                              "error",
-                              "code"
+                              "error"
                             ]
                           }
                         }
@@ -907,10 +904,7 @@
                               }
                             },
                             "required": [
-                              "crm_unit_id",
-                              "unit_id",
-                              "error",
-                              "code"
+                              "error"
                             ]
                           }
                         }
@@ -946,7 +940,7 @@
           }
         },
         "summary": "Create or update units",
-        "description": "Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` \u2014 unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `crm_unit_id`. Use it for the initial roster load and periodic reconciliation. Every applied unit comes back in `data.results` with its KISS `unit_id`, so you can record the mapping without a second call; per-item failures come back in `data.errors` with a `200` response."
+        "description": "Create or update up to 500 units in one idempotent call, matched on your `external_unit_id`. Unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `external_unit_id`. Use it for the initial roster load and periodic reconciliation. Every applied unit comes back in `data.results` with its KISS `unit_id`, so you can record the mapping without a second call. Per-item failures come back in `data.errors` with a `200`; a batch where every item failed answers `422` with the same body."
       }
     },
     "/units/{ulid}/tenancy": {
