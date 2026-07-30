@@ -59,7 +59,7 @@ If you send `external_unit_id` and something fails validation, the error will na
 
 ## Common Mistakes and Fixes
 
-### Syncing a unit without `crm_unit_id`
+### Syncing a unit without an identifier
 
 **Error:**
 ```json
@@ -71,19 +71,19 @@ If you send `external_unit_id` and something fails validation, the error will na
 }
 ```
 
-**Fix:** `crm_unit_id` is the **only** required field on a sync item. Everything else (`occupied`, `move_in_date`, `pms_tenant_id`, `balance_due`, the `pms_*` flags) is optional, so send only what you know. To mark a unit occupied, set `occupied: true` and include the tenant's `pms_tenant_id`. Note that `pms_tenant_id` is a **flat** field on the unit, not a nested `tenant` object:
+**Fix:** every sync item needs exactly one identifier: your own `external_unit_id`, or the KISS `unit_id` for an update. Everything else (`occupied`, `move_in_date`, `external_tenant_id`, `balance_due`, the access flags) is optional, so send only what you know. To mark a unit occupied, set `occupied: true` and include the tenant's `external_tenant_id`. Note that `external_tenant_id` is a **flat** field on the unit, not a nested `tenant` object:
 ```json
 {
-  "crm_unit_id": "PMS-U-1001",
+  "external_unit_id": "PMS-U-1001",
   "occupied": true,
-  "pms_tenant_id": "PMS-T-5001",
+  "external_tenant_id": "PMS-T-5001",
   "move_in_date": "2026-06-01"
 }
 ```
 
 ---
 
-### Sending duplicate `crm_unit_id` values, or both location fields
+### Sending duplicate `external_unit_id` values, or both location fields
 
 **Error:**
 ```json
@@ -95,7 +95,7 @@ If you send `external_unit_id` and something fails validation, the error will na
 }
 ```
 
-**Fix:** Each `crm_unit_id` may appear at most once per `PATCH /units` request, so de-duplicate the batch before sending. Separately, a single item may set `location_id` **or** `pms_location_code` to place a unit, but not both; sending both fails with `The units.0.location_id field cannot be present together with units.0.pms_location_code.`
+**Fix:** Each `external_unit_id` may appear at most once per `PATCH /units` request, so de-duplicate the batch before sending. Separately, a single item may set `location_id` **or** `external_location_code` to place a unit, but not both; sending both fails with `The units.0.location_id field cannot be present together with units.0.pms_location_code.`
 
 ---
 
@@ -208,7 +208,7 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 
 ### Re-sending the same sync data
 
-This is **not** an error. `PATCH /units` is a bulk upsert, matched on `crm_unit_id` today, so re-sending your current roster is safe: KISS reconciles each unit to the state you send. Reach for it to bootstrap and reconcile; for real-time changes, address units per-unit by `unit_id`. There is no separate "unchanged" count; a unit that already exists is reported under `updated`:
+This is **not** an error. `PATCH /units` is a bulk upsert, matched on `external_unit_id`, so re-sending your current roster is safe: KISS reconciles each unit to the state you send. Reach for it to bootstrap and reconcile; for real-time changes, address units per-unit by `unit_id`. There is no separate "unchanged" count; a unit that already exists is reported under `updated`:
 
 ```json
 {
@@ -219,6 +219,11 @@ This is **not** an error. `PATCH /units` is a bulk upsert, matched on `crm_unit_
     "total": 3,
     "created": 0,
     "updated": 3,
+    "results": [
+      { "unit_id": "01K2E4M9XQ7T8VB3RY0DZC5NHF", "external_unit_id": "PMS-U-1001", "outcome": "updated" },
+      { "unit_id": "01K2E4M9XR2P6WD5FA1QJ8T4KN", "external_unit_id": "PMS-U-1002", "outcome": "updated" },
+      { "unit_id": "01K2E4M9XSA4HC7NB2VKM3R9QD", "external_unit_id": "PMS-U-1003", "outcome": "updated" }
+    ],
     "errors": []
   }
 }
@@ -260,7 +265,7 @@ If a large sync is failing, reduce to a single unit with only required fields to
 {
   "units": [
     {
-      "crm_unit_id": "TEST-001",
+      "external_unit_id": "TEST-001",
       "occupied": false
     }
   ]

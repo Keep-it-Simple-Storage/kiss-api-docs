@@ -78,7 +78,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | When | Call | What it does |
 | --- | --- | --- |
 | Look up units you did not just write | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `external_unit_id` ↔ `unit_id` mapping. Returns a page at a time; narrow it with `filter[external_location_code]` to one store. Supports `ETag` / `If-None-Match`. |
-| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`, both with a `200`. |
+| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`. A batch with at least one success answers `200`; a batch where every item failed answers `422` with the same body. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user. Sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`lockout`, `auction`, `unrentable`, `balance_due`, and so on). Send only what changed. |
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. Guests with inherited access are removed automatically. |
@@ -118,7 +118,9 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
   }'
 ```
 
-A failing item does not abort the batch: it lands in `data.errors` and the response is still `200`, so always check that array. Applied units land in `data.results` with their `unit_id`. Full field list on the [reference page](/reference/v-2-units-sync).
+A failing item does not abort the batch: it lands in `data.errors` while the rest still apply, so always check that array rather than trusting the status code. Applied units land in `data.results` with their `unit_id`.
+
+The status tells you how much got through: `200` when at least one item applied, `422` when every item failed. The body is the same either way, so `data.errors` is what you read in both cases. Full field list on the [reference page](/reference/v-2-units-sync).
 
 ## Reading the unit list
 
