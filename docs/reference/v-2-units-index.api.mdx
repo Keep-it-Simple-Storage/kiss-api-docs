@@ -1,11 +1,11 @@
 ---
 id: v-2-units-index
 title: "List units"
-description: "Returns every unit in your company, each carrying both IDs: your own `crm_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Supports conditional requests via `ETag` / `If-None-Match`."
+description: "Lists the units in your company, each carrying both IDs: your own `external_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed to one store with `filter[location]` or `filter[external_location_code]`. Supports conditional requests via `ETag` / `If-None-Match`."
 sidebar_label: "List units"
 hide_title: true
 hide_table_of_contents: true
-api: eJzlVk1v2zgQ/SsDnlrAkd00J1+KxTZbGO22RT5OgRGPpbHFRiK5JOVEMPzfd4aSvY7jdNPbLgIYsDUfb4ZvHkdeK+vIY9TWTAo1VqvTrDE6hkybgh7UQEVcBjW+UddiVdOB8hScNYHYulano5F8FRRyr52gMAZn5dZEMlF86Fyl81Rh+CNIwFqFvKQak9e03xaMv1axdcTJdv6D8sgQzktnUXeFagoBl3Q0xTRVpTaD3TN6jy0j6Ei1JG/2fCF6bZZqM90MVIEx9XDgGnCxR45nWnK41Aa7M/9bbN54z3zcuv4MfbRmlpbkpSYH/8QbbcTquKvC8DzuRub1V6M9FTLER23s1dwW2EcTho6wc4C4R8JA5jA9DNgOrqe7J3e6N5L/z8Rz23SaPqCZ87XRdVOr8ehFrHVAr5ew43y8mAoOlND3o7Mjy4cdZ6N3Tx3XBptYsvplGTH+LyypF/P+mKbBQQfn3lsPdkV+pek+e8LCFqg/3tno/dNT/JbnHAUFGf3fP8PmMPuCYuNNAOL8FuRFA9pAaxsPua0dy3YAhHkJOQu05fowt7GEyccw7qLsvYFZ7utbyb3VxQzQFMBjhc+Ty0uY7cxvEK6/TD6+zeCq1AH4I0E1cySo0UKI1hPoheDCPZooRiwKL/QGDqooNRhg3iaoDC4b56xnC5NeaDkSViCHp8DGlUaYnV/hcgZDmE0WJ1+toZM/MeblLOu0W1p5xS4p8Y+x5IdhqsHPgRklH9KlbTzvelXG6MJ4OESnT7jv7I7IcayuXUXSPdOcMWviH65O+b4KCG94HduEkmbPo7yZ7rsukzXsxLE/c6korfR2NSf0ab11P/6wvsYoIvw+YbbuyKTxa7OwCUTHSrLSJCTkghbEr5tcLrCcrdMAt3ooizQiv41meiU6DYxM4SxvjQC1DSIW3h/dv5UATaAMvhIVrIFdIGdhlHEbG6FkwA/wO18RzGMnoNScJ5eldy5j1pguisF04i+aq2xH8qjJ9T9X7VXLuJdKpIc4dBVqI0Qmwa57Td+oZvtfsWSCxbBezzHQta82GzFzKS8a5Z8r9BrnVSdTTiAsWHEi3ztq+33n5L6ssGrSm+twy4m4d3fr0/kVa/JvGsa/ug==
+api: eJztWE1v2zgQ/SsDnlpAcZy0veiyKNruItjubpE0p8CwaGpssZFIlhw5NQz998VQsiPbSuJ2e9gCOSUmR8M3n+S8tbAOvSRtzUUuUrE8H9VGUxhpk+M3kQiSiyDSG3HNq2KSCCe9rJDQ8/JaGFmhSMVcl4T+prQq6pqIRGgjUvG1Rr8SicgxKK8d74lUXCLV3oA15QricSAJqNABNgoSkHnuMQTMYbYCFvnz4uoKso3AVOcZvLj+ePH+5UgkIqgCKynStaCVY0CBvDYL0TTJPkb8RuiNLKdbVcrm+GOIcQsY7jQVrQ2sDrSBla092DsDYRUIqxG8s5WTZnVC9hYNKFmW6EPUeawJTi7wcaCf5AKBLPgIeASf5EKbBeRIUpeMrUKYSXXLALMKSY4cS0QbskEY2hAu0MeT5rIuSaRnO5jQT5/GdWnvAjj0wKIjeN+qCgz17E0CSjqHOTv1bDw+GsabppkkwmNw1gQMLH0+HvOf3cNFIpQ1hIZ4TzpX6jZqp18CC6x7x0mz+mceU7s72M6+oCKRCOe5Vki3B1UYAls99Impy1Kwi7rf0nvJLtGEFX/c9PY2UZ40icglDSVAIjhQvY0HIN1H8mlZVXuPhtrIHXq5Se7jOrhLlmQ5vFXK8LDehuP1tdYec24rOzCSfi61B/S1sYcGy2NHY88JCcdhsi+wCVzn7s65k15Ifp2IK1u3OX1QJJU2uqorkY6P8lqr6Ndz2P5nTyDi1j3V+aDHt/fCg0JJRC1nJYqUfI1NIpSvvks+yraNcwBC73I7SptVqnYa+8Iza0uUJqaQXeJUm2kuafi4rcWERpqjbXBV+M4vSswX6I+VDrb2Cqet3ADsbl/naEjPNfrjMHAfCSujMJ9KeroiNlEdSIzdsPeDuhvCXoD2ojHo+33P9v2265UhHxxYOEkEaWIPxMfbJbbfREOf75N4nzx8dTw3wecm+NwEn5vgkU+swdfU0T1k0jQs+mr8emB0aRLxenx2uHFtZE0FW64kRecePeIc3bD282kXwQfvrQe7RL/UeDc6SJ6Nos681+NXh1a8VQpDgByN/v/b0Ox//VEHHmEL7DiBzdCv2kE/AZSqACW9X/EQPrNUwMX7kN5TA9l+XWUgTR5VtnzHdvmFhJbtgM9MMuj23Eo6x6rJQiDrEfSclcOdNMSLHYsCQZtFuYE5W0VVI7jEEIdw6THO5Tm8OHuzndITyDb3Zwa1i6P6ePyyZTrcLq8wxCYk0RQlDcwQjPTe3mHOWqzBDm1Ule2TRxlYv119gK7JRnBVO2c9Malhcs1bsgQOHnJUllpC9uGzXGRwCtnF/ORva/DkL0mqiDxHhVRYprwWGPNHUiFScRo9xL0F/XLDcdW+FKkoiFxIT0+l0yfSudEtotMUdOVKZGuY11C24v3T5blgZiKgqr2mVdQScxdFejPpb13F1bBN7n7O8okbKiReayh97DztP79bX3ETF28/XUDklGL6ajO3UUnX92IescglztGjUdyA2LY2h5fnB0URE8xvpEFxebTphiZ3VhsKUNlAEHthyx4GqAOO4G9kFsdsBYEKSZysxhIU6PE3eGcNSUVtDURwHt0ovhBtoErGQu+4JS4w2IRkB+T6vlU8l+EvXIZdqhN+o1NXSh0fbbHg1l1Ntq+QyD0XNhAvrNczGfDal03Dyy3jyDWW68DvnVykc1kGfCRnfj4FPWjJLa6G2fGlLGts7/efAPtn8tBP2/Ewg/6DVv1n0voRzN3496P+/k7a+jEg97PoPZgJ//C6faTf8GxXoMz5NX+z7r7jJ5Kj3lcHDyPWsr3O/vjwWTTNv1UHB6s=
 sidebar_class_name: "get api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -37,10 +37,18 @@ import Translate from "@docusaurus/Translate";
 
 
 
-Returns every unit in your company, each carrying both IDs: your own `crm_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Supports conditional requests via `ETag` / `If-None-Match`.
+Lists the units in your company, each carrying both IDs: your own `external_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed to one store with `filter[location]` or `filter[external_location_code]`. Supports conditional requests via `ETag` / `If-None-Match`.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
 
 <ParamsDetails
-  parameters={undefined}
+  {...require("./v-2-units-index.ParamsDetails.json")}
 >
   
 </ParamsDetails>

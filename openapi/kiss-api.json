@@ -405,6 +405,42 @@
         "tags": [
           "Units"
         ],
+        "parameters": [
+          {
+            "name": "filter[location]",
+            "in": "query",
+            "description": "Return only units at this location, addressed by its KISS `location_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[external_location_code]",
+            "in": "query",
+            "description": "Return only units at the location with this code in your own system. Company-token callers only.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page to return. Paging details come back in `meta.pagination`.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Rows per page. Defaults to 15, capped at 100.",
+            "schema": {
+              "type": "integer",
+              "default": 15
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -535,13 +571,78 @@
                           ]
                         },
                         "data": {
-                          "type": "string"
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/UnitResource"
+                          }
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "pagination": {
+                              "type": "object",
+                              "properties": {
+                                "current_page": {
+                                  "type": "integer"
+                                },
+                                "per_page": {
+                                  "type": "integer"
+                                },
+                                "total": {
+                                  "type": "integer"
+                                },
+                                "last_page": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "current_page",
+                                "per_page",
+                                "total",
+                                "last_page"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "pagination"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "data",
+                        "meta"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "array",
+                              "items": {}
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/UnitResource"
+                          }
                         },
                         "meta": {
                           "type": "object",
                           "properties": {
                             "count": {
-                              "type": "integer"
+                              "type": "integer",
+                              "minimum": 0
                             }
                           },
                           "required": [
@@ -587,7 +688,7 @@
           }
         },
         "summary": "List units",
-        "description": "Returns every unit in your company, each carrying both IDs: your own `crm_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Supports conditional requests via `ETag` / `If-None-Match`."
+        "description": "Lists the units in your company, each carrying both IDs: your own `external_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed to one store with `filter[location]` or `filter[external_location_code]`. Supports conditional requests via `ETag` / `If-None-Match`."
       },
       "patch": {
         "operationId": "v2.units.sync",
@@ -599,7 +700,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -617,37 +718,103 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "Sync applied. `results` maps every applied item to its KISS `unit_id`; anything that failed is in `errors` instead.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "string",
-                          "enum": [
-                            "Sync completed."
-                          ]
-                        }
-                      ]
+                      "type": "string"
                     },
                     "data": {
-                      "type": "string"
+                      "type": "object",
+                      "properties": {
+                        "synced_at": {
+                          "type": "string"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "created": {
+                          "type": "integer"
+                        },
+                        "updated": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "unit_id": {
+                                "type": "string"
+                              },
+                              "external_unit_id": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "crm_unit_id": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "outcome": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "unit_id",
+                              "external_unit_id",
+                              "crm_unit_id",
+                              "outcome"
+                            ]
+                          }
+                        },
+                        "errors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "crm_unit_id": {
+                                "type": "string"
+                              },
+                              "unit_id": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "error"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "synced_at",
+                        "total",
+                        "created",
+                        "updated",
+                        "failed",
+                        "results",
+                        "errors"
+                      ]
                     },
                     "meta": {
-                      "type": "string"
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 0,
+                      "maxItems": 0,
+                      "additionalItems": false
                     }
                   },
                   "required": [
@@ -663,11 +830,117 @@
             "$ref": "#/components/responses/AuthenticationException"
           },
           "422": {
-            "$ref": "#/components/responses/ValidationException"
+            "description": "Every item in the batch failed. Same body as a 200; inspect `errors`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "synced_at": {
+                          "type": "string"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "created": {
+                          "type": "integer"
+                        },
+                        "updated": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "unit_id": {
+                                "type": "string"
+                              },
+                              "external_unit_id": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "crm_unit_id": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "outcome": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "unit_id",
+                              "external_unit_id",
+                              "crm_unit_id",
+                              "outcome"
+                            ]
+                          }
+                        },
+                        "errors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "crm_unit_id": {
+                                "type": "string"
+                              },
+                              "unit_id": {
+                                "type": "string"
+                              },
+                              "error": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "error"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "synced_at",
+                        "total",
+                        "created",
+                        "updated",
+                        "failed",
+                        "results",
+                        "errors"
+                      ]
+                    },
+                    "meta": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 0,
+                      "maxItems": 0,
+                      "additionalItems": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "Create or update units",
-        "description": "Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `crm_unit_id`. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response."
+        "description": "Create or update up to 500 units in one idempotent call, matched on your `external_unit_id`. Unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `external_unit_id`. Use it for the initial roster load and periodic reconciliation. Every applied unit comes back in `data.results` with its KISS `unit_id`, so you can record the mapping without a second call. Per-item failures come back in `data.errors` with a `200`; a batch where every item failed answers `422` with the same body."
       }
     },
     "/units/{ulid}/tenancy": {
@@ -689,7 +962,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -787,7 +1060,7 @@
           }
         },
         "summary": "Assign primary user",
-        "description": "Addressed by the unit's KISS `unit_id` (ULID). Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow, not this endpoint."
+        "description": "Addressed by the unit's KISS `unit_id` (ULID). Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them \u2014 the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow, not this endpoint."
       },
       "delete": {
         "operationId": "v2.units.tenancy.delete",
@@ -807,7 +1080,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -979,7 +1252,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -1139,7 +1412,7 @@
           },
           "occupied": {
             "type": "string",
-            "description": "Tenancy fields belong to PUT/DELETE /tenancy — reject explicitly"
+            "description": "Tenancy fields belong to PUT/DELETE /tenancy \u2014 reject explicitly"
           },
           "tenant_id": {
             "type": "string"
@@ -1534,7 +1807,7 @@
       },
       "StorePaymentRequest": {
         "type": "object",
-        "description": "Validates a V2 pay request. `type` selects which charges are settled (the\nwrite-side mirror of the 342 invoice-read `filter[type]`); `period` applies\nonly to advance-pay. Card fields mirror V1 exactly — the PMS is the processor.",
+        "description": "Validates a V2 pay request. `type` selects which charges are settled (the\nwrite-side mirror of the 342 invoice-read `filter[type]`); `period` applies\nonly to advance-pay. Card fields mirror V1 exactly \u2014 the PMS is the processor.",
         "properties": {
           "type": {
             "type": "string",
@@ -1645,7 +1918,7 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "password grant (manager). No exists: rule — the controller returns a\ngeneric invalid-credentials response so the endpoint can't be used to\nenumerate which emails exist."
+            "description": "password grant (manager). No exists: rule \u2014 the controller returns a\ngeneric invalid-credentials response so the endpoint can't be used to\nenumerate which emails exist."
           },
           "password": {
             "type": "string"
@@ -1674,8 +1947,18 @@
             "items": {
               "type": "object",
               "properties": {
+                "unit_id": {
+                  "type": "string"
+                },
+                "external_unit_id": {
+                  "type": "string",
+                  "description": "Your system's unit identifier, an alternative to `unit_id`. Creates the unit when unknown.",
+                  "maxLength": 255
+                },
                 "crm_unit_id": {
                   "type": "string",
+                  "description": "Legacy alias of `external_unit_id`.",
+                  "deprecated": true,
                   "maxLength": 255
                 },
                 "unit_name": {
@@ -1687,8 +1970,16 @@
                   "type": "string",
                   "nullable": true
                 },
+                "external_location_code": {
+                  "type": "string",
+                  "description": "The location's code in your system, an alternative to `location_id`.",
+                  "maxLength": 255,
+                  "nullable": true
+                },
                 "pms_location_code": {
                   "type": "string",
+                  "description": "Legacy alias of `external_location_code`.",
+                  "deprecated": true,
                   "maxLength": 255,
                   "nullable": true
                 },
@@ -1700,8 +1991,16 @@
                   "format": "date-time",
                   "nullable": true
                 },
+                "external_tenant_id": {
+                  "type": "string",
+                  "description": "The unit's current tenant identifier in your system.",
+                  "maxLength": 255,
+                  "nullable": true
+                },
                 "pms_tenant_id": {
                   "type": "string",
+                  "description": "Legacy alias of `external_tenant_id`.",
+                  "deprecated": true,
                   "maxLength": 255,
                   "nullable": true
                 },
@@ -1719,27 +2018,56 @@
                   "format": "date-time",
                   "nullable": true
                 },
+                "lockout": {
+                  "type": "boolean",
+                  "description": "Whether the external system has the unit locked out (e.g. for delinquency)."
+                },
                 "pms_lockout": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "Legacy alias of `lockout`.",
+                  "deprecated": true
+                },
+                "lock_exempt": {
+                  "type": "boolean",
+                  "description": "Whether the unit is exempt from lockout enforcement."
                 },
                 "pms_lock_exempt": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "Legacy alias of `lock_exempt`.",
+                  "deprecated": true
+                },
+                "auction": {
+                  "type": "boolean",
+                  "description": "Whether the unit is in auction status."
                 },
                 "pms_auction": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "Legacy alias of `auction`.",
+                  "deprecated": true
+                },
+                "unrentable": {
+                  "type": "boolean",
+                  "description": "Whether the unit is unrentable."
                 },
                 "pms_unrentable": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "Legacy alias of `unrentable`.",
+                  "deprecated": true
+                },
+                "status_raw": {
+                  "type": "string",
+                  "description": "The unit's raw status string in the external system.",
+                  "maxLength": 255,
+                  "nullable": true
                 },
                 "pms_status_raw": {
                   "type": "string",
+                  "description": "Legacy alias of `status_raw`.",
+                  "deprecated": true,
                   "maxLength": 255,
                   "nullable": true
                 }
-              },
-              "required": [
-                "crm_unit_id"
-              ]
+              }
             },
             "minItems": 1,
             "maxItems": 500
@@ -1863,6 +2191,73 @@
           "permissions"
         ],
         "title": "UserResource"
+      },
+      "UnitResource": {
+        "type": "object",
+        "properties": {
+          "unit_id": {
+            "type": "string"
+          },
+          "external_unit_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "crm_unit_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit_name": {
+            "type": "string"
+          },
+          "location_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "occupied": {
+            "type": "boolean"
+          },
+          "move_in_date": {
+            "type": "string"
+          },
+          "external_tenant_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "pms_tenant_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "ledger_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "source_identifier": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_synced_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "external_unit_id",
+          "crm_unit_id",
+          "unit_name",
+          "location_id",
+          "occupied",
+          "move_in_date",
+          "external_tenant_id",
+          "pms_tenant_id",
+          "ledger_id",
+          "source_type",
+          "source_identifier",
+          "last_synced_at"
+        ],
+        "title": "UnitResource"
       }
     },
     "responses": {

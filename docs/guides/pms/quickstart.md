@@ -10,7 +10,7 @@ import Method from '@site/src/components/Method';
 
 # Sync partners
 
-This guide is for **sync partners**: any system that pushes unit and tenant state into KISS, such as a property management system (or any source that knows who holds each unit). You keep each unit's facts current; KISS evaluates them into an access decision the tenant's app acts on. Read [How access works](/guides/concepts) first for the model — this is the high-level integration overview.
+This guide is for **sync partners**: any system that pushes unit and tenant state into KISS, such as a property management system (or any source that knows who holds each unit). You keep each unit's facts current; KISS evaluates them into an access decision the tenant's app acts on. This page is the high-level integration overview. If you have not read [How access works](/guides/concepts) yet, start there for the model.
 
 :::tip Every call has a reference page
 This guide is the overview. Each endpoint below links to its **reference page** for the full parameters, schema, and a Try it console.
@@ -32,23 +32,44 @@ Create the token yourself in the web admin portal: **Company Settings → API**,
 
 Every unit has **two** IDs:
 
-- **`unit_id`**: the KISS identifier, a 26-character ULID. KISS assigns it, and it never changes for the life of the unit.
-- **`crm_unit_id`**: your own identifier, stored on the unit as reference metadata. You set it.
+- **`unit_id`**: the KISS identifier. KISS assigns it, and it never changes for the life of the unit. It is a ULID, a 26-character sortable ID that looks like `01K2E4M9XQ7T8VB3RY0DZC5NHF`. Treat it as an opaque string.
+- **`external_unit_id`**: your own identifier, stored on the unit as reference metadata. You set it.
+
+:::note You may see `crm_unit_id` in older examples
+`external_unit_id` and `crm_unit_id` are the same field. Both are accepted, and responses carry both, so existing integrations keep working. New ones should use `external_unit_id`. The same applies to `external_tenant_id` (was `pms_tenant_id`) and `external_location_code` (was `pms_location_code`).
+:::
 
 | Endpoint | Addressed by |
 | --- | --- |
-| `PATCH /units` (bulk) | your **`crm_unit_id`** |
-| `PATCH /units/{unit_id}` (single) | the KISS **`unit_id`** (ULID) |
-| `PUT` / `DELETE /units/{unit_id}/tenancy` | the KISS **`unit_id`** (ULID) |
-| `GET /units/{unit_id}` | the KISS **`unit_id`** (ULID) |
+| `PATCH /units` (bulk) | your **`external_unit_id`** |
+| `PATCH /units/{unit_id}` (single) | the KISS **`unit_id`** |
+| `PUT` / `DELETE /units/{unit_id}/tenancy` | the KISS **`unit_id`** |
+| `GET /units/{unit_id}` | the KISS **`unit_id`** |
 
-**Key your integration on `unit_id`.** It is the durable handle for every per-unit call, and it survives events your own IDs may not: it stays the same even when an operator moves to new management software and every external ID for the facility gets rebuilt. The flow is: load your roster with the bulk `PATCH /units` (which creates units and matches items on `crm_unit_id`), then call `GET /units` once and store the `crm_unit_id` ↔ `unit_id` mapping alongside your records, and address units by `unit_id` from then on.
+**Key your integration on `unit_id`.** It is the durable handle for every per-unit call, and it survives events your own IDs may not: it stays the same even when an operator moves to new management software and every external ID for the facility gets rebuilt.
 
-:::tip What is `crm_unit_id` for, then?
-It is your reference label: KISS stores it so you (and KISS support) can correlate a unit with your records, and it is how the bulk `PATCH /units` matches items. Keep it current, but treat it as metadata rather than the key your integration depends on. If you ever lose your mapping, `GET /units` returns both IDs for every unit.
+Building the mapping takes one call. Load your roster with the bulk `PATCH /units`, matching items on your `external_unit_id`. The response lists every unit it applied in `data.results`, each with the `unit_id` KISS assigned:
+
+```json
+{
+  "data": {
+    "total": 2, "created": 2, "updated": 0, "failed": 0,
+    "results": [
+      { "unit_id": "01K2E4M9XQ7T8VB3RY0DZC5NHF", "external_unit_id": "A-142", "outcome": "created" },
+      { "unit_id": "01K2E4M9XR2P6WD5FA1QJ8T4KN", "external_unit_id": "A-143", "outcome": "created" }
+    ],
+    "errors": []
+  }
+}
+```
+
+Store those pairs alongside your records and address units by `unit_id` from then on.
+
+:::tip What is `external_unit_id` for, then?
+It is your reference label: KISS stores it so you (and KISS support) can correlate a unit with your records, and it is how the bulk `PATCH /units` matches items. Keep it current, but treat it as metadata rather than the key your integration depends on. If you ever lose your mapping, `GET /units` returns both IDs for every unit, a page at a time.
 :::
 
-Every unit belongs to a **location**. If your company has one active location, omit it and the API infers it; otherwise pass `location_id` (a ULID) or your own `pms_location_code` (set per location in the admin portal).
+Every unit belongs to a **location**, which is one physical facility. If your company has one active location, omit it and the API infers it; otherwise pass `location_id` (the KISS ULID for the location) or your own `external_location_code` (set per location in the admin portal).
 
 ## Endpoints
 
@@ -56,10 +77,10 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 
 | When | Call | What it does |
 | --- | --- | --- |
-| Discover your unit IDs | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `crm_unit_id` ↔ `unit_id` mapping. Supports `ETag` / `If-None-Match`. |
-| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `crm_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Per-item errors return in `data.errors` with a `200`. |
-| New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user — sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
-| Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`pms_lockout`, `pms_auction`, `pms_unrentable`, `balance_due`, …). Send only what changed. |
+| Look up units you did not just write | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `external_unit_id` ↔ `unit_id` mapping. Returns a page at a time; narrow it with `filter[external_location_code]` to one store. Supports `ETag` / `If-None-Match`. |
+| Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`. A batch with at least one success answers `200`; a batch where every item failed answers `422` with the same body. |
+| New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user. Sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
+| Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`lockout`, `auction`, `unrentable`, `balance_due`, and so on). Send only what changed. |
 | Move-out | <Method m="delete" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete) | Remove the primary user and reset the unit to vacant. Guests with inherited access are removed automatically. |
 
 :::note Primary user vs. guests
@@ -75,7 +96,7 @@ Store tenant phone numbers as plain digits, country code plus number, with no `+
 :::
 
 :::tip Use the right write for the job
-Send individual changes (an overlock, a payment, a status flag) in real time as they happen, and reserve full 500-unit batches for the initial load and periodic reconciliation. A big batch to flip one flag is wasteful and slower to take effect. For a single change, prefer `PATCH /units/{unit_id}`; a one-item `PATCH /units` (matched on `crm_unit_id`) also works when you don't have the ULID at hand.
+Send individual changes (an overlock, a payment, a status flag) in real time as they happen, and reserve full 500-unit batches for the initial load and periodic reconciliation. A big batch to flip one flag is wasteful and slower to take effect. For a single change, prefer `PATCH /units/{unit_id}`; a one-item `PATCH /units` (matched on `external_unit_id`) also works when you don't have the `unit_id` at hand.
 :::
 
 ## Example: bulk sync
@@ -89,15 +110,38 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
   -H "Idempotency-Key: acme-roster-2026-06-12" \
   -d '{
     "units": [
-      { "crm_unit_id": "A-142", "unit_name": "142", "occupied": true,
-        "pms_tenant_id": "T-883920", "move_in_date": "2026-06-01",
-        "balance_due": 0, "pms_lockout": false },
-      { "crm_unit_id": "A-143", "unit_name": "143", "occupied": false }
+      { "external_unit_id": "A-142", "unit_name": "142", "occupied": true,
+        "external_tenant_id": "T-883920", "move_in_date": "2026-06-01",
+        "balance_due": 0, "lockout": false },
+      { "external_unit_id": "A-143", "unit_name": "143", "occupied": false }
     ]
   }'
 ```
 
-A failing item does not abort the batch: it lands in `data.errors` and the response is still `200`, so always check that array. Full field list on the [reference page](/reference/v-2-units-sync).
+A failing item does not abort the batch: it lands in `data.errors` while the rest still apply, so always check that array rather than trusting the status code. Applied units land in `data.results` with their `unit_id`.
+
+The status tells you how much got through: `200` when at least one item applied, `422` when every item failed. The body is the same either way, so `data.errors` is what you read in both cases. Full field list on the [reference page](/reference/v-2-units-sync).
+
+## Reading the unit list
+
+`GET /units` returns one page at a time, 15 units by default. Ask for more per page with `per_page` (up to 100), and walk the pages with `page`:
+
+```bash
+curl "https://api-app.keepitsimplestorage.com/api/v2/units?per_page=100&page=2" \
+  -H "Authorization: Bearer $KISS_TOKEN"
+```
+
+Each response tells you where you are, so keep asking until `current_page` reaches `last_page`:
+
+```json
+{ "meta": { "pagination": { "current_page": 2, "per_page": 100, "total": 340, "last_page": 4 } } }
+```
+
+If you only care about one facility, filter by your own store code with `filter[external_location_code]`, or by the KISS location with `filter[location]`.
+
+:::tip You usually do not need this endpoint
+The bulk `PATCH /units` already returns the `unit_id` of everything it applied, so the common case (loading your roster and recording the mapping) needs no list call at all. Reach for `GET /units` when you are reconciling, recovering a lost mapping, or inspecting units you did not write.
+:::
 
 ## Idempotency
 
@@ -105,7 +149,7 @@ Every write requires an `Idempotency-Key` header (any opaque string up to 255 ch
 
 ## When changes take effect
 
-Every write is evaluated immediately: the moment you set `pms_lockout`, the unit's access state flips on our side. Tenant apps, though, operate **offline**: each device caches its access bundle and keys for up to **8 hours** (the `GET /access` cache window). So a change you write can take up to 8 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
+Every write is evaluated immediately: the moment you set `lockout`, the unit's access state flips on our side. Tenant apps, though, operate **offline**: each device caches its access bundle and keys for up to **8 hours** (the `GET /access` cache window). So a change you write can take up to 8 hours to reach a device that already holds a cached bundle, unless the app refreshes sooner. Apps refresh on launch, on pull-to-refresh, and whenever the cache expires.
 
 In practice:
 

@@ -7,10 +7,13 @@
 // renders as Quo-style endpoint pages. The "Full API spec" link points callers
 // at the complete surface.
 
-import {writeFileSync, existsSync, mkdirSync} from 'node:fs';
+import {writeFileSync, readFileSync, existsSync, mkdirSync} from 'node:fs';
 import {dirname} from 'node:path';
 
-const SOURCE = 'https://app.keepitsimplestorage.com/docs/api.json';
+// The live spec is access-gated, so a build cannot always reach it. Point
+// OPENAPI_SOURCE at a local file (e.g. the output of `php artisan
+// scramble:export` in kiss-api) to regenerate from a spec you have in hand.
+const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/api.json';
 const OUT = 'openapi/kiss-api.json';
 
 // Curated, partner-facing endpoints (by Scramble operationId).
@@ -40,7 +43,7 @@ const META = {
   'v2.units.index': {
     summary: 'List units',
     description:
-      'Returns every unit in your company, each carrying both IDs: your own `crm_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Supports conditional requests via `ETag` / `If-None-Match`.',
+      'Lists the units in your company, each carrying both IDs: your own `external_unit_id` and the KISS `unit_id` (a ULID). This is the mapping to store if you want to address single units by ULID. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed to one store with `filter[location]` or `filter[external_location_code]`. Supports conditional requests via `ETag` / `If-None-Match`.',
   },
   'v2.units.show': {
     summary: 'Get a unit',
@@ -49,7 +52,7 @@ const META = {
   'v2.units.sync': {
     summary: 'Create or update units',
     description:
-      'Create or update up to 500 units in one idempotent call, matched on your `crm_unit_id` — unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `crm_unit_id`. Use it for the initial roster load and periodic reconciliation. Per-item failures come back in `data.errors` with a `200` response.',
+      'Create or update up to 500 units in one idempotent call, matched on your `external_unit_id`. Unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `external_unit_id`. Use it for the initial roster load and periodic reconciliation. Every applied unit comes back in `data.results` with its KISS `unit_id`, so you can record the mapping without a second call. Per-item failures come back in `data.errors` with a `200`; a batch where every item failed answers `422` with the same body.',
   },
   'v2.units.patch': {
     summary: 'Update unit facts',
@@ -116,12 +119,21 @@ function downConvert(node) {
   for (const key of Object.keys(node)) downConvert(node[key]);
 }
 
+async function loadSpec() {
+  if (!/^https?:/.test(SOURCE)) {
+    return JSON.parse(readFileSync(SOURCE, 'utf8'));
+  }
+
+  const res = await fetch(SOURCE);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  return res.json();
+}
+
 async function main() {
   let spec;
   try {
-    const res = await fetch(SOURCE);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    spec = await res.json();
+    spec = await loadSpec();
   } catch (err) {
     if (existsSync(OUT)) {
       console.warn(`[sync-openapi] fetch failed (${err.message}); keeping existing ${OUT}`);
