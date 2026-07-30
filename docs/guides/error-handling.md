@@ -26,16 +26,16 @@ For validation errors, the response includes field-level details:
 {
   "message": "Validation failed.",
   "errors": {
-    "units.0.crm_unit_id": ["The crm_unit_id field is required."],
-    "units.2.crm_unit_id": ["The crm_unit_id field is required."]
+    "units.0.external_unit_id": ["The external_unit_id field is required."],
+    "units.2.external_unit_id": ["The external_unit_id field is required."]
   }
 }
 ```
 
-The `errors` object maps field paths to arrays of error messages. For items in an array, the path includes the index in dot notation (e.g., `units.2.crm_unit_id` is the third unit in the array).
+The `errors` object maps field paths to arrays of error messages. For items in an array, the path includes the index in dot notation (e.g., `units.2.external_unit_id` is the third unit in the array).
 
-:::note Validation messages still use the older field names
-If you send `external_unit_id` and something fails validation, the error will name `crm_unit_id` instead. The two are the same field, and the validator reports the older name. The same goes for `external_location_code`, which appears as `pms_location_code` in error text. Match on the path rather than the exact wording if you parse these.
+:::note Errors name the field you sent
+Validation errors report whichever identifier your request used. Send `external_unit_id` and both the path and the message name `external_unit_id`; send the legacy `crm_unit_id` and they name that instead. The same applies to `external_location_code` and its legacy `pms_location_code`. A batch mixing the two is reported item by item, each one the way you sent it.
 :::
 
 ---
@@ -66,7 +66,7 @@ If you send `external_unit_id` and something fails validation, the error will na
 {
   "message": "Validation failed.",
   "errors": {
-    "units.0.crm_unit_id": ["The crm_unit_id field is required."]
+    "units.0.external_unit_id": ["The external_unit_id field is required."]
   }
 }
 ```
@@ -90,12 +90,12 @@ If you send `external_unit_id` and something fails validation, the error will na
 {
   "message": "Validation failed.",
   "errors": {
-    "units": ["Duplicate crm_unit_id values are not allowed."]
+    "units": ["Duplicate external_unit_id values are not allowed."]
   }
 }
 ```
 
-**Fix:** Each `external_unit_id` may appear at most once per `PATCH /units` request, so de-duplicate the batch before sending. Separately, a single item may set `location_id` **or** `external_location_code` to place a unit, but not both; sending both fails with `The units.0.location_id field cannot be present together with units.0.pms_location_code.`
+**Fix:** Each `external_unit_id` may appear at most once per `PATCH /units` request, so de-duplicate the batch before sending. Separately, a single item may set `location_id` **or** `external_location_code` to place a unit, but not both; sending both fails with `The units.0.location_id field cannot be present together with units.0.external_location_code.`
 
 ---
 
@@ -251,7 +251,7 @@ A `401` on every request usually means your token is wrong or expired. For PMS i
 
 ### 3. Read the error message
 
-KISS error messages are specific. "The crm_unit_id field is required" tells you exactly what's missing. Check your payload against the [API Reference](/reference/kiss-api-reference).
+KISS error messages are specific. "The external_unit_id field is required" tells you exactly what's missing. Check your payload against the [API Reference](/reference/kiss-api-reference).
 
 ### 4. Check field paths in validation errors
 
