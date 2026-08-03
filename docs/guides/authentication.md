@@ -15,7 +15,7 @@ Every request carries `Authorization: Bearer <token>`. How you obtain that token
 
 ## Partner API tokens
 
-API tokens authenticate server-to-server requests. Each token is scoped to a single company.
+API tokens authenticate server-to-server requests. Each token is scoped to a single company, and optionally to specific locations within that company.
 
 ### Create a token
 
@@ -23,8 +23,36 @@ You can self-serve in the KISS web admin portal:
 
 1. Sign in to the [KISS Dashboard](https://app.keepitsimplestorage.com) and open **Company Settings**.
 2. Click the **API** tab. (This needs company admin permission; if you do not see it, ask KISS to adjust your user or issue the token for you.)
-3. Name the token (for example `acme-pms-integration`), select the scopes the integration needs, and create it.
+3. Name the token (for example `acme-pms-integration`), select the scopes the integration needs, and create it. If your company has more than one location, you can also limit the token to specific ones under **Limit to locations**.
 4. **Copy the token immediately.** It is shown once; store it in a secrets manager.
+
+### Location-scoped tokens
+
+By default a token reaches **every location** in its company. You can instead bind it to one or more specific locations — useful when you want a key that touches your test store and cannot reach production.
+
+A location-scoped token behaves as if the other locations do not exist:
+
+| Operation | Out-of-scope location |
+| --- | --- |
+| `GET /units` and other lists | Filtered out of results |
+| `GET /units/{unit_id}` | `404 Not Found` |
+| Single-unit writes addressing a unit | `404 Not Found` |
+| Single-unit writes naming a location (`location_id`, `external_location_code`) | `422 Unprocessable Entity` |
+| Bulk `PATCH /units` | Per-item error in `data.errors`, see below |
+
+Three things worth knowing:
+
+- **Unscoped tokens are unchanged.** A token with no location binding reaches the whole company exactly as before.
+- **A token bound to exactly one location can omit the location entirely** on writes — the API infers it, the same way it does for a single-location company. See the [PMS integration guide](/guides/pms/quickstart#identifiers-and-locations).
+- **The bulk sync does not fail the whole request.** `PATCH /units` resolves a location per item, so an item pointing at a location your token cannot reach is rejected on its own and reported in `data.errors`, while the rest of the batch applies. The request still answers `200` unless *every* item failed, in which case it answers `422` with the same body. Check `data.failed` and `data.errors` rather than the status code alone.
+
+:::caution A bulk scoping mistake still answers `200`
+If you point a location-scoped key at a roster covering several stores, the out-of-scope rows are rejected while the rest apply, and the response still reads `200`. The rejections are reported, not swallowed: every one appears in `data.errors`. It is the status code that will not tell you. After each sync check `data.failed`, and read `data.errors` when it is non-zero. The counts always satisfy `data.total == data.created + data.updated + data.failed`.
+:::
+
+:::tip Isolating a test store
+If you run a test facility alongside real ones under the same company, issue a separate token bound only to the test location. Without that binding, any unscoped token carrying a write scope (`units:write` or its `pms:write` alias) can write to production, regardless of how it is named.
+:::
 
 :::note No account yet?
 If you do not have a KISS account, email [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com) with your company details and why you want to integrate, and we will set you up with a sandbox company to build against.
@@ -86,7 +114,7 @@ Some requests are subject to rate limits. See **[Rate limits](/guides/rate-limit
 
 ## Best practices
 
-- **Store partner tokens securely.** Environment variables or a secrets manager, never source code. Use separate tokens per environment.
+- **Store partner tokens securely.** Environment variables or a secrets manager, never source code. Use separate tokens per environment, and scope a test token to your test location so it cannot reach production.
 - **Cache the tenant token for the session.** Do not re-authenticate on every call.
 - **Handle `401` gracefully.** A partner token may be revoked; a tenant token may have expired. Re-authenticate accordingly.
 - **Keep tenant tokens on the device.** Server-side operations use partner API tokens.

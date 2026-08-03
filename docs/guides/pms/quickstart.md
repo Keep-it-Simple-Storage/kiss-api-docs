@@ -69,7 +69,9 @@ Store those pairs alongside your records and address units by `unit_id` from the
 It is your reference label: KISS stores it so you (and KISS support) can correlate a unit with your records, and it is how the bulk `PATCH /units` matches items. Keep it current, but treat it as metadata rather than the key your integration depends on. If you ever lose your mapping, `GET /units` returns both IDs for every unit, a page at a time.
 :::
 
-Every unit belongs to a **location**, which is one physical facility. If your company has one active location, omit it and the API infers it; otherwise pass `location_id` (the KISS ULID for the location) or your own `external_location_code` (set per location in the admin portal).
+Every unit belongs to a **location**, which is one physical facility. If your token reaches exactly one active location, omit it and the API infers it; otherwise pass `location_id` (the KISS ULID for the location) or your own `external_location_code` (set per location in the admin portal).
+
+A token reaches one location when it is either issued to a company that has a single active location, or [scoped to a single location](/guides/authentication#location-scoped-tokens). So a key bound to one store can leave the location out of every payload.
 
 ## Endpoints
 
@@ -102,6 +104,8 @@ Send individual changes (an overlock, a payment, a status flag) in real time as 
 ## Example: bulk sync
 
 The bulk upsert is the workhorse. Send each unit's known facts; KISS reconciles.
+
+The example below omits the location, so it assumes a token that reaches exactly one active location. If yours reaches more than one, add `location_id` or `external_location_code` to each item, or the items come back rejected in `data.errors`.
 
 ```bash
 curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
