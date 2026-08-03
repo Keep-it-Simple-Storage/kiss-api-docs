@@ -46,12 +46,12 @@ Three things worth knowing:
 - **A token bound to exactly one location can omit the location entirely** on writes — the API infers it, the same way it does for a single-location company. See the [PMS integration guide](/guides/pms/quickstart#identifiers-and-locations).
 - **The bulk sync does not fail the whole request.** `PATCH /units` resolves a location per item, so an item pointing at a location your token cannot reach is rejected on its own and reported in `data.errors`, while the rest of the batch applies. The request still answers `200` unless *every* item failed, in which case it answers `422` with the same body. Check `data.failed` and `data.errors` rather than the status code alone.
 
-:::caution Bulk sync hides out-of-scope items in a `200`
-This is the one place where a scoping mistake will not announce itself. If you point a location-scoped key at a roster covering several stores, the out-of-scope rows are silently skipped and the response still reads `200`. Reconcile `data.total` against `data.created + data.updated` after every sync.
+:::caution A bulk scoping mistake still answers `200`
+If you point a location-scoped key at a roster covering several stores, the out-of-scope rows are rejected while the rest apply, and the response still reads `200`. The rejections are reported, not swallowed: every one appears in `data.errors`. It is the status code that will not tell you. After each sync check `data.failed`, and read `data.errors` when it is non-zero. The counts always satisfy `data.total == data.created + data.updated + data.failed`.
 :::
 
 :::tip Isolating a test store
-If you run a test facility alongside real ones under the same company, issue a separate token bound only to the test location. Without that binding, any token for the company can write to production, regardless of how it is named.
+If you run a test facility alongside real ones under the same company, issue a separate token bound only to the test location. Without that binding, any unscoped token carrying a write scope (`units:write` or its `pms:write` alias) can write to production, regardless of how it is named.
 :::
 
 :::note No account yet?

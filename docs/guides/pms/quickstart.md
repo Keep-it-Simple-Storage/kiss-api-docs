@@ -105,6 +105,8 @@ Send individual changes (an overlock, a payment, a status flag) in real time as 
 
 The bulk upsert is the workhorse. Send each unit's known facts; KISS reconciles.
 
+The example below omits the location, so it assumes a token that reaches exactly one active location. If yours reaches more than one, add `location_id` or `external_location_code` to each item, or the items come back rejected in `data.errors`.
+
 ```bash
 curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
   -H "Authorization: Bearer $KISS_TOKEN" \
