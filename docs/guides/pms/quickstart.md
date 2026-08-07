@@ -149,7 +149,12 @@ The bulk `PATCH /units` already returns the `unit_id` of everything it applied, 
 
 ## Idempotency
 
-Every write requires an `Idempotency-Key` header (any opaque string up to 255 characters). Retry with the **same** key after a timeout or 5xx; the original response replays and nothing is applied twice. The same key with a different body returns `409`.
+Every write requires an `Idempotency-Key` header (any opaque string up to 255 characters). The same key with a different body returns `409`.
+
+Only **successful** responses are stored, and only for 24 hours. That determines what a retry actually does:
+
+- **After a success**, a same-key retry replays the stored response and writes nothing.
+- **After a timeout or a 5xx**, nothing was stored, so a same-key retry re-runs the request from scratch rather than replaying it. Retrying is still the right move, but the work is repeated in full: a large batch that timed out costs the same again. Back off between attempts rather than retrying tightly, and prefer a smaller batch if one keeps timing out.
 
 ## When changes take effect
 
@@ -180,7 +185,7 @@ Before you wire up production data:
 1. Create your token (Company Settings → API) with `pms:read` + `pms:write`.
 2. `GET /units` to see what is registered; load your roster with `PATCH /units` and store each `unit_id`.
 3. Wire your events to the calls in the table above.
-4. Retry on timeout / 5xx with the *same* `Idempotency-Key`; alert on 4xx.
+4. Retry on timeout / 5xx with the *same* `Idempotency-Key`, backing off between attempts; alert on 4xx.
 5. Run a live test with KISS: overlock a unit, watch access revoke in the app, release it, watch it restore.
 
 ## Staying in sync: events and webhooks
