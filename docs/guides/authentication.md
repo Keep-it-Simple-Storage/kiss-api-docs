@@ -82,7 +82,7 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/units \
 ```
 
 :::tip Idempotency-Key
-Every write accepts an `Idempotency-Key` header: any opaque string up to 255 characters (a UUID works well). The server stores the request hash and response for 24 hours, so retrying the same key with the same payload returns the cached response without a second write. Retrying the same key with a *different* payload returns `409 Conflict`. Use a fresh value per logical operation; reuse it only when retrying that operation.
+Every write accepts an `Idempotency-Key` header: any opaque string up to 255 characters (a UUID works well). The server stores the request hash and response of **successful** writes for 24 hours, so retrying the same key with the same payload returns the cached response without a second write. Failed and timed-out writes are not stored, so a retry re-runs them rather than replaying. Retrying the same key with a *different* payload returns `409 Conflict`. Use a fresh value per logical operation; reuse it only when retrying that operation.
 :::
 
 ### Multi-company partners
