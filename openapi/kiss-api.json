@@ -7,12 +7,16 @@
   },
   "servers": [
     {
-      "url": "https://api-app.keepitsimplestorage.com/api/v2"
+      "url": "https://api-app.keepitsimplestorage.com/api/v2",
+      "description": "Production"
     }
   ],
   "tags": [
     {
       "name": "Units"
+    },
+    {
+      "name": "Tenants"
     },
     {
       "name": "Access"
@@ -188,7 +192,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/StoreLockLogRequest"
+                "$ref": "#/components/schemas/App.Http.Requests.Api.V2.Locks.StoreLockLogRequest"
               }
             }
           }
@@ -332,51 +336,167 @@
         "description": "Record an entry-point event (gate or door) after an NFC interaction."
       }
     },
-    "/units/{unit}": {
+    "/tenants": {
       "get": {
-        "operationId": "v2.units.show",
+        "operationId": "v2.tenants.index",
         "tags": [
-          "Units"
+          "Tenants"
         ],
         "parameters": [
           {
-            "name": "unit",
-            "in": "path",
-            "required": true,
-            "description": "The unit ulid",
+            "name": "filter[phone_number]",
+            "in": "query",
+            "description": "Substring match against the stored country code + number.",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "filter[location]",
+            "in": "query",
+            "description": "Only tenants homed at this location, addressed by its KISS `location_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[external_location_code]",
+            "in": "query",
+            "description": "Only tenants at the location with this code in your own system. Company-token callers only.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[external_tenant_id]",
+            "in": "query",
+            "description": "Look up specific tenants by the id they carry in your own system. Company-token callers only.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[type]",
+            "in": "query",
+            "description": "Narrow to `primary`, `secondary-tenant`, or `unit-accessor`. Same vocabulary as the `type` field on each row.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page to return. Paging details come back in `meta.pagination`.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Rows per page. Defaults to 15, capped at 100.",
+            "schema": {
+              "type": "integer",
+              "default": 15
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "A page of tenants, in the shape that matches your token. A company token gets the tenants at its locations, each carrying both ids plus `phone_number`. A staff token gets the manager shape instead. Send the `ETag` back as `If-None-Match` to skip pages that have not changed.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string"
                     },
                     "data": {
                       "type": "array",
-                      "items": {}
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tenant_id": {
+                            "type": "string"
+                          },
+                          "external_tenant_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "first_name": {
+                            "type": "string"
+                          },
+                          "last_name": {
+                            "type": "string"
+                          },
+                          "phone_number": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "location_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "external_location_code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "tenant_id",
+                          "external_tenant_id",
+                          "first_name",
+                          "last_name",
+                          "phone_number",
+                          "location_id",
+                          "external_location_code",
+                          "type",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      }
                     },
                     "meta": {
-                      "type": "string"
+                      "type": "object",
+                      "properties": {
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "last_page": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "current_page",
+                            "per_page",
+                            "total",
+                            "last_page"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "pagination"
+                      ]
                     }
                   },
                   "required": [
@@ -388,15 +508,196 @@
               }
             }
           },
+          "304": {
+            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent. Skip it and move on to the next page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
           },
-          "404": {
-            "$ref": "#/components/responses/ModelNotFoundException"
+          "403": {
+            "description": "A company token without the `tenants:read` scope, or a caller whose persona cannot enumerate tenants.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Error overview."
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           }
         },
-        "summary": "Get a unit",
-        "description": "Fetch a single unit by its KISS `unit_id` (ULID)."
+        "summary": "List tenants",
+        "description": "Lists the tenants at your locations, each carrying both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID), along with their name, `phone_number`, location, and `type`. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed with `filter[location]`, `filter[external_location_code]`, `filter[external_tenant_id]`, or `filter[type]`. Supports conditional requests via `ETag` / `If-None-Match`. A row with a null `external_tenant_id` is a tenant KISS holds that carries no id from your system, identified by `phone_number`; see the [sync guide](/guides/pms/quickstart#tenants-you-did-not-create) before writing your own id onto one. Needs the `tenants:read` scope."
+      }
+    },
+    "/tenants/{tenant}": {
+      "get": {
+        "operationId": "v2.tenants.show",
+        "tags": [
+          "Tenants"
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "path",
+            "required": true,
+            "description": "The tenant's KISS `tenant_id` (ULID), as returned by `GET /tenants`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "01J8ZQK3M7V2XPB4NRTC6H9DSE"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The tenant, in the shape that matches your token: a company token gets the same fields as `GET /tenants`, a staff token gets the manager fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tenant_id": {
+                          "type": "string"
+                        },
+                        "external_tenant_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "phone_number": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "location_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "external_location_code": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tenant_id",
+                        "external_tenant_id",
+                        "first_name",
+                        "last_name",
+                        "phone_number",
+                        "location_id",
+                        "external_location_code",
+                        "type",
+                        "created_at",
+                        "updated_at"
+                      ]
+                    },
+                    "meta": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 0,
+                      "maxItems": 0,
+                      "additionalItems": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "A company token without the `tenants:read` scope, or a staff caller without tenant-read permission or without access to this tenant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Error overview."
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No tenant with that `tenant_id` at a location your token reaches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Error overview."
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a tenant",
+        "description": "Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
       }
     },
     "/units": {
@@ -700,7 +1001,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -943,6 +1244,107 @@
         "description": "Create or update up to 500 units in one idempotent call, matched on your `external_unit_id`. Unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `external_unit_id`. Use it for the initial roster load and periodic reconciliation. Every applied unit comes back in `data.results` with its KISS `unit_id`, so you can record the mapping without a second call. Per-item failures come back in `data.errors` with a `200`; a batch where every item failed answers `422` with the same body."
       }
     },
+    "/units/{unit}": {
+      "get": {
+        "operationId": "v2.units.show",
+        "tags": [
+          "Units"
+        ],
+        "parameters": [
+          {
+            "name": "unit",
+            "in": "path",
+            "required": true,
+            "description": "The unit ulid",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "array",
+                              "items": {}
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "meta": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "data",
+                        "meta"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "array",
+                              "items": {}
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "data": {
+                          "$ref": "#/components/schemas/UnitResource"
+                        },
+                        "meta": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "data",
+                        "meta"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "404": {
+            "$ref": "#/components/responses/ModelNotFoundException"
+          }
+        },
+        "summary": "Get a unit",
+        "description": "Fetch a single unit by its KISS `unit_id` (ULID)."
+      }
+    },
     "/units/{ulid}/tenancy": {
       "put": {
         "operationId": "v2.units.tenancy.put",
@@ -962,7 +1364,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -1000,7 +1402,7 @@
                       ]
                     },
                     "data": {
-                      "$ref": "#/components/schemas/PmsUnitResource"
+                      "$ref": "#/components/schemas/UnitResource"
                     },
                     "meta": {
                       "type": "string"
@@ -1037,7 +1439,7 @@
                       ]
                     },
                     "data": {
-                      "$ref": "#/components/schemas/PmsUnitResource"
+                      "$ref": "#/components/schemas/UnitResource"
                     },
                     "meta": {
                       "type": "string"
@@ -1060,7 +1462,7 @@
           }
         },
         "summary": "Assign primary user",
-        "description": "Addressed by the unit's KISS `unit_id` (ULID). Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them \u2014 the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow, not this endpoint."
+        "description": "Addressed by the unit's KISS `unit_id` (ULID). Set the unit's single primary user (the owner). Marks the unit occupied, sets the move-in date, clears any lockout, and (with a `tenant` block) creates or updates that user so they can claim the unit in the app. If the unit already has a primary user, this REPLACES them — the prior primary link is overwritten (guest / secondary accessors are left attached). Adding a guest is a separate flow, not this endpoint."
       },
       "delete": {
         "operationId": "v2.units.tenancy.delete",
@@ -1080,7 +1482,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -1111,7 +1513,7 @@
                           ]
                         },
                         "data": {
-                          "$ref": "#/components/schemas/PmsUnitResource"
+                          "$ref": "#/components/schemas/UnitResource"
                         },
                         "meta": {
                           "type": "string"
@@ -1252,7 +1654,7 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "description": "Unique request identifier for deduplication (1\u2013255 chars, 24 h window)",
+            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
             "schema": {
               "type": "string"
             }
@@ -1290,7 +1692,7 @@
                       ]
                     },
                     "data": {
-                      "$ref": "#/components/schemas/PmsUnitResource"
+                      "$ref": "#/components/schemas/UnitResource"
                     },
                     "meta": {
                       "type": "string"
@@ -1355,30 +1757,112 @@
       }
     },
     "schemas": {
-      "MoveInTenantToUnitRequest": {
+      "App.Http.Requests.Api.V2.Locks.StoreLockLogRequest": {
         "type": "object",
         "properties": {
-          "tenant_id": {
-            "type": "string"
-          },
-          "phone_country_code": {
-            "type": "number"
-          },
-          "phone_number": {
-            "type": "number"
-          },
-          "first_name": {
+          "key": {
             "type": "string",
-            "minLength": 3,
-            "maxLength": 25
+            "description": "Only the device open/close actions a client reports. Server-generated\nkeys (registration, bundle, access-share) are written by their own\nflows and must not be forgeable through this endpoint.",
+            "enum": [
+              "lock.open_successful",
+              "lock.open_failure",
+              "lock.open_blocked",
+              "lock.close_successful",
+              "lock.close_successful_confirmed",
+              "lock.close_failure",
+              "lock.close_blocked",
+              "lock.open_unconfirmed",
+              "lock.close_unconfirmed",
+              "entry_point.open_successful",
+              "entry_point.open_failure",
+              "entry_point.open_blocked",
+              "entry_point.close_successful",
+              "entry_point.close_successful_confirmed",
+              "entry_point.close_failure",
+              "entry_point.close_blocked",
+              "entry_point.open_unconfirmed",
+              "entry_point.close_unconfirmed"
+            ]
           },
-          "last_name": {
+          "reason": {
             "type": "string",
-            "minLength": 3,
-            "maxLength": 25
+            "description": "KEEP-1277: `nullable` is REQUIRED here, not cosmetic. `reason` is\noptional for every key except the two failure keys above, but the\nglobal ConvertEmptyStringsToNull middleware rewrites an empty string\nto null, and without `nullable` a null value then fails the `string`\nrule and 422s the whole request.",
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "happened_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "app_version": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "app_build": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ],
+            "nullable": true
+          },
+          "error_code": {
+            "type": "string",
+            "description": "KEEP-1150: telemetry must never fail the whole request. An error\ncode the server does not recognise is coerced to null in the\ncontroller (AccessLogErrorCode::tryFrom), so validating it with\nRule::in only served to 422 the primary open/close outcome log and\ndrop it entirely. Accept any string; the model's enum cast + the\ncontroller tryFrom still guarantee only valid values or null persist.",
+            "nullable": true
+          },
+          "first_error_code": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "attempt_count": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "nfc_antenna_profile": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true
+          },
+          "scanned_lock_serial": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "field_lost_after_start": {
+            "type": "boolean",
+            "description": "KEEP-1148: flags a real open the phone was pulled away from mid-motor.",
+            "nullable": true
+          },
+          "package": {
+            "type": "string",
+            "description": "KEEP-1154: which NFC engine + version produced the tap (kiss_core /\ntapt_nfc + its version), so performance can be sliced by NFC stack\nacross apps and the bench.",
+            "maxLength": 40,
+            "nullable": true
+          },
+          "package_version": {
+            "type": "string",
+            "maxLength": 40,
+            "nullable": true
           }
         },
-        "title": "MoveInTenantToUnitRequest"
+        "required": [
+          "key"
+        ],
+        "title": "App.Http.Requests.Api.V2.Locks.StoreLockLogRequest"
       },
       "PatchUnitRequest": {
         "type": "object",
@@ -1393,96 +1877,92 @@
             "format": "date-time",
             "nullable": true
           },
+          "lockout": {
+            "type": "boolean",
+            "description": "Whether the external system has the unit locked out (e.g. for delinquency)."
+          },
           "pms_lockout": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Legacy alias of `lockout`.",
+            "deprecated": true
+          },
+          "lock_exempt": {
+            "type": "boolean",
+            "description": "Whether the unit is exempt from lockout enforcement."
           },
           "pms_lock_exempt": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Legacy alias of `lock_exempt`.",
+            "deprecated": true
+          },
+          "auction": {
+            "type": "boolean",
+            "description": "Whether the unit is in auction status."
           },
           "pms_auction": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Legacy alias of `auction`.",
+            "deprecated": true
+          },
+          "unrentable": {
+            "type": "boolean",
+            "description": "Whether the unit is unrentable."
           },
           "pms_unrentable": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Legacy alias of `unrentable`.",
+            "deprecated": true
+          },
+          "status_raw": {
+            "type": "string",
+            "description": "The unit's raw status string in the external system.",
+            "maxLength": 255,
+            "nullable": true
           },
           "pms_status_raw": {
             "type": "string",
+            "description": "Legacy alias of `status_raw`.",
+            "deprecated": true,
             "maxLength": 255,
             "nullable": true
           },
           "occupied": {
             "type": "string",
-            "description": "Tenancy fields belong to PUT/DELETE /tenancy \u2014 reject explicitly"
+            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
           },
           "tenant_id": {
-            "type": "string"
+            "type": "string",
+            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
+          },
+          "external_tenant_id": {
+            "type": "string",
+            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
           },
           "pms_tenant_id": {
-            "type": "string"
+            "type": "string",
+            "description": "Legacy alias of `external_tenant_id`. Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy.",
+            "deprecated": true
           },
           "move_in_date": {
-            "type": "string"
+            "type": "string",
+            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
           }
         },
         "title": "PatchUnitRequest"
       },
-      "PmsUnitResource": {
-        "type": "object",
-        "properties": {
-          "unit_id": {
-            "type": "string"
-          },
-          "crm_unit_id": {
-            "type": "string",
-            "nullable": true
-          },
-          "unit_name": {
-            "type": "string"
-          },
-          "occupied": {
-            "type": "boolean"
-          },
-          "move_in_date": {
-            "type": "string"
-          },
-          "pms_tenant_id": {
-            "type": "string",
-            "nullable": true
-          },
-          "ledger_id": {
-            "type": "string",
-            "nullable": true
-          },
-          "source_type": {
-            "type": "string"
-          },
-          "source_identifier": {
-            "type": "string",
-            "nullable": true
-          },
-          "last_synced_at": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "unit_id",
-          "crm_unit_id",
-          "unit_name",
-          "occupied",
-          "move_in_date",
-          "pms_tenant_id",
-          "ledger_id",
-          "source_type",
-          "source_identifier",
-          "last_synced_at"
-        ],
-        "title": "PmsUnitResource"
-      },
       "PutTenancyRequest": {
         "type": "object",
         "properties": {
+          "external_unit_id": {
+            "type": "string",
+            "description": "Your system's unit identifier. Only used to label the unit when this\ncall creates it; it never re-targets or re-labels an existing unit.",
+            "maxLength": 255,
+            "nullable": true
+          },
           "crm_unit_id": {
             "type": "string",
+            "description": "Legacy alias of `external_unit_id`. Also create-only: it never re-targets an existing unit.",
+            "deprecated": true,
             "maxLength": 255,
             "nullable": true
           },
@@ -1490,8 +1970,16 @@
             "type": "string",
             "nullable": true
           },
+          "external_location_code": {
+            "type": "string",
+            "description": "The location's code in your system, an alternative to `location_id`.",
+            "maxLength": 255,
+            "nullable": true
+          },
           "pms_location_code": {
             "type": "string",
+            "description": "Legacy alias of `external_location_code`.",
+            "deprecated": true,
             "maxLength": 255,
             "nullable": true
           },
@@ -1505,8 +1993,16 @@
             "format": "date-time",
             "nullable": true
           },
+          "external_tenant_id": {
+            "type": "string",
+            "description": "The moving-in tenant's identifier in your system.",
+            "maxLength": 255,
+            "nullable": true
+          },
           "pms_tenant_id": {
             "type": "string",
+            "description": "Legacy alias of `external_tenant_id`.",
+            "deprecated": true,
             "maxLength": 255,
             "nullable": true
           },
@@ -1515,20 +2011,43 @@
             "maxLength": 255,
             "nullable": true
           },
+          "status_raw": {
+            "type": "string",
+            "description": "The unit's raw status string in the external system.",
+            "maxLength": 255,
+            "nullable": true
+          },
           "pms_status_raw": {
             "type": "string",
+            "description": "Legacy alias of `status_raw`.",
+            "deprecated": true,
             "maxLength": 255,
+            "nullable": true
+          },
+          "lock_exempt": {
+            "type": "boolean",
+            "description": "Whether the unit is exempt from lockout enforcement.",
             "nullable": true
           },
           "pms_lock_exempt": {
             "type": "boolean",
+            "description": "Legacy alias of `lock_exempt`.",
+            "deprecated": true,
             "nullable": true
           },
           "tenant": {
             "type": "object",
             "properties": {
+              "external_tenant_id": {
+                "type": "string",
+                "description": "The tenant's identifier in your system.",
+                "maxLength": 255,
+                "nullable": true
+              },
               "pms_tenant_id": {
                 "type": "string",
+                "description": "Legacy alias of `tenant.external_tenant_id`.",
+                "deprecated": true,
                 "maxLength": 255,
                 "nullable": true
               },
@@ -1558,56 +2077,6 @@
         },
         "title": "PutTenancyRequest"
       },
-      "ReserveUnitRequest": {
-        "type": "object",
-        "properties": {
-          "tenant_id": {
-            "type": "string"
-          },
-          "first_name": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 25
-          },
-          "last_name": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 25
-          },
-          "phone_country_code": {
-            "type": "number"
-          },
-          "phone_number": {
-            "type": "number"
-          },
-          "move_in_date": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "move_in_date"
-        ],
-        "title": "ReserveUnitRequest"
-      },
-      "StoreBundleRequest": {
-        "type": "object",
-        "properties": {
-          "unit_id": {
-            "type": "string"
-          },
-          "display_name": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 20,
-            "nullable": true
-          }
-        },
-        "required": [
-          "unit_id"
-        ],
-        "title": "StoreBundleRequest"
-      },
       "StoreEntryPointLogRequest": {
         "type": "object",
         "properties": {
@@ -1622,13 +2091,17 @@
               "lock.close_successful_confirmed",
               "lock.close_failure",
               "lock.close_blocked",
+              "lock.open_unconfirmed",
+              "lock.close_unconfirmed",
               "entry_point.open_successful",
               "entry_point.open_failure",
               "entry_point.open_blocked",
               "entry_point.close_successful",
               "entry_point.close_successful_confirmed",
               "entry_point.close_failure",
-              "entry_point.close_blocked"
+              "entry_point.close_blocked",
+              "entry_point.open_unconfirmed",
+              "entry_point.close_unconfirmed"
             ]
           },
           "zone_id": {
@@ -1640,304 +2113,75 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "app_version": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "app_build": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ],
+            "nullable": true
+          },
+          "error_code": {
+            "type": "string",
+            "description": "KEEP-1150: telemetry must never fail the whole request. An error\ncode the server does not recognise is coerced to null in the\ncontroller (AccessLogErrorCode::tryFrom), so validating it with\nRule::in only served to 422 the primary open/close outcome log and\ndrop it entirely. Accept any string; the model's enum cast + the\ncontroller tryFrom still guarantee only valid values or null persist.",
+            "nullable": true
+          },
+          "first_error_code": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "attempt_count": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "nfc_antenna_profile": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true
+          },
+          "scanned_lock_serial": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "field_lost_after_start": {
+            "type": "boolean",
+            "description": "KEEP-1148: flags a real open the phone was pulled away from mid-motor.",
+            "nullable": true
+          },
+          "package": {
+            "type": "string",
+            "description": "KEEP-1154: which NFC engine + version produced the tap (kiss_core /\ntapt_nfc + its version), so performance can be sliced by NFC stack\nacross apps and the bench.",
+            "maxLength": 40,
+            "nullable": true
+          },
+          "package_version": {
+            "type": "string",
+            "maxLength": 40,
+            "nullable": true
           }
         },
         "required": [
           "key"
         ],
         "title": "StoreEntryPointLogRequest"
-      },
-      "StoreEntryPointRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 255,
-            "nullable": true
-          },
-          "serial_number": {
-            "type": "string",
-            "minLength": 3
-          },
-          "function": {
-            "type": "string",
-            "enum": [
-              "one_way",
-              "two_way"
-            ],
-            "nullable": true
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "gate",
-              "interior_door",
-              "exterior_door",
-              "rollup_door",
-              "other"
-            ],
-            "nullable": true
-          },
-          "key": {
-            "type": "string",
-            "minLength": 3,
-            "nullable": true
-          },
-          "supervisor_key": {
-            "type": "string",
-            "minLength": 3,
-            "nullable": true
-          },
-          "password": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 255,
-            "nullable": true
-          },
-          "lock_name": {
-            "type": "string",
-            "minLength": 3,
-            "nullable": true
-          },
-          "company_id": {
-            "type": "string"
-          },
-          "version": {
-            "type": "string",
-            "enum": [
-              "1.0"
-            ]
-          }
-        },
-        "required": [
-          "serial_number"
-        ],
-        "title": "StoreEntryPointRequest"
-      },
-      "StoreLockLogRequest": {
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "string",
-            "description": "Only the device open/close actions a client reports. Server-generated\nkeys (registration, bundle, access-share) are written by their own\nflows and must not be forgeable through this endpoint.",
-            "enum": [
-              "lock.open_successful",
-              "lock.open_failure",
-              "lock.open_blocked",
-              "lock.close_successful",
-              "lock.close_successful_confirmed",
-              "lock.close_failure",
-              "lock.close_blocked",
-              "entry_point.open_successful",
-              "entry_point.open_failure",
-              "entry_point.open_blocked",
-              "entry_point.close_successful",
-              "entry_point.close_successful_confirmed",
-              "entry_point.close_failure",
-              "entry_point.close_blocked"
-            ]
-          },
-          "reason": {
-            "type": "string",
-            "maxLength": 1000
-          },
-          "happened_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "key"
-        ],
-        "title": "StoreLockLogRequest"
-      },
-      "StoreLockRequest": {
-        "type": "object",
-        "properties": {
-          "company_id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 255
-          },
-          "serial_number": {
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "supervisor_key": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 255
-          },
-          "version": {
-            "type": "string",
-            "enum": [
-              "1.0"
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "serial_number"
-        ],
-        "title": "StoreLockRequest"
-      },
-      "StoreOtpRequest": {
-        "type": "object",
-        "properties": {
-          "country_code": {
-            "type": "number"
-          },
-          "phone_number": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "country_code",
-          "phone_number"
-        ],
-        "title": "StoreOtpRequest"
-      },
-      "StorePaymentRequest": {
-        "type": "object",
-        "description": "Validates a V2 pay request. `type` selects which charges are settled (the\nwrite-side mirror of the 342 invoice-read `filter[type]`); `period` applies\nonly to advance-pay. Card fields mirror V1 exactly \u2014 the PMS is the processor.",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "past-due",
-              "all",
-              "advance-pay"
-            ]
-          },
-          "period": {
-            "type": "integer",
-            "minimum": 1,
-            "nullable": true
-          },
-          "payment_method": {
-            "type": "object",
-            "properties": {
-              "name_on_card": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 255
-              },
-              "card_number": {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "minLength": 13,
-                "maxLength": 19
-              },
-              "cvv": {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "minLength": 3,
-                "maxLength": 4
-              },
-              "exp_month": {
-                "type": "string",
-                "pattern": "^(0[1-9]|1[0-2])$",
-                "minLength": 1,
-                "maxLength": 2
-              },
-              "exp_year": {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "minLength": 2,
-                "maxLength": 4
-              },
-              "address": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 255
-              },
-              "address2": {
-                "type": "string",
-                "maxLength": 255,
-                "nullable": true
-              },
-              "city": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 100
-              },
-              "country": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 100
-              },
-              "state": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 100
-              },
-              "zip": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 20
-              }
-            },
-            "required": [
-              "name_on_card",
-              "card_number",
-              "cvv",
-              "exp_month",
-              "exp_year",
-              "address",
-              "city",
-              "country",
-              "state",
-              "zip"
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "payment_method"
-        ],
-        "title": "StorePaymentRequest"
-      },
-      "StoreTokenRequest": {
-        "type": "object",
-        "properties": {
-          "grant": {
-            "type": "string",
-            "enum": [
-              "otp",
-              "password"
-            ]
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "description": "password grant (manager). No exists: rule \u2014 the controller returns a\ngeneric invalid-credentials response so the endpoint can't be used to\nenumerate which emails exist."
-          },
-          "password": {
-            "type": "string"
-          },
-          "country_code": {
-            "type": "number",
-            "description": "otp grant (tenant phone)."
-          },
-          "phone_number": {
-            "type": "number"
-          },
-          "otp": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "grant"
-        ],
-        "title": "StoreTokenRequest"
       },
       "SyncUnitsRequest": {
         "type": "object",
@@ -2077,120 +2321,6 @@
           "units"
         ],
         "title": "SyncUnitsRequest"
-      },
-      "UpdateEntryPointRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 255,
-            "nullable": true
-          },
-          "function": {
-            "type": "string",
-            "enum": [
-              "one_way",
-              "two_way"
-            ],
-            "nullable": true
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "gate",
-              "interior_door",
-              "exterior_door",
-              "rollup_door",
-              "other"
-            ],
-            "nullable": true
-          }
-        },
-        "title": "UpdateEntryPointRequest"
-      },
-      "UpdateZonesRequest": {
-        "type": "object",
-        "properties": {
-          "zones": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "zone_id": {
-                  "type": "string"
-                },
-                "display_name": {
-                  "type": "string",
-                  "minLength": 3,
-                  "maxLength": 20,
-                  "nullable": true
-                }
-              },
-              "required": [
-                "zone_id"
-              ]
-            }
-          }
-        },
-        "required": [
-          "zones"
-        ],
-        "title": "UpdateZonesRequest"
-      },
-      "UserResource": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "first_name": {
-            "type": "string"
-          },
-          "last_name": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "company": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "code": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "code"
-            ],
-            "nullable": true
-          },
-          "permissions": {
-            "type": "array",
-            "items": {}
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "first_name",
-          "last_name",
-          "email",
-          "company",
-          "permissions"
-        ],
-        "title": "UserResource"
       },
       "UnitResource": {
         "type": "object",

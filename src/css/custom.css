@@ -198,10 +198,10 @@ article .markdown > p:first-of-type {
   opacity: 1 !important;
 }
 
-/* cURL box: hide the in-box language + variant tabs entirely ("cURL" renders as
-   a header above the box now), so the box is just the code and the copy/expand
-   buttons sit in its upper-right corner. */
-[role="tablist"]:has([class*="openapi-tabs__code-item"]) {
+/* The language row is the box's label, so it stays visible. The variant row
+   below it does not: every language is pinned to one variant in languageTabs,
+   so it would only ever render a single dead tab. */
+[role="tablist"].openapi-tabs__code-container-inner {
   display: none;
 }
 

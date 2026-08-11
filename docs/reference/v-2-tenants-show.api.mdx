@@ -1,0 +1,69 @@
+---
+id: v-2-tenants-show
+title: "Get a tenant"
+description: "Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
+sidebar_label: "Get a tenant"
+hide_title: true
+hide_table_of_contents: true
+api: eJztV9tu20YQ/ZXBvjQBaElxjF74UriJk7ppjNSWi7aGYI3IkbgJucvsDJUIAv+9GF5kWZLToC2CPvRJ3Mvsnpk5M3u0Nr6kgGK9O09NbJbHAyGHTnjAmf9gIiO4YBPfmHE7bSaRKTFgQUJBF9bGYUEmNq2diYx1JjYlSmYiE+h9ZQOlJpZQUWRS4iTYUu8zsRlnBK3ZVwyvzq+uYNoOb206hUfXP58/fxwBMgSSKjhKYbaC6cuzMQw7lNOBiQwnGRVo4rWRValQWIJ1C1NHhj5iUeY6N3ry07d//PLq6etvfj3+7c0PJxeX42df//jd86szU08UKJfeMbEeczwa6c9DYCOwDiQj4AxLAslQoEBJMmJY+SqA+HfkYkBIfFGiW7UTsCDh1g4LgrmlPGX17r5HESCw4Hy+a1WgwwWFzlAdT7wTcqJYsSxzmzSJHL5lBbzej4ufvaVEU1QGTbvY1t2CmHFBBwOYonzGCZusPZAEoeAwv/3Etsi4Ks9xprlSqtSRmdvActuy68CpOX5qtcy8o1tXFTMKn3Vb7tvofS66jVMbw8SnB7AcMG03HACdBEKh9Bbl4HJVpg8v19vFdrOVkYPxvxfd7VjuRO5+XB70uvPpngf38E7qyBR0j0oYAq60XQgVfNDfwrrzdnEUmQI/3g0wTa3ejnk3N8ecaTcGPa87FncIJnWtG5+OTvZr/Het3un5/OjCOzp6rTU97Uo7jUEyy10LgAwZnBdIMnQLSoGtS7pWMD0b40LL2KXgPMx8ugLLwOTk7xTtJsGK+mT0ZB/1tcNKMnKiZ1H6BRrDbiM/C8EH8EsKS0sfBnts7A+a9F483ffidKdbfrCS+Uqa1tc9CxwHwnQKnPiSIvBh0yoTzHMKdzbN9iPdDSWFwjJb79Sg34FJQswgfjurX6Kn/uPQHaDthe9pqe51LNx6SVEAoa/YrScKAqG+Wv95v+td6xckSabZt26R9++yqgPJyIaHtUQrJKxb/PU7PICrqix9EIbEu77fgGIkFoalxa7UYbjbMwZw2VzEMD0ZnUxh3lC1Q+krYZtSg6BPCh/KClwQpfxgAQzajpZ5FW4LanKhqis2vQ/DdftRq0iisOwVWxVyE5tMpOR4OMTSHmFZDt4RlVbYqmBi8QEXNEh8oevD5fFeAt8En1ZJM1ABxZRUwcqquaBhC5n4ZrK9dNXM8oZO2yxRML2U0/GMMDTvT/vxwodCnz1z+ua8jVJDGOvmvjnESiPymrzrlkuaUyCXaPNXt1vIB7wYa/WHfjckSsg25OTS0lsnDIVnAeuEFqFLVsXUZgfQbTa2dWfbdyGjQN/DM+8EE2mT24ALVA4afeJZCmxKq9PPL0k2HNmFub4rz/+p31G/I47QRxmWOVrXSCRl9rqrg14FsYlM3AV2EpnMs+jiej1DpuuQ17VOv68oKHsnkVlisK1iu1mb1LJ+p53I+ERmHl12/esx/Ev/bA762Osnp+ppiXmlIxOZd7S6+xtWq+LKCFOVvzfrbvE0SaiULbO9Vq/1umkqL8/Gpq7/BNnD7b0=
+sidebar_class_name: "get api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get a tenant"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/tenants/{tenant}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-tenants-show.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-tenants-show.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-tenants-show.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

@@ -1,6 +1,8 @@
 import React, {useState, useEffect, type ReactNode} from 'react';
 import {useDoc} from '@docusaurus/plugin-content-docs/client';
 import CodeSnippets from '@theme/ApiExplorer/CodeSnippets';
+import {useTypedDispatch, useTypedSelector} from '@theme/ApiItem/hooks';
+import {setServer} from '@theme/ApiExplorer/Server/slice';
 import Request from '@theme/ApiExplorer/Request';
 import Response from '@theme/ApiExplorer/Response';
 import * as sdk from 'postman-collection';
@@ -32,6 +34,28 @@ export default function ApiExplorer({
     return () => window.removeEventListener('kiss:tryit', handler);
   }, []);
 
+  // buildPostmanRequest defaults the snippet host to window.location.origin and
+  // only overrides it when the store holds a server. The Server control lives in
+  // the Try-it modal, so on a reference page nothing ever selected one and every
+  // sample told partners to curl the docs site. Seed it from the spec's own
+  // servers on mount.
+  const dispatch = useTypedDispatch();
+  const serverValue = useTypedSelector((state: any) => state.server.value);
+  const serverOptions = useTypedSelector((state: any) => state.server.options);
+
+  useEffect(() => {
+    if (!serverOptions?.length) return;
+
+    // Also re-seed when the persisted value is not one of the current options:
+    // a stale URL from an earlier spec would otherwise keep pointing the
+    // snippets and the Try-it form at an origin the API no longer serves.
+    const known = serverOptions.some((o: any) => o.url === serverValue?.url);
+
+    if (!known) {
+      dispatch(setServer(JSON.stringify(serverOptions[0])));
+    }
+  }, [dispatch, serverValue, serverOptions]);
+
   const isEvent = item.method === 'event';
   const postman = new sdk.Request(
     item.postman
@@ -41,10 +65,9 @@ export default function ApiExplorer({
       : {},
   );
 
-  const renderCURL = () =>
+  const renderSamples = () =>
     isEvent ? null : (
-      <div className={styles.curlBox}>
-        <div className={styles.curlHeader}>cURL</div>
+      <div className={styles.sampleBox}>
         <CodeSnippets
           postman={postman}
           codeSamples={item['x-codeSamples'] ?? []}
@@ -55,7 +78,7 @@ export default function ApiExplorer({
 
   return (
     <>
-      {renderCURL()}
+      {renderSamples()}
       {/* Example responses: the body's <StatusCodes> portals into this slot. */}
       <div id="kiss-response-slot" />
       {!isEvent && open && (
@@ -65,7 +88,7 @@ export default function ApiExplorer({
               <Request item={item} />
             </div>
             <div className={styles.modalPreview}>
-              {renderCURL()}
+              {renderSamples()}
               <Response item={item} />
             </div>
           </div>

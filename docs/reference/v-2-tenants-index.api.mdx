@@ -1,0 +1,69 @@
+---
+id: v-2-tenants-index
+title: "List tenants"
+description: "Lists the tenants at your locations, each carrying both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID), along with their name, `phone_number`, location, and `type`. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed with `filter[location]`, `filter[external_location_code]`, `filter[external_tenant_id]`, or `filter[type]`. Supports conditional requests via `ETag` / `If-None-Match`. A row with a null `external_tenant_id` is a tenant KISS holds that carries no id from your system, identified by `phone_number`; see the [sync guide](/guides/pms/quickstart#tenants-you-did-not-create) before writing your own id onto one. Needs the `tenants:read` scope."
+sidebar_label: "List tenants"
+hide_title: true
+hide_table_of_contents: true
+api: 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
+sidebar_class_name: "get api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List tenants"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/tenants"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Lists the tenants at your locations, each carrying both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID), along with their name, `phone_number`, location, and `type`. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed with `filter[location]`, `filter[external_location_code]`, `filter[external_tenant_id]`, or `filter[type]`. Supports conditional requests via `ETag` / `If-None-Match`. A row with a null `external_tenant_id` is a tenant KISS holds that carries no id from your system, identified by `phone_number`; see the [sync guide](/guides/pms/quickstart#tenants-you-did-not-create) before writing your own id onto one. Needs the `tenants:read` scope.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-tenants-index.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-tenants-index.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-tenants-index.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

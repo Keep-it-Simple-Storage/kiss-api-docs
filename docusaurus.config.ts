@@ -79,14 +79,40 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/social-card.jpg',
-    // Reference code samples: cURL only (Quo-style). Add languages here if a
-    // partner asks for SDK snippets.
+    // Reference code samples. cURL first, then the runtimes partners actually
+    // integrate from. These apply to every endpoint in the reference, not just
+    // one, so keep the list short enough that the tab strip stays readable.
+    // There is no TypeScript generator; the Node snippet is valid TypeScript.
     languageTabs: [
       {
         highlight: 'bash',
         language: 'curl',
         logoClass: 'bash',
         options: {longFormat: false, followRedirect: true, trimRequestBody: true},
+      },
+      {
+        highlight: 'ruby',
+        language: 'ruby',
+        logoClass: 'ruby',
+        variant: 'Net::HTTP',
+      },
+      {
+        highlight: 'php',
+        language: 'php',
+        logoClass: 'php',
+        variant: 'Guzzle',
+      },
+      {
+        highlight: 'go',
+        language: 'go',
+        logoClass: 'go',
+        variant: 'Native',
+      },
+      {
+        highlight: 'javascript',
+        language: 'nodejs',
+        logoClass: 'nodejs',
+        variant: 'Axios',
       },
     ],
     colorMode: {
@@ -116,7 +142,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['bash', 'json'],
+      additionalLanguages: ['bash', 'json', 'ruby', 'php', 'go'],
     },
   } satisfies Preset.ThemeConfig,
 };

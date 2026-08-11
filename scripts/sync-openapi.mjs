@@ -10,13 +10,25 @@
 import {writeFileSync, readFileSync, existsSync, mkdirSync} from 'node:fs';
 import {dirname} from 'node:path';
 
-// The live spec is access-gated, so a build cannot always reach it. Point
-// OPENAPI_SOURCE at a local file (e.g. the output of `php artisan
-// scramble:export` in kiss-api) to regenerate from a spec you have in hand.
-const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/api.json';
+// kiss-api serves the partner slice publicly at /docs/partner-api.json. The
+// full spec at /docs/api.json is gated on a session user, so a build could
+// never fetch it: the fetch 403'd, the catch below kept the committed copy, and
+// the portal quietly froze.
+//
+// This is the app domain, not api-app: bootstrap/app.php scopes routes/web.php
+// (where the route lives) to APP_DOMAIN, so the API host 404s it. The API base
+// URL partners call is still api-app.
+//
+// Point OPENAPI_SOURCE at a local file (e.g. the output of
+// `php artisan scramble:export`) to regenerate from a spec in hand.
+const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/partner-api.json';
 const OUT = 'openapi/kiss-api.json';
 
-// Curated, partner-facing endpoints (by Scramble operationId).
+// Curated, partner-facing endpoints (by Scramble operationId). kiss-api applies
+// its own allowlist before serving the spec, so this is an intersection rather
+// than the only gate. Kept deliberately: if the two ever disagree, an endpoint
+// stays unpublished until both sides list it, which is the safe direction for a
+// public site. Consolidate into the app once that side has proven itself.
 const ALLOW = new Set([
   'v2.access',
   'v2.units.index',
@@ -25,6 +37,8 @@ const ALLOW = new Set([
   'v2.units.patch',
   'v2.units.tenancy.put',
   'v2.units.tenancy.delete',
+  'v2.tenants.index',
+  'v2.tenants.show',
   'v2.locks.logs.store',
   'v2.entry-points.logs.store',
   'v2.health',
@@ -69,6 +83,20 @@ const META = {
     description:
       "Addressed by the unit's KISS `unit_id` (ULID). End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit.",
   },
+  'v2.tenants.index': {
+    summary: 'List tenants',
+    description:
+      "Lists the tenants at your locations, each carrying both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID), along with their name, `phone_number`, location, and `type`. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed with `filter[location]`, `filter[external_location_code]`, `filter[external_tenant_id]`, or `filter[type]`. Supports conditional requests via `ETag` / `If-None-Match`. A row with a null `external_tenant_id` is a tenant KISS holds that carries no id from your system, identified by `phone_number`; see the [sync guide](/guides/pms/quickstart#tenants-you-did-not-create) before writing your own id onto one. Needs the `tenants:read` scope.",
+    dropParams: ['filter[full_name]', 'archived', 'include', 'sort'],
+    pickResponse: 0,
+  },
+  'v2.tenants.show': {
+    summary: 'Get a tenant',
+    description:
+      'Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.',
+    dropParams: ['include'],
+    pickResponse: 0,
+  },
   'v2.locks.logs.store': {
     summary: 'Report lock activity',
     description:
@@ -86,9 +114,26 @@ const META = {
 };
 
 // Sidebar/category order for the kept tags.
-const TAG_ORDER = ['Units', 'Access', 'Logs', 'Health'];
+const TAG_ORDER = ['Units', 'Tenants', 'Access', 'Logs', 'Health'];
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
+
+/**
+ * Collapse a union 200 body down to one branch. Leaves the operation untouched
+ * if the schema is not a union, so a spec change that drops the union does not
+ * silently publish the wrong shape.
+ */
+function pickResponseVariant(op, index) {
+  const schema = op.responses?.['200']?.content?.['application/json']?.schema;
+  if (!schema || !Array.isArray(schema.anyOf)) return;
+
+  const picked = schema.anyOf[index];
+  if (!picked) {
+    throw new Error(`${op.operationId}: pickResponse ${index} is out of range (${schema.anyOf.length} variants)`);
+  }
+
+  op.responses['200'].content['application/json'].schema = picked;
+}
 
 /** Recursively rewrite OpenAPI 3.1 constructs into 3.0.3 equivalents. */
 function downConvert(node) {
@@ -136,7 +181,11 @@ async function main() {
     spec = await loadSpec();
   } catch (err) {
     if (existsSync(OUT)) {
-      console.warn(`[sync-openapi] fetch failed (${err.message}); keeping existing ${OUT}`);
+      console.warn(
+        `[sync-openapi] WARNING: fetch of ${SOURCE} failed (${err.message}).\n` +
+        `[sync-openapi] Publishing the committed ${OUT} instead, which may be behind the API. ` +
+        'The site will build and look healthy either way, so check this if the reference looks stale.'
+      );
       return;
     }
     console.error(`[sync-openapi] fetch failed (${err.message}) and no committed spec at ${OUT}`);
@@ -158,6 +207,18 @@ async function main() {
         if (meta) {
           if (!op.summary) op.summary = meta.summary;
           if (!op.description) op.description = meta.description;
+          // Endpoints shared with the staff surface document both callers'
+          // parameters. Publishing the staff-only ones here would advertise
+          // query params a company token silently ignores.
+          if (meta.dropParams && Array.isArray(op.parameters)) {
+            op.parameters = op.parameters.filter((p) => !meta.dropParams.includes(p.name));
+          }
+          // Same reason as dropParams, for the body: an endpoint serving both
+          // callers documents its 200 as a union of the two shapes, and only
+          // one of them is what a partner will ever receive.
+          if (typeof meta.pickResponse === 'number') {
+            pickResponseVariant(op, meta.pickResponse);
+          }
         }
         keptItem[method] = op;
         kept++;

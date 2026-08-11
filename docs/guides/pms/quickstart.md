@@ -80,6 +80,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | When | Call | What it does |
 | --- | --- | --- |
 | Look up units you did not just write | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `external_unit_id` ↔ `unit_id` mapping. Returns a page at a time; narrow it with `filter[external_location_code]` to one store. Supports `ETag` / `If-None-Match`. |
+| Look up tenants | <Method m="get" /> [`/tenants`](/reference/v-2-tenants-index) | Lists the tenants at your locations with the `external_tenant_id` ↔ `tenant_id` mapping, plus name, `phone_number`, and location. Paged and filterable; supports `ETag` / `If-None-Match`. Needs the `tenants:read` scope. |
 | Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`. A batch with at least one success answers `200`; a batch where every item failed answers `422` with the same body. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user. Sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`lockout`, `auction`, `unrentable`, `balance_due`, and so on). Send only what changed. |
@@ -145,6 +146,45 @@ If you only care about one facility, filter by your own store code with `filter[
 
 :::tip You usually do not need this endpoint
 The bulk `PATCH /units` already returns the `unit_id` of everything it applied, so the common case (loading your roster and recording the mapping) needs no list call at all. Reach for `GET /units` when you are reconciling, recovering a lost mapping, or inspecting units you did not write.
+:::
+
+## Reading the tenant list
+
+`GET /tenants` returns the tenants at your locations, one page at a time, 15 by default. Each row carries both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID), plus the tenant's name, `phone_number`, and location.
+
+```bash
+curl "https://api-app.keepitsimplestorage.com/api/v2/tenants?per_page=100" \
+  -H "Authorization: Bearer $KISS_TOKEN"
+```
+
+```json
+{
+  "data": [
+    { "tenant_id": "01J8ZQK3M7V2XPB4NRTC6H9DSE", "external_tenant_id": "T-883920",
+      "first_name": "Dana", "last_name": "Whitfield", "phone_number": "+15125550142",
+      "location_id": "01J8ZQ2A4WY7RK5MF3TDN6XBQV", "external_location_code": "STORE-01",
+      "type": "primary" },
+    { "tenant_id": "01J8ZR7T1K9F3XW5PDNB2QH4CV", "external_tenant_id": null,
+      "first_name": "Marcus", "last_name": "Ferreira", "phone_number": "+15125559981",
+      "location_id": "01J8ZQ2A4WY7RK5MF3TDN6XBQV", "external_location_code": "STORE-01",
+      "type": "primary" }
+  ],
+  "meta": { "pagination": { "current_page": 1, "per_page": 100, "total": 2, "last_page": 1 } }
+}
+```
+
+Walk the pages with `page` and size them with `per_page` (up to 100), the same as `GET /units`. Narrow the list with `filter[location]` or `filter[external_location_code]` for one store, or `filter[external_tenant_id]` to look up specific tenants by your own id. The endpoint honours `ETag` / `If-None-Match`, so a periodic sweep can re-request each page and skip the ones that answer `304`. [`GET /tenants/{tenant_id}`](/reference/v-2-tenants-show) returns one tenant with the same fields, and takes the same conditional request.
+
+`type` tells you how the tenant holds their access: `primary` for the renter, `secondary-tenant` for someone on the same rental, `unit-accessor` for a guest given access to a unit. The same values work as `filter[type]`.
+
+### Tenants you did not create
+
+Not every row will be one of yours. A tenant can exist in KISS with no id from your system: they may have signed up in the app, been added at the counter, or come from an integration you replaced. Those rows come back with `external_tenant_id: null`, and `phone_number` (country code plus number, leading `+`) is what identifies them.
+
+:::caution Pushing your own id over one of these creates a second record
+Tenancy writes match on `external_tenant_id` alone. Send your own id for a tenant listed here with `external_tenant_id: null` and KISS has no way to tell it is the same person, so it creates a second tenant on the same phone number. Both records then exist and access can end up split across them.
+
+Claiming an existing tenant is not self-serve yet. If a `phone_number` in this list matches someone in your own records, send those to your KISS contact and they will link them before you write. Tenants you create yourself always carry your id and match normally.
 :::
 
 ## Idempotency
