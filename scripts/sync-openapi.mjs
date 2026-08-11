@@ -25,6 +25,8 @@ const ALLOW = new Set([
   'v2.units.patch',
   'v2.units.tenancy.put',
   'v2.units.tenancy.delete',
+  'v2.tenants.index',
+  'v2.tenants.show',
   'v2.locks.logs.store',
   'v2.entry-points.logs.store',
   'v2.health',
@@ -69,6 +71,20 @@ const META = {
     description:
       "Addressed by the unit's KISS `unit_id` (ULID). End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit.",
   },
+  'v2.tenants.index': {
+    summary: 'List tenants',
+    description:
+      "The tenants KISS already holds for your locations, so you can reconcile them against your own records before you write. Each row carries both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID). Rows with a null `external_tenant_id` are tenants KISS knows that you have not claimed — someone who signed up in the app, walked in, or arrived through another integration. Match those on `phone_number` and reuse the existing person rather than pushing a new id for them, which is what keeps you from creating a duplicate. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed with `filter[location]`, `filter[external_location_code]`, or `filter[external_tenant_id]`. Supports conditional requests via `ETag` / `If-None-Match`, so a periodic sweep can skip pages that have not changed. Needs the `tenants:read` scope.",
+    dropParams: ['filter[full_name]', 'archived', 'include', 'sort'],
+    pickResponse: 0,
+  },
+  'v2.tenants.show': {
+    summary: 'Get a tenant',
+    description:
+      'Fetch a single tenant by their KISS `tenant_id` (ULID). Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.',
+    dropParams: ['include'],
+    pickResponse: 0,
+  },
   'v2.locks.logs.store': {
     summary: 'Report lock activity',
     description:
@@ -86,9 +102,26 @@ const META = {
 };
 
 // Sidebar/category order for the kept tags.
-const TAG_ORDER = ['Units', 'Access', 'Logs', 'Health'];
+const TAG_ORDER = ['Units', 'Tenants', 'Access', 'Logs', 'Health'];
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
+
+/**
+ * Collapse a union 200 body down to one branch. Leaves the operation untouched
+ * if the schema is not a union, so a spec change that drops the union does not
+ * silently publish the wrong shape.
+ */
+function pickResponseVariant(op, index) {
+  const schema = op.responses?.['200']?.content?.['application/json']?.schema;
+  if (!schema || !Array.isArray(schema.anyOf)) return;
+
+  const picked = schema.anyOf[index];
+  if (!picked) {
+    throw new Error(`${op.operationId}: pickResponse ${index} is out of range (${schema.anyOf.length} variants)`);
+  }
+
+  op.responses['200'].content['application/json'].schema = picked;
+}
 
 /** Recursively rewrite OpenAPI 3.1 constructs into 3.0.3 equivalents. */
 function downConvert(node) {
@@ -158,6 +191,18 @@ async function main() {
         if (meta) {
           if (!op.summary) op.summary = meta.summary;
           if (!op.description) op.description = meta.description;
+          // Endpoints shared with the staff surface document both callers'
+          // parameters. Publishing the staff-only ones here would advertise
+          // query params a company token silently ignores.
+          if (meta.dropParams && Array.isArray(op.parameters)) {
+            op.parameters = op.parameters.filter((p) => !meta.dropParams.includes(p.name));
+          }
+          // Same reason as dropParams, for the body: an endpoint serving both
+          // callers documents its 200 as a union of the two shapes, and only
+          // one of them is what a partner will ever receive.
+          if (typeof meta.pickResponse === 'number') {
+            pickResponseVariant(op, meta.pickResponse);
+          }
         }
         keptItem[method] = op;
         kept++;

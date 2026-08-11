@@ -12,12 +12,6 @@ const sidebar: SidebarsConfig = {
       items: [
         {
           type: "doc",
-          id: "reference/v-2-units-show",
-          label: "Get a unit",
-          className: "api-method get",
-        },
-        {
-          type: "doc",
           id: "reference/v-2-units-index",
           label: "List units",
           className: "api-method get",
@@ -27,6 +21,12 @@ const sidebar: SidebarsConfig = {
           id: "reference/v-2-units-sync",
           label: "Create or update units",
           className: "api-method patch",
+        },
+        {
+          type: "doc",
+          id: "reference/v-2-units-show",
+          label: "Get a unit",
+          className: "api-method get",
         },
         {
           type: "doc",
@@ -45,6 +45,24 @@ const sidebar: SidebarsConfig = {
           id: "reference/v-2-units-patch",
           label: "Update unit facts",
           className: "api-method patch",
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Tenants",
+      items: [
+        {
+          type: "doc",
+          id: "reference/v-2-tenants-index",
+          label: "List tenants",
+          className: "api-method get",
+        },
+        {
+          type: "doc",
+          id: "reference/v-2-tenants-show",
+          label: "Get a tenant",
+          className: "api-method get",
         },
       ],
     },

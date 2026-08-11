@@ -1,0 +1,69 @@
+---
+id: v-2-tenants-index
+title: "List tenants"
+description: "The tenants KISS already holds for your locations, so you can reconcile them against your own records before you write. Each row carries both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID). Rows with a null `external_tenant_id` are tenants KISS knows that you have not claimed — someone who signed up in the app, walked in, or arrived through another integration. Match those on `phone_number` and reuse the existing person rather than pushing a new id for them, which is what keeps you from creating a duplicate. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed with `filter[location]`, `filter[external_location_code]`, or `filter[external_tenant_id]`. Supports conditional requests via `ETag` / `If-None-Match`, so a periodic sweep can skip pages that have not changed. Needs the `tenants:read` scope."
+sidebar_label: "List tenants"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWM1uGzkSfpUCTxlsW7Yzk4sug2AmuzA2mw1i5zAwBHepWVJz3E1yimwpgiFgH2KfcJ9kUWRL1p8t2zOZ3UNOtppk8au/j1V1p5wnxmicvdBqqGavB5Es2hgGxmr6ogoVcRrU8Fpd5e9qVCiPjC1FYlm4UxZbUkM1MU0kvva1s3Rju3ZMPFKFMlYN1W8d8UIVSlOo2Hi5Tw3VZTcOkY2dQouxqgGnaGyIEGuCEB2Thsp1NvICKqcJ/gJZ7EAVKlQ1taiGdyouvFyfJanlsthF1LgqaXgEzT9ts4Bee6hdSxpQsJgAKwkFoNZMIZCG8QJMDPD3i8tLKFcbbowu4dXn9xc/f/dMkPQlEltsbtaiROXnQMZsuNV5mJtYZ/jJeMbCwnUMbm4hLEKkdgA/udajXZxEd0sWKmwa4gDONouXos9gbow+gvy9c7fQeQieKjMx1VqL8SJpYbT8WUCFzIuvi102HEH7AZndHKKD0rNpkRdlAWWgylmNvDjJ4MsCHEPZWRNPsKooBMflAC6xJZi5Csddg7wADEnDUu4tYWKo0eAsEFY1sJs/Fb3HKT2O+iNOSTAzxY7tAD7iVHJNU0TTSFS0BGOsbsW8ZUsRB152pOgpD8IwNtKUON00wa6Jani+hYn45jiuT24ewBODbB3Az1lUEKjnbwqo0Puce+dnZ0+G8Wa5HBWKKXhnAwXZ/frsTP5sX/423Qpusoq4QtRPjFOjJ4g1xkxHFHLQpQAbwFsxmERc/gBTitmRG/knhLDKv1Bkl6YIFruPXazB6AC+6QKUmzxZFhAcYC8qZ651UO6nVQkVWgjRNA2MqQeq18y5zhKmyrEOAjtEnEx2QbdocUrcKy1nCfUALsnqHJ3vrnBa5vDAAOXF5OSDs3TyD7mwlHiVXZa+RAhzIi/OC7fGJ+uGbMUaZwTWRahqtFPS4svK2Ug2il/Q+8ZkW53+GsQ5d/uuduNfqYqqUJ7lpYomu7alECTO9jOkUBrjpgRkRolBE6kNxyWvLX1Q9r5D9rcVynZNg+OG1DByR8tC+TY888TEcIg3Oa0O4GjwsdXN0HrSbRvP15P2H36snnQ0bzgAGrmqzYz0DcYnCaqYMD6wfVmozuuHl5fCFL91hklLaXPvmoMe3vXflnc2fbFj+W27Pmi13ibbFtjSb0ubkaAXtj4ey/d0fnxv1TGTjZm+96lWompF7gdXo4vYHF5KBnro5I4rtmAUmw9KvmBT2mj38Ia+e2srxuj5oTfhaLmUjd+f/bD/UvwiXLpLfD3hDnNhlZ6SGsMmy0EwturfkcyiBaDVwudjpxdgAgSycQCXQpcmpsXWzSiRqrvn1fQ6voAy10Eumv1wdr6v2WeLXazJRpFF+k+g5d0S4B2zY3Az4pmh+WAvDFaCRistvj/wkqcSCzRZ8/+vw3L39NVG5ZB6CGyYUC+gdo0OMHGcH/ONciI4+ZQKAHnebWUaiTNqH3z+YUwTx5SOzdlEGsC7vsxMdYmhsC5LhvenD9Yd2FcGueHZWHiFkBseSIVdKl4QhK8fEMQ7mt9aOZcSRoDelw0NGunC/vOvf0NwLTlLMK8dBDO1pKV76Cs39L6AOTa3pMHYVIWLcjMSxOy6aQ1oXayJIfFObngHkHIaYu1CSr7tkiwpzNSFZGOgLyZEKeM8cXAWGJO8WKMF34ValhAszaV1Ee+JYwqY16aqJefnot4tkU9VJUzYtZAoPh/UXY5YGsAnCqkcFjsJB2h4df5mXS8XUK5IsRQTSNF8dvZdNrvfrvAP1fWZjCSGxgQ29TWk8+lyt1+WJufx9rRveR7uAqX/6bx3HKXhsNrIWWxAEoVCDDAzuCo2T3fZtq+KPbFx2lR9pZkK4GOlJnwg0qtGKwfbUPKrhFA5n3i1pVg7GXpMKbEAxloN1Wm/W/oO4tlqxtFxo4aqjtGH4ekpenOC3g/EnyYG0/qGZGAhjF25VtZPZ6/3GzJ2uqvSD2lWAlUdm7hIFyR6IjW8Hm0uXaavYc1fm7QkYFbdkfweE3KqOvI/f3XcSvGj3n68yNV/YihjJy4JMVGKKZUyULZ8ogkx2UqeSFE7Qz6gxZW8fLzaDZUwYLY0We2dkbxuXYibuRagC5SdAmjXG7PzTH4/a2L6EX5yNmLVU1kCx+QHqf5wIbaYuLxvN98bGRat/bUF8+7+PfjGtd+49hvX/k+5tqesSF/iqW/Q2NSicZO7FCHeVReWBsy1C1E+3d2NMdBnbpZL+ZzHScKW2gRpBrUaTrAJ9Eju/54Z80HUt7R4eNg9w6aTI0qGYk8H+RVGz8exb47F/wjcf/j8+bgKDw/NX6jQ1x5LP0OlrUn6C9X5s+fWx9VbDdtfqNDvHmk/grCfM7wQ2XOH2o8BuR963IMZyQ82eQR2PVoWqibUMt+7vuvPSUPs48apvTZYpKzL3r+9u1LL5X8BeVLkwQ==
+sidebar_class_name: "get api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List tenants"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/tenants"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+The tenants KISS already holds for your locations, so you can reconcile them against your own records before you write. Each row carries both ids: your own `external_tenant_id` and the KISS `tenant_id` (a ULID). Rows with a null `external_tenant_id` are tenants KISS knows that you have not claimed — someone who signed up in the app, walked in, or arrived through another integration. Match those on `phone_number` and reuse the existing person rather than pushing a new id for them, which is what keeps you from creating a duplicate. Results are paged (15 per page, `per_page` up to 100) with paging details in `meta.pagination`, and can be narrowed with `filter[location]`, `filter[external_location_code]`, or `filter[external_tenant_id]`. Supports conditional requests via `ETag` / `If-None-Match`, so a periodic sweep can skip pages that have not changed. Needs the `tenants:read` scope.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-tenants-index.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-tenants-index.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-tenants-index.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

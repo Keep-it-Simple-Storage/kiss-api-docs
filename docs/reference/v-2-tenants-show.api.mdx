@@ -1,0 +1,69 @@
+---
+id: v-2-tenants-show
+title: "Get a tenant"
+description: "Fetch a single tenant by their KISS `tenant_id` (ULID). Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
+sidebar_label: "Get a tenant"
+hide_title: true
+hide_table_of_contents: true
+api: eJzVVktv3DYQ/ivEnBJA3XVdn3QpgjQJjBZpYDsnY2HPkrMrxhLJcEYbLwT994Kidr0vG+6lSE+SOMPRzDePbzrwgSKK9e7SQAmr84mQQyc84cr/gAIElwzlLdzkY5gVEDBiQ0IxCTpw2BCUkO9BAdZBCQGlggIifW9tJAOlxJYKMMQ62pD+ByXcVKTyNdXW1kABrCtqEMoOZB2SVZZo3RL6fpaMcfCOiZP8/OwsPfYN/u02BguFxkRiJqPma2WF1Z+X19fqPovvrLlXb77+dfnH20JZp6QixRUGUlKhqAZFV8Rq7duoxD+QKxUq7ZuAbp0P1JKEh3uRtHfa1naAUS0s1YYLhYoFF4tROyk26HBJcdSYQAHaOyEnKRAMobZ6MDH9xima7hgNP/9GOmEcYsqb2IxFQ8y4pBOwFWBQXmFhi8pJG/QoFB3Wdy+oFeDausZ5TTnXfQGh4X95Y2Ejy10uqBN+1PiSNFTe0Z1rmznFV/2t9hnv13q3hWF7UXtzwpcTV7PCCacx6squyNyhvMqQjoTyjHpfQBvM8+J+tx9vd3J+MsOH+dvLzm4uDpDfx/VZ1EZM9hHYi28vmllfQEN7pYwx4jrNG6GGT6LRWHeZhWcFNPj49IHG2OQL1uPZAmumQ4Q2fTV20ejBrO+T4sXZr8cD6KvDVipyklqZzH/Q4ocz9UOMPiq/oriy9GNylPWNoW0Uvx1H8U5rYlaGnP1/xHBxHMNnL2rhW/fT+98f3v5IoqtEH9Yt6y1BzteJQ2x8jsYm6oqkjY7V/cXZxb1a+Khwc9m3wtbQwEKbNtxlNxUJE+FN1Gcik2lt/AWXkdDcK9Y+0CT3QOXTrrCkAaJE9CVMR+1pl1/6ROYUV5sloY01lFCJBC6nUwz2Fwxh8kAUrLBtQk0sPuKSJto3ST5dnR/h+iV60+rhI+0DTLqNVtbDD4YkEpS3s13R9XDK2yzvJi85s1k50vecMA7zK7989LFJYxTefbnMKA15tG7hByNW0liGIR1J5YoWFMnpNC5S2NnlE1HcVJZV3GgrneokQ07OBG+dsGo8i7JOaBnHZLVMOTsK3VYxbyuWlfOiKor0u3rvnaCWnNzBuUhhMvCjZ2lwqPhxZftEsq2RQze7p6752StyzKfQo0xDjdYNTJgKrhvLc0N2DAWUY7yzAirPkoRdN0emr7Hu+3T8vaWYimpWwAqjzfx724GxnN7NyBYvAPbmauz2t+p4xz3p7obTXGK0FdZt+oICHmj9tFv3iQUrQpMWnNtuFKZpHWTn2tGMSx2xbdtPH26g7/8B98ktrg==
+sidebar_class_name: "get api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get a tenant"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/tenants/{tenant}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Fetch a single tenant by their KISS `tenant_id` (ULID). Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-tenants-show.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-tenants-show.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-tenants-show.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

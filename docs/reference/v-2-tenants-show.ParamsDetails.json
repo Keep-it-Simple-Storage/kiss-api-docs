@@ -1,0 +1,1 @@
+{"parameters":[{"name":"tenant","in":"path","required":true,"description":"The tenant ulid","schema":{"type":"string"}}]}
