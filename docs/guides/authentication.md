@@ -66,6 +66,8 @@ For PMS integrations, scope the token to `pms:read` and `pms:write`. See the [PM
 
 Add `tenants:read` if you need [`GET /tenants`](/reference/v-2-tenants-index) to reconcile tenant records before writing. It is separate from the unit scopes because that endpoint returns contact phone numbers, so no token reaches it unless you asked for it. `pms:read` and `units:read` do not imply it, and tokens issued before it existed do not carry it. Create a new token, or ask KISS to add it to yours.
 
+Add `tenants:write` if you need [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) to correct a name or phone number your system got wrong. It is a separate scope from `tenants:read`, `units:write`, and `pms:write`: none of them imply it, so a token that already syncs units cannot correct a tenant until you add it explicitly.
+
 ### Use the token
 
 Include it in the `Authorization` header of every request:

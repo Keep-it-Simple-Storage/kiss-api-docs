@@ -64,6 +64,12 @@ const sidebar: SidebarsConfig = {
           label: "Get a tenant",
           className: "api-method get",
         },
+        {
+          type: "doc",
+          id: "reference/v-2-tenants-patch",
+          label: "Correct a tenant",
+          className: "api-method patch",
+        },
       ],
     },
     {

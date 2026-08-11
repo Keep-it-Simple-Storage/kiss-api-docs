@@ -38,6 +38,10 @@ The `errors` object maps field paths to arrays of error messages. For items in a
 Validation errors report whichever identifier your request used. Send `external_unit_id` and both the path and the message name `external_unit_id`; send the legacy `crm_unit_id` and they name that instead. The same applies to `external_location_code` and its legacy `pms_location_code`. A batch mixing the two is reported item by item, each one the way you sent it.
 :::
 
+:::note Not every anomaly is an error
+A response can flag a concern without failing. [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) always returns `meta.warnings` on its `200`, empty when there is nothing to report. A `phone_number_shared` entry means the write applied, but another account also answers on that phone number. See [Correcting a tenant](/guides/pms/quickstart#correcting-a-tenant) for the full shape.
+:::
+
 ---
 
 ## HTTP Status Codes
@@ -51,7 +55,7 @@ Validation errors report whichever identifier your request used. Send `external_
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
 | `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
-| `409` | Conflict | Source-type collision (a push write against a pull-owned unit) **or** `Idempotency-Key` reused with a different payload. |
+| `409` | Conflict | Source-type collision (a push write against a pull-owned unit), a rejected tenant correction (see below), **or** `Idempotency-Key` reused with a different payload. |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
 
@@ -203,6 +207,48 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 ```
 
 **Fix:** The unit you're trying to write to is owned by a pull-mode integration. A push write cannot silently take it over; the source-of-truth rule protects partner data. (Standalone units, managed only in the dashboard, are adopted by a push write and do not conflict.) If you need to migrate a pull-owned unit to push, reach out to KISS support.
+
+---
+
+### Correcting a tenant you don't own
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "This tenant is not linked to an external_tenant_id in your system, so it cannot be corrected through this endpoint. Contact KISS support to claim it.",
+  "code": "tenant_not_externally_linked"
+}
+```
+
+**Fix:** `PATCH /tenants/{tenant_id}` only corrects a tenant that already carries an id from your system. This one doesn't: it was created outside your integration (signed up in the app, added at the counter, or left behind by a prior one). See [Tenants you did not create](/guides/pms/quickstart#tenants-you-did-not-create). Ask your KISS contact to link it before you write.
+
+---
+
+### Correcting an ambiguous tenant
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "This tenant holds more than one record your token can reach, so the one to correct is ambiguous. Narrow the token to a single location.",
+  "code": "tenant_profile_ambiguous"
+}
+```
+
+**Fix:** The tenant has more than one profile your token can reach (for example, records at two locations under a company-wide token), so KISS can't tell which one you mean. Scope the token to a single location, or ask KISS to resolve the duplicate records.
+
+---
+
+### Correcting a name that spans locations
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "This tenant holds records at more than one of your locations, and their name is shared across all of them, so it cannot be corrected for one location alone. Correcting their phone number, which is held per location, still works.",
+  "code": "tenant_spans_locations"
+}
+```
+
+**Fix:** `first_name` and `last_name` live on the tenant's shared account, not on the per-location record, so a name correction is the same value everywhere that tenant appears. This tenant holds records at more than one of your locations, so KISS won't apply a name change that a location outside your token cannot see. Unlike `tenant_profile_ambiguous`, narrowing the token does not fix this: the name is still shared with a location the narrower token still can't reach. `phone` is held per location and is unaffected; send that correction on its own if that's what you need.
 
 ---
 

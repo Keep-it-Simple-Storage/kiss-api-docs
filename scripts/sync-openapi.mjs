@@ -39,6 +39,7 @@ const ALLOW = new Set([
   'v2.units.tenancy.delete',
   'v2.tenants.index',
   'v2.tenants.show',
+  'v2.tenants.patch',
   'v2.locks.logs.store',
   'v2.entry-points.logs.store',
   'v2.health',
@@ -96,6 +97,11 @@ const META = {
       'Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.',
     dropParams: ['include'],
     pickResponse: 0,
+  },
+  'v2.tenants.patch': {
+    summary: 'Correct a tenant',
+    description:
+      "Correct a tenant's `first_name`, `last_name`, or `phone` (at least one required; nothing else is accepted). Addressed by the KISS `tenant_id` (ULID). Returns the corrected tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant with no id from your system, an ambiguous target, or (for a name) one that spans locations your token doesn't reach; see the [correction guide](/guides/pms/quickstart#correcting-a-tenant) for each case. Needs the `tenants:write` scope.",
   },
   'v2.locks.logs.store': {
     summary: 'Report lock activity',

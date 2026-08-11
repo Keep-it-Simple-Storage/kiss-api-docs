@@ -1,0 +1,1 @@
+{"parameters":[{"name":"Idempotency-Key","in":"header","required":true,"description":"Unique request identifier for deduplication (1–255 chars, 24 h window)","schema":{"type":"string"}},{"name":"ulid","in":"path","required":true,"description":"The tenant's KISS `tenant_id` (ULID), as returned by `GET /tenants`.","schema":{"type":"string"},"example":"01J8ZQK3M7V2XPB4NRTC6H9DSE"}]}
