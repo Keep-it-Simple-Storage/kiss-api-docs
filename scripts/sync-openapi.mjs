@@ -13,9 +13,15 @@ import {dirname} from 'node:path';
 // kiss-api serves the partner slice publicly at /docs/partner-api.json. The
 // full spec at /docs/api.json is gated on a session user, so a build could
 // never fetch it: the fetch 403'd, the catch below kept the committed copy, and
-// the portal quietly froze. Point OPENAPI_SOURCE at a local file (e.g. the
-// output of `php artisan scramble:export`) to regenerate from a spec in hand.
-const SOURCE = process.env.OPENAPI_SOURCE || 'https://api-app.keepitsimplestorage.com/docs/partner-api.json';
+// the portal quietly froze.
+//
+// This is the app domain, not api-app: bootstrap/app.php scopes routes/web.php
+// (where the route lives) to APP_DOMAIN, so the API host 404s it. The API base
+// URL partners call is still api-app.
+//
+// Point OPENAPI_SOURCE at a local file (e.g. the output of
+// `php artisan scramble:export`) to regenerate from a spec in hand.
+const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/partner-api.json';
 const OUT = 'openapi/kiss-api.json';
 
 // Curated, partner-facing endpoints (by Scramble operationId). kiss-api applies
