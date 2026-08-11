@@ -569,7 +569,7 @@
         ],
         "responses": {
           "200": {
-            "description": "One tenant, addressed by its KISS `tenant_id` (ULID), in the shape that matches your token: a company token gets the reconciliation fields, a staff token the manager fields.",
+            "description": "The tenant, in the shape that matches your token: a company token gets the same fields as `GET /tenants`, a staff token gets the manager fields.",
             "content": {
               "application/json": {
                 "schema": {
