@@ -44,7 +44,14 @@ export default function ApiExplorer({
   const serverOptions = useTypedSelector((state: any) => state.server.options);
 
   useEffect(() => {
-    if (!serverValue && serverOptions?.length) {
+    if (!serverOptions?.length) return;
+
+    // Also re-seed when the persisted value is not one of the current options:
+    // a stale URL from an earlier spec would otherwise keep pointing the
+    // snippets and the Try-it form at an origin the API no longer serves.
+    const known = serverOptions.some((o: any) => o.url === serverValue?.url);
+
+    if (!known) {
       dispatch(setServer(JSON.stringify(serverOptions[0])));
     }
   }, [dispatch, serverValue, serverOptions]);

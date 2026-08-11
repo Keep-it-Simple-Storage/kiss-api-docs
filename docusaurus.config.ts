@@ -103,7 +103,7 @@ const config: Config = {
         variant: 'Guzzle',
       },
       {
-        highlight: 'golang',
+        highlight: 'go',
         language: 'go',
         logoClass: 'go',
         variant: 'Native',
@@ -142,7 +142,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['bash', 'json'],
+      additionalLanguages: ['bash', 'json', 'ruby', 'php', 'go'],
     },
   } satisfies Preset.ThemeConfig,
 };
