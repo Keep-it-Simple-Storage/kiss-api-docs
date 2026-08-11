@@ -10,13 +10,19 @@
 import {writeFileSync, readFileSync, existsSync, mkdirSync} from 'node:fs';
 import {dirname} from 'node:path';
 
-// The live spec is access-gated, so a build cannot always reach it. Point
-// OPENAPI_SOURCE at a local file (e.g. the output of `php artisan
-// scramble:export` in kiss-api) to regenerate from a spec you have in hand.
-const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/api.json';
+// kiss-api serves the partner slice publicly at /docs/partner-api.json. The
+// full spec at /docs/api.json is gated on a session user, so a build could
+// never fetch it: the fetch 403'd, the catch below kept the committed copy, and
+// the portal quietly froze. Point OPENAPI_SOURCE at a local file (e.g. the
+// output of `php artisan scramble:export`) to regenerate from a spec in hand.
+const SOURCE = process.env.OPENAPI_SOURCE || 'https://api-app.keepitsimplestorage.com/docs/partner-api.json';
 const OUT = 'openapi/kiss-api.json';
 
-// Curated, partner-facing endpoints (by Scramble operationId).
+// Curated, partner-facing endpoints (by Scramble operationId). kiss-api applies
+// its own allowlist before serving the spec, so this is an intersection rather
+// than the only gate. Kept deliberately: if the two ever disagree, an endpoint
+// stays unpublished until both sides list it, which is the safe direction for a
+// public site. Consolidate into the app once that side has proven itself.
 const ALLOW = new Set([
   'v2.access',
   'v2.units.index',
@@ -169,7 +175,11 @@ async function main() {
     spec = await loadSpec();
   } catch (err) {
     if (existsSync(OUT)) {
-      console.warn(`[sync-openapi] fetch failed (${err.message}); keeping existing ${OUT}`);
+      console.warn(
+        `[sync-openapi] WARNING: fetch of ${SOURCE} failed (${err.message}).\n` +
+        `[sync-openapi] Publishing the committed ${OUT} instead, which may be behind the API. ` +
+        'The site will build and look healthy either way, so check this if the reference looks stale.'
+      );
       return;
     }
     console.error(`[sync-openapi] fetch failed (${err.message}) and no committed spec at ${OUT}`);
