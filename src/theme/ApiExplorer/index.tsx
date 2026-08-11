@@ -41,10 +41,9 @@ export default function ApiExplorer({
       : {},
   );
 
-  const renderCURL = () =>
+  const renderSamples = () =>
     isEvent ? null : (
-      <div className={styles.curlBox}>
-        <div className={styles.curlHeader}>cURL</div>
+      <div className={styles.sampleBox}>
         <CodeSnippets
           postman={postman}
           codeSamples={item['x-codeSamples'] ?? []}
@@ -55,7 +54,7 @@ export default function ApiExplorer({
 
   return (
     <>
-      {renderCURL()}
+      {renderSamples()}
       {/* Example responses: the body's <StatusCodes> portals into this slot. */}
       <div id="kiss-response-slot" />
       {!isEvent && open && (
@@ -65,7 +64,7 @@ export default function ApiExplorer({
               <Request item={item} />
             </div>
             <div className={styles.modalPreview}>
-              {renderCURL()}
+              {renderSamples()}
               <Response item={item} />
             </div>
           </div>

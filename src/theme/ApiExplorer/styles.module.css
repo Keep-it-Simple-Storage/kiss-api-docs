@@ -16,21 +16,14 @@
 /* cURL box: "cURL" sits as a header above the box; the box itself is just the
    code (the in-box language/variant tabs are hidden in custom.css, so the
    copy/expand buttons land in its true upper-right corner). */
-.curlBox {
+.sampleBox {
   margin-bottom: 1rem;
-}
-
-.curlHeader {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--ifm-color-emphasis-700);
-  margin-bottom: 0.35rem;
 }
 
 /* The copy/expand buttons sit absolutely in the code block's top-right; push the
    first code line down so they never cover it. */
-.curlBox :global(.openapi-explorer__code-block-lines),
-.curlBox :global(.openapi-explorer__code-block-lines-numbering) {
+.sampleBox :global(.openapi-explorer__code-block-lines),
+.sampleBox :global(.openapi-explorer__code-block-lines-numbering) {
   padding-top: 2.5rem;
 }
 
