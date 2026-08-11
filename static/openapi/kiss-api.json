@@ -561,10 +561,11 @@
             "name": "tenant",
             "in": "path",
             "required": true,
-            "description": "The tenant ulid",
+            "description": "The tenant's KISS `tenant_id` (ULID), as returned by `GET /tenants`.",
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "01J8ZQK3M7V2XPB4NRTC6H9DSE"
           }
         ],
         "responses": {
@@ -653,6 +654,16 @@
               }
             }
           },
+          "304": {
+            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
           },
@@ -676,11 +687,18 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/ModelNotFoundException"
+            "description": "No tenant with that `tenant_id` at a location your token reaches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "summary": "Get a tenant",
-        "description": "Fetch a single tenant by their KISS `tenant_id` (ULID). Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
+        "description": "Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
       }
     },
     "/units": {

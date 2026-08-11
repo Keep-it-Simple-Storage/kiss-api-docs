@@ -173,7 +173,7 @@ curl "https://api-app.keepitsimplestorage.com/api/v2/tenants?per_page=100" \
 }
 ```
 
-Walk the pages with `page` and size them with `per_page` (up to 100), the same as `GET /units`. Narrow the list with `filter[location]` or `filter[external_location_code]` for one store, or `filter[external_tenant_id]` to look up specific tenants by your own id. The endpoint honours `ETag` / `If-None-Match`, so a periodic sweep can re-request each page and skip the ones that answer `304`.
+Walk the pages with `page` and size them with `per_page` (up to 100), the same as `GET /units`. Narrow the list with `filter[location]` or `filter[external_location_code]` for one store, or `filter[external_tenant_id]` to look up specific tenants by your own id. The endpoint honours `ETag` / `If-None-Match`, so a periodic sweep can re-request each page and skip the ones that answer `304`. [`GET /tenants/{tenant_id}`](/reference/v-2-tenants-show) returns one tenant with the same fields, and takes the same conditional request.
 
 `type` tells you how the tenant holds their access: `primary` for the renter, `secondary-tenant` for someone on the same rental, `unit-accessor` for a guest given access to a unit. The same values work as `filter[type]`.
 

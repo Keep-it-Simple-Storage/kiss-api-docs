@@ -1,11 +1,11 @@
 ---
 id: v-2-tenants-show
 title: "Get a tenant"
-description: "Fetch a single tenant by their KISS `tenant_id` (ULID). Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
+description: "Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
 sidebar_label: "Get a tenant"
 hide_title: true
 hide_table_of_contents: true
-api: eJzVVktv2zgQ/ivEnFpAa2ezOemyKLppYOyiKPI4BYY9FscWG4lkOSM3hqD/vqAoO34lyGnRPUnkcIYz3zw+tuA8BRTj7ERDDuvLkZBFKzzi0v2EDARXDPkj3KdtmGbgMWBNQiEKWrBYE+SQ9CADYyEHj1JCBoF+NCaQhlxCQxlo4iIYH++DHO5LUklNNZXRkAEXJdUIeQuy8dEqSzB2BV03jcbYO8vEUX55cRE/rxnMlLFKSlJcoiclJYqqUYqSWG1cE5S4J7K5QlW42qPdpA21IuGkhzWppaFKs0JW85vrezUesJlnChULLpfHWjVaXFEYFEeQQeGskJXoK3pfmaIHe/ydo8PtacBu8Z2KCKMPMTViUrg1MeOKziCTgUZ5h4Xk+8zoszboWShYrGZvHMvANlWFi4pSOrsMliawzFIFnLFa4VtSXzpLM9vUCwrvuq1yCb33ercLaqdYOH3GlzOq6cAZpzEUpVmTnqG8y1ARCOWV410Gjdevi7v9Bnrcy+DZfB1kYx/7I6QPcXwVpQGDw4gP4jnwftplUNNBIWIIuIkDQajms9HXxk6S8CKDGp9fFqi1ib5gNewtsWI6RmTbFUMPDB5Muy4evLr4/XRCPFhspCQrsRFJ/wcNejz0rkNwQbk1hbWhn6OTLG8N7aL44zSKT0VBzEqTNf+PGK5OY/jqRC1dY395/7tj7S8kRRkZwNhVtWOwxSYygAnq78ndnZrv+nKuPjz8M/nr40jdkjTBsppfXVzN1dIFhVtl1wgbTT2HbNtwn6hUIIzcNVJfiXTimuEKzgOhnisunKdR6oHSRTJfUQ9RZOIcttw1btNPF9mWwnrL4k2oIIdSxHM+HqM3v6H3oycib4RN7SticQFXNCpcHeXj9eUJrt+C003RLyJhMxVNMLLpL+iTSJA/TvdFd/0u77K8n7zozPZNENcLwtDPr/TzxYU6jk349G2SUOrzaOzS9UaMxDEMfTrikVtaUiBbxHERw04un4nivjSswva0KmKdJMjJau+MFVa1Y1HGCq3CkKyGKWVHod0dTA8Pw8o6USUF+lN9dlawkJTc3rlAftTzoWOpsa/44U11Q7KrkWM325eu+dUrcsin0LOMfYXG9swXC64dynNLbgwZ5EO80wxKxxKFbbtApodQdV3c/tFQiEU1zWCNwSS+fWxBG47/emCLNwD7cDt0+0d1+gg96+6W02xktDVWTVxBBk+0eXn8dpEFS0IdHzSP7SCM09rLntrJjIsdsWvbm+t76Lp/AXa5C64=
+api: eJztV9tuG0cM/RViXpoAG0lxjF72pUgTJ3WTGKmtFG0NwaJ2KO0kuzOTGa4cQdh/L7gXRTenRlsUKNAn7dwPyUPyaK2cp4BsnD3XKlXLkwGTRctxEHN3qxLFuIgqvVbjdlpNEuUxYElMQRbWymJJKlXtOZUoY1WqPHKuEhXoY2UCaZVyqChRmmIWjJf3VKrGOUF77KsIr86vrmDaDm+MnsKDd6/Pnz9MACME4ipY0jBbwfTl2RiGHcrpQCUqZjmVqNK14pUXKJGDsQtVJ4o+YekLmRs9/unb339+9eTNN7+c/Pr2h9OLy/Gzr3/87vnVmaonAjR6ZyNFueZkNJKfu8AmYCxwThBz9AScI0OJnOUUYeWqAOw+kE0BIXOlR7tqJ2BBHNtzWBLMDRU6inW7FiWAEBnn8/1TJVpcUOgOiuGZs0yWBSt6X5isCeTwfRTA60O/uNl7yiREPkjY2bTmlhQjLuioAzXyPW7YRO2OIDAFi8XNF7YlylZFgTOJlVClTtTchMg3LbuO3Frgl1Z97izd2KqcUbjXa4VrvXdfdBujNgczp49gOXK03XAENIYsN0vSN8j3uigLhHzH9jpRldd3L9fbyXm9FcGj8dqJxrbv9zy968c7vdT5YNfiHXt20E/qRJW0Q0QMAVdSbJjKeNT60tjzdnGUqBI/fR6g1kawYNHNzbGItO+RPiu6HOgQTOpaNj4ZnR5WiN8k96fn80cXztKjN1IRpl1h0ClwbmJXQCDHCNYxZDnaBWmIxmZdIZmejXEhRcBqsA5mTq/ARIhk+a+k/Cbcgvp09PgQ9TuLFedkWe4i/S+Ulf02cBaCC+CWFJaGbgcH3OwvmvRWPDm04mmWUYygyZr/hg1H+HPhen7cGs47Omw1RGRA6BNpq9NAIJTm8zf5Ue/b9II4y6UbGbso+uYnLZhzMuHuht12a2MXf97sBnBVee8CR8ic7dMSxHMUOcLSYJcRMNxPrQFcNg9FmJ6OTqcwdwGwR+kqjkZTg6B3WTzmM7gg0m2D7WyJaSDUU4iZ8zRoEz93oo4W1DBEpE2qehuG6/ajFiVCYdnLoioUKlU5s4/pcIjePELvBx+IvOFoRJVEdgEXNMhcKevD5ckBrd4Gp6usGYhKiZRVwfCqeaCJJan0erK9dNXMxk2wt7krYHq9JOMZYWiKdvvxwoVSeoV6+va89VJDY2PnrrnEcKOkmrjLlkuaUyCbSY0Us1vIR6wYS+kL/W7IJE1al5PV3hnLEUoXGYxlWoQuWFWkNjqAdrOxzQrTls+cAn0Pz5xlzLgNbgMukB80IsBFLrEhfidSXxJvOLIPc/05ef6nfkf9jjhMn3joCzS20RXC7HWXB710iCpRaefYSaJyF1kW1+sZRnoXirqW6Y8VBWHvJFFLDKZVM9drpU2Ub9314i9E5sFlV1Ufwj/09+Gojb3MsCIyllhUMlKJ+kCrz/91ahEmOaEWjXm97halFXneOnZQiCVfN0Xl5dlY1fUfPx20xg==
 sidebar_class_name: "get api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -37,7 +37,7 @@ import Translate from "@docusaurus/Translate";
 
 
 
-Fetch a single tenant by their KISS `tenant_id` (ULID). Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.
+Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.
 
 <Heading
   id={"request"}

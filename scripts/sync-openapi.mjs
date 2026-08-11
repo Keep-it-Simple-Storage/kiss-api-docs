@@ -87,7 +87,7 @@ const META = {
   'v2.tenants.show': {
     summary: 'Get a tenant',
     description:
-      'Fetch a single tenant by their KISS `tenant_id` (ULID). Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.',
+      'Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope.',
     dropParams: ['include'],
     pickResponse: 0,
   },
