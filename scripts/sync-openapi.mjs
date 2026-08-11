@@ -235,12 +235,6 @@ async function main() {
     }
   }
 
-  // An allowlisted operation missing from the source is dropped silently, which
-  // is the safe direction (nothing publishes until both sides list it) but a
-  // miserable thing to diagnose: the build fails several steps later, on broken
-  // links from the guides to a reference page that was never generated, naming
-  // the guides rather than the endpoint. Usually it means kiss-api has not
-  // deployed the endpoint yet, or PartnerApiSpec::OPERATIONS is missing it.
   const found = new Set();
   for (const item of Object.values(keptPaths))
     for (const [method, op] of Object.entries(item))
