@@ -698,9 +698,7 @@
         },
         "summary": "Get a tenant",
         "description": "Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
-      }
-    },
-    "/tenants/{ulid}": {
+      },
       "patch": {
         "operationId": "v2.tenants.patch",
         "tags": [
@@ -717,7 +715,7 @@
             }
           },
           {
-            "name": "ulid",
+            "name": "tenant",
             "in": "path",
             "required": true,
             "description": "The tenant's KISS `tenant_id` (ULID), as returned by `GET /tenants`.",
@@ -912,7 +910,7 @@
             }
           },
           "422": {
-            "description": "No correctable field was sent, or the phone number could not be read. Sending any field other than `first_name`, `last_name`, or `phone` also answers `422`, with the reason keyed by field name: `email`, `external_tenant_id`, `location_id`, `is_secondary`, `is_classified`, `access_start_time`, `access_end_time`, `access_hours`, and `archived_at` are all owned elsewhere.",
+            "description": "No correctable field was sent, or the phone number could not be read. Sending any field other than `first_name`, `last_name`, or `phone` also answers `422`, with the reason keyed by field name: `email`, `external_tenant_id`, `pms_tenant_id`, `location_id`, `is_secondary`, `is_classified`, `access_start_time`, `access_end_time`, `access_hours`, and `archived_at` are all owned elsewhere.",
             "content": {
               "application/json": {
                 "schema": {

@@ -235,6 +235,28 @@ async function main() {
     }
   }
 
+  // An allowlisted operation missing from the source is dropped silently, which
+  // is the safe direction (nothing publishes until both sides list it) but a
+  // miserable thing to diagnose: the build fails several steps later, on broken
+  // links from the guides to a reference page that was never generated, naming
+  // the guides rather than the endpoint. Usually it means kiss-api has not
+  // deployed the endpoint yet, or PartnerApiSpec::OPERATIONS is missing it.
+  const found = new Set();
+  for (const item of Object.values(keptPaths))
+    for (const [method, op] of Object.entries(item))
+      if (HTTP_METHODS.has(method.toLowerCase()) && op?.operationId) found.add(op.operationId);
+
+  const missing = [...ALLOW].filter((id) => !found.has(id));
+  if (missing.length) {
+    console.warn(
+      `[sync-openapi] WARNING: ${missing.length} allowlisted operation(s) are not in ${SOURCE}:\n` +
+      missing.map((id) => `[sync-openapi]   - ${id}`).join('\n') + '\n' +
+      '[sync-openapi] They will not be published, no reference page is generated for them, and any\n' +
+      '[sync-openapi] guide link to one will fail the Docusaurus build as a broken link. Check that\n' +
+      '[sync-openapi] the endpoint is deployed and listed in PartnerApiSpec::OPERATIONS in kiss-api.'
+    );
+  }
+
   const usedTags = new Set();
   for (const item of Object.values(keptPaths))
     for (const [m, op] of Object.entries(item))

@@ -96,7 +96,9 @@ A bundle-grants API for managing guests programmatically exists but is behind a 
 :::
 
 :::note Phone number format
-Store tenant phone numbers as plain digits, country code plus number, with no `+`, spaces, or punctuation (for example `15550101234`). KISS matches a tenant's sign-in number against what you sync, so a stored `+1 555 010 1234` will not match a sign-in of `15550101234`.
+This applies to the `tenant` block on the tenancy writes above. Store tenant phone numbers as plain digits, country code plus number, with no `+`, spaces, or punctuation (for example `15550101234`). KISS matches a tenant's sign-in number against what you sync, so a stored `+1 555 010 1234` will not match a sign-in of `15550101234`.
+
+[`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) is the exception: it accepts E.164 with a leading `+`, and that is the form to prefer there. See [Correcting a tenant](#correcting-a-tenant).
 :::
 
 :::tip Use the right write for the job
