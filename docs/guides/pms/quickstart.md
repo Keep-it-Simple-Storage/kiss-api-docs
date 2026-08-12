@@ -81,6 +81,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | --- | --- | --- |
 | Look up units you did not just write | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `external_unit_id` ↔ `unit_id` mapping. Returns a page at a time; narrow it with `filter[external_location_code]` to one store. Supports `ETag` / `If-None-Match`. |
 | Look up tenants | <Method m="get" /> [`/tenants`](/reference/v-2-tenants-index) | Lists the tenants at your locations with the `external_tenant_id` ↔ `tenant_id` mapping, plus name, `phone_number`, and location. Paged and filterable; supports `ETag` / `If-None-Match`. Needs the `tenants:read` scope. |
+| Fix a tenant's name or phone | <Method m="patch" /> [`/tenants/{tenant_id}`](/reference/v-2-tenants-patch) | Correct `first_name`, `last_name`, or `phone` on a tenant you created. Returns `meta.warnings` when the corrected phone number is shared with another account. Needs the `tenants:write` scope. |
 | Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`. A batch with at least one success answers `200`; a batch where every item failed answers `422` with the same body. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user. Sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`lockout`, `auction`, `unrentable`, `balance_due`, and so on). Send only what changed. |
@@ -95,7 +96,9 @@ A bundle-grants API for managing guests programmatically exists but is behind a 
 :::
 
 :::note Phone number format
-Store tenant phone numbers as plain digits, country code plus number, with no `+`, spaces, or punctuation (for example `15550101234`). KISS matches a tenant's sign-in number against what you sync, so a stored `+1 555 010 1234` will not match a sign-in of `15550101234`.
+This applies to the `tenant` block on the tenancy writes above. Store tenant phone numbers as plain digits, country code plus number, with no `+`, spaces, or punctuation (for example `15550101234`). KISS matches a tenant's sign-in number against what you sync, so a stored `+1 555 010 1234` will not match a sign-in of `15550101234`.
+
+[`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) is the exception: it accepts E.164 with a leading `+`, and that is the form to prefer there. See [Correcting a tenant](#correcting-a-tenant).
 :::
 
 :::tip Use the right write for the job
@@ -184,8 +187,49 @@ Not every row will be one of yours. A tenant can exist in KISS with no id from y
 :::caution Pushing your own id over one of these creates a second record
 Tenancy writes match on `external_tenant_id` alone. Send your own id for a tenant listed here with `external_tenant_id: null` and KISS has no way to tell it is the same person, so it creates a second tenant on the same phone number. Both records then exist and access can end up split across them.
 
-Claiming an existing tenant is not self-serve yet. If a `phone_number` in this list matches someone in your own records, send those to your KISS contact and they will link them before you write. Tenants you create yourself always carry your id and match normally.
+Claiming an existing tenant is not self-serve yet. If a `phone_number` in this list matches someone in your own records, send those to your KISS contact and they will link them before you write. Tenants you create yourself always carry your id and match normally. Trying to correct one of these through `PATCH /tenants/{tenant_id}` answers `409 tenant_not_externally_linked` rather than silently attaching your id.
 :::
+
+## Correcting a tenant
+
+`PATCH /tenants/{tenant_id}` fixes a name or phone number your system got wrong on a tenant you created. It is not how a tenant is onboarded or moved between units; use the tenancy endpoints above for that. Send only the fields you're correcting, at least one of `first_name`, `last_name`, or `phone`, nothing else is accepted.
+
+```bash
+curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/tenants/01J8ZQK3M7V2XPB4NRTC6H9DSE \
+  -H "Authorization: Bearer $KISS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"phone": "+15125550142"}'
+```
+
+```json
+{
+  "message": "Request successful.",
+  "data": {
+    "tenant_id": "01J8ZQK3M7V2XPB4NRTC6H9DSE", "external_tenant_id": "T-883920",
+    "first_name": "Dana", "last_name": "Whitfield", "phone_number": "+15125550142",
+    "location_id": "01J8ZQ2A4WY7RK5MF3TDN6XBQV", "external_location_code": "STORE-01",
+    "type": "primary"
+  },
+  "meta": { "warnings": [] }
+}
+```
+
+`phone` is also the tenant's sign-in credential. Send it in E.164 (`+15125550142`) to be unambiguous, or as a bare national number, which is read against the tenant's location. A tenant with no location on file has no country to read a bare number against, so a bare number for one of these answers `422`; send E.164 instead.
+
+`meta.warnings` is always present, even when empty. A write that lands on a phone number another account also answers on comes back `200` with a `phone_number_shared` entry rather than being rejected, since the number really is shared and blocking the write would not fix that:
+
+```json
+{ "code": "phone_number_shared", "message": "...", "tenant_ids": ["01J8ZR7T1K9F3XW5PDNB2QH4CV"] }
+```
+
+`tenant_ids` lists only the accounts your token can see; a collision with a tenant outside your reach still raises the warning, just without an id you could look up.
+
+This endpoint only reaches a tenant that carries an id from your system. One with `external_tenant_id: null` (see [above](#tenants-you-did-not-create)) answers `409 tenant_not_externally_linked`. If your token reaches more than one of the tenant's records, it answers `409 tenant_profile_ambiguous` instead: narrow the token to a single location and retry.
+
+A name correction has one more condition. `first_name` and `last_name` live on the tenant's shared account, not on the per-location record, so they are the same value everywhere that tenant appears. If the tenant holds records at more than one of your locations, correcting the name answers `409 tenant_spans_locations`, and narrowing the token does not help here: the name is still shared with a location the narrower token cannot reach. `phone` is held per location and is unaffected, so correcting it still works even when the name can't be.
+
+Needs the `tenants:write` scope. Full field list and error shapes on the [reference page](/reference/v-2-tenants-patch).
 
 ## Idempotency
 

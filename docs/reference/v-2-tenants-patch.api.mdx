@@ -1,0 +1,69 @@
+---
+id: v-2-tenants-patch
+title: "Correct a tenant"
+description: "Correct a tenant's `first_name`, `last_name`, or `phone` (at least one required; nothing else is accepted). Addressed by the KISS `tenant_id` (ULID). Returns the corrected tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant with no id from your system, an ambiguous target, or (for a name) one that spans locations your token doesn't reach; see the [correction guide](/guides/pms/quickstart#correcting-a-tenant) for each case. Needs the `tenants:write` scope."
+sidebar_label: "Correct a tenant"
+hide_title: true
+hide_table_of_contents: true
+api: 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
+sidebar_class_name: "patch api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Correct a tenant"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"patch"}
+  path={"/tenants/{tenant}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Correct a tenant's `first_name`, `last_name`, or `phone` (at least one required; nothing else is accepted). Addressed by the KISS `tenant_id` (ULID). Returns the corrected tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant with no id from your system, an ambiguous target, or (for a name) one that spans locations your token doesn't reach; see the [correction guide](/guides/pms/quickstart#correcting-a-tenant) for each case. Needs the `tenants:write` scope.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-tenants-patch.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-tenants-patch.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-tenants-patch.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

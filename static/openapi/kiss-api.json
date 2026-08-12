@@ -698,6 +698,250 @@
         },
         "summary": "Get a tenant",
         "description": "Fetch a single tenant by their KISS `tenant_id` (ULID), returning the same fields as `GET /tenants`. Supports conditional requests via `ETag` / `If-None-Match`. Returns `404` for a tenant outside the locations your token reaches. Needs the `tenants:read` scope."
+      },
+      "patch": {
+        "operationId": "v2.tenants.patch",
+        "tags": [
+          "Tenants"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "path",
+            "required": true,
+            "description": "The tenant's KISS `tenant_id` (ULID), as returned by `GET /tenants`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "01J8ZQK3M7V2XPB4NRTC6H9DSE"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchTenantRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The corrected tenant, in the same shape as `GET /tenants/{tenant}`. `meta.warnings` is always present: a `phone_number_shared` entry means the write applied but another account answers on that number, and `tenant_ids` lists the ones your token can see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tenant_id": {
+                          "type": "string"
+                        },
+                        "external_tenant_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "phone_number": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "location_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "external_location_code": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tenant_id",
+                        "external_tenant_id",
+                        "first_name",
+                        "last_name",
+                        "phone_number",
+                        "location_id",
+                        "external_location_code",
+                        "type",
+                        "created_at",
+                        "updated_at"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "tenant_ids": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "message",
+                              "tenant_ids"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "warnings"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "Your token does not carry the `tenants:write` scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No tenant with that `tenant_id` at a location your token reaches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "array",
+                          "items": {}
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "Tenant not found."
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The tenant exists but must not be corrected here. `code` is `tenant_not_externally_linked` when the account carries no id from your system, `tenant_profile_ambiguous` when your token reaches more than one of the tenant's records, or `tenant_spans_locations` when a name correction was sent for a tenant holding records at several of your locations (a name is one value behind all of them; correcting the phone number, which is held per location, still works).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "code"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No correctable field was sent, or the phone number could not be read. Sending any field other than `first_name`, `last_name`, or `phone` also answers `422`, with the reason keyed by field name: `email`, `external_tenant_id`, `pms_tenant_id`, `location_id`, `is_secondary`, `is_classified`, `access_start_time`, `access_end_time`, `access_hours`, and `archived_at` are all owned elsewhere.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Errors overview."
+                    },
+                    "errors": {
+                      "type": "object",
+                      "description": "A detailed description of each field that failed validation.",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "errors"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "Correct a tenant",
+        "description": "Correct a tenant's `first_name`, `last_name`, or `phone` (at least one required; nothing else is accepted). Addressed by the KISS `tenant_id` (ULID). Returns the corrected tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant with no id from your system, an ambiguous target, or (for a name) one that spans locations your token doesn't reach; see the [correction guide](/guides/pms/quickstart#correcting-a-tenant) for each case. Needs the `tenants:write` scope."
       }
     },
     "/units": {
@@ -1863,6 +2107,27 @@
           "key"
         ],
         "title": "App.Http.Requests.Api.V2.Locks.StoreLockLogRequest"
+      },
+      "PatchTenantRequest": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "description": "The tenant's given name, as your system holds it.",
+            "maxLength": 255
+          },
+          "last_name": {
+            "type": "string",
+            "description": "The tenant's family name, as your system holds it.",
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "description": "The tenant's mobile number, and their credential for signing in.\nE.164 (`+15125550142`) is unambiguous; a bare national number is\nread against the location's country.",
+            "maxLength": 32
+          }
+        },
+        "title": "PatchTenantRequest"
       },
       "PatchUnitRequest": {
         "type": "object",
