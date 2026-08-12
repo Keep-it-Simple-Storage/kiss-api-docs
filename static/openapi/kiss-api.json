@@ -509,14 +509,7 @@
             }
           },
           "304": {
-            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent. Skip it and move on to the next page.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent. Skip it and move on to the next page."
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
@@ -529,8 +522,7 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "type": "string",
-                      "description": "Error overview."
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -645,14 +637,7 @@
             }
           },
           "304": {
-            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent."
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
@@ -665,8 +650,7 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "type": "string",
-                      "description": "Error overview."
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -736,7 +720,7 @@
         },
         "responses": {
           "200": {
-            "description": "The corrected tenant, in the same shape as `GET /tenants/{tenant}`. `meta.warnings` is always present: a `phone_number_shared` entry means the write applied but another account answers on that number, and `tenant_ids` lists the ones your token can see.",
+            "description": "The updated tenant, in the same shape as `GET /tenants/{tenant}`. `meta.warnings` is always present: a `phone_number_shared` entry means the write applied but another account answers on that number, and `tenant_ids` lists the ones your token can see.",
             "content": {
               "application/json": {
                 "schema": {
@@ -847,7 +831,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string"
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
                 }
               }
             }
@@ -888,7 +880,7 @@
             }
           },
           "409": {
-            "description": "The tenant exists but must not be corrected here. `code` is `tenant_not_externally_linked` when the account carries no id from your system, `tenant_profile_ambiguous` when your token reaches more than one of the tenant's records, or `tenant_spans_locations` when a name correction was sent for a tenant holding records at several of your locations (a name is one value behind all of them; correcting the phone number, which is held per location, still works).",
+            "description": "The tenant exists but cannot be updated here. `code` is `tenant_not_externally_linked` when the account carries no id from your system, `tenant_profile_ambiguous` when your token reaches more than one of the tenant's records, or `tenant_spans_locations` when a name was sent for a tenant holding records at several of your locations (a name is one value behind all of them; the phone number is held per location, so sending that on its own still works).",
             "content": {
               "application/json": {
                 "schema": {
@@ -910,7 +902,7 @@
             }
           },
           "422": {
-            "description": "No correctable field was sent, or the phone number could not be read. Sending any field other than `first_name`, `last_name`, or `phone` also answers `422`, with the reason keyed by field name: `email`, `external_tenant_id`, `pms_tenant_id`, `location_id`, `is_secondary`, `is_classified`, `access_start_time`, `access_end_time`, `access_hours`, and `archived_at` are all owned elsewhere.",
+            "description": "No writable field was sent, or the phone number could not be read. Sending any field other than `first_name`, `last_name`, or `phone` also answers `422`, with the reason keyed by field name: `email`, `external_tenant_id`, `pms_tenant_id`, `location_id`, `is_secondary`, `is_classified`, `access_start_time`, `access_end_time`, `access_hours`, and `archived_at` are all owned elsewhere.",
             "content": {
               "application/json": {
                 "schema": {
@@ -940,8 +932,8 @@
             }
           }
         },
-        "summary": "Correct a tenant",
-        "description": "Correct a tenant's `first_name`, `last_name`, or `phone` (at least one required; nothing else is accepted). Addressed by the KISS `tenant_id` (ULID). Returns the corrected tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant with no id from your system, an ambiguous target, or (for a name) one that spans locations your token doesn't reach; see the [correction guide](/guides/pms/quickstart#correcting-a-tenant) for each case. Needs the `tenants:write` scope."
+        "summary": "Update a tenant",
+        "description": "Update a tenant's `first_name`, `last_name`, or `phone`. Send at least one; nothing else is accepted. Addressed by the KISS `tenant_id` (ULID). Returns the updated tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant carrying no id from your system, an ambiguous target, or (for a name) one that spans locations your token cannot reach; see [Updating a tenant](/guides/pms/quickstart#updating-a-tenant) for each case. Needs the `tenants:write` scope."
       }
     },
     "/units": {
@@ -2190,27 +2182,6 @@
             "deprecated": true,
             "maxLength": 255,
             "nullable": true
-          },
-          "occupied": {
-            "type": "string",
-            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
-          },
-          "tenant_id": {
-            "type": "string",
-            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
-          },
-          "external_tenant_id": {
-            "type": "string",
-            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
-          },
-          "pms_tenant_id": {
-            "type": "string",
-            "description": "Legacy alias of `external_tenant_id`. Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy.",
-            "deprecated": true
-          },
-          "move_in_date": {
-            "type": "string",
-            "description": "Prohibited here — tenancy changes go through PUT/DELETE /units/{ulid}/tenancy."
           }
         },
         "title": "PatchUnitRequest"

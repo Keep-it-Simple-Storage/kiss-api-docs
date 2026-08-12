@@ -39,7 +39,7 @@ Validation errors report whichever identifier your request used. Send `external_
 :::
 
 :::note Not every anomaly is an error
-A response can flag a concern without failing. [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) always returns `meta.warnings` on its `200`, empty when there is nothing to report. A `phone_number_shared` entry means the write applied, but another account also answers on that phone number. See [Correcting a tenant](/guides/pms/quickstart#correcting-a-tenant) for the full shape.
+A response can flag a concern without failing. [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) always returns `meta.warnings` on its `200`, empty when there is nothing to report. A `phone_number_shared` entry means the write applied, but another account also answers on that phone number. See [Updating a tenant](/guides/pms/quickstart#updating-a-tenant) for the full shape.
 :::
 
 ---
@@ -55,7 +55,7 @@ A response can flag a concern without failing. [`PATCH /tenants/{tenant_id}`](/r
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
 | `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
-| `409` | Conflict | Source-type collision (a push write against a pull-owned unit), a rejected tenant correction (see below), **or** `Idempotency-Key` reused with a different payload. |
+| `409` | Conflict | Source-type collision (a push write against a pull-owned unit), a rejected tenant update (see below), **or** `Idempotency-Key` reused with a different payload. |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
 
@@ -210,7 +210,7 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 
 ---
 
-### Correcting a tenant you don't own
+### Updating a tenant you don't own
 
 **Error (HTTP 409):**
 ```json
@@ -220,11 +220,11 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 }
 ```
 
-**Fix:** `PATCH /tenants/{tenant_id}` only corrects a tenant that already carries an id from your system. This one doesn't: it was created outside your integration (signed up in the app, added at the counter, or left behind by a prior one). See [Tenants you did not create](/guides/pms/quickstart#tenants-you-did-not-create). Ask your KISS contact to link it before you write.
+**Fix:** `PATCH /tenants/{tenant_id}` only updates a tenant that already carries an id from your system. This one doesn't: it was created outside your integration (signed up in the app, added at the counter, or left behind by a prior one). See [Tenants you did not create](/guides/pms/quickstart#tenants-you-did-not-create). Ask your KISS contact to link it before you write.
 
 ---
 
-### Correcting an ambiguous tenant
+### Updating an ambiguous tenant
 
 **Error (HTTP 409):**
 ```json
@@ -238,7 +238,7 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 
 ---
 
-### Correcting a name that spans locations
+### Updating a name that spans locations
 
 **Error (HTTP 409):**
 ```json
@@ -248,7 +248,7 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 }
 ```
 
-**Fix:** `first_name` and `last_name` live on the tenant's shared account, not on the per-location record, so a name correction is the same value everywhere that tenant appears. This tenant holds records at more than one of your locations, so KISS won't apply a name change that a location outside your token cannot see. Unlike `tenant_profile_ambiguous`, narrowing the token does not fix this: the name is still shared with a location the narrower token still can't reach. `phone` is held per location and is unaffected; send that correction on its own if that's what you need.
+**Fix:** `first_name` and `last_name` live on the tenant's shared account rather than the per-location record, so a name holds the same value everywhere that tenant appears. This tenant has records at more than one of your locations, so KISS will not apply a name change that a location outside your token cannot see. Unlike `tenant_profile_ambiguous`, narrowing the token does not fix this, because the name is still shared with a location the narrower token cannot reach. `phone` is held per location, so send that on its own if it is what you need.
 
 ---
 
