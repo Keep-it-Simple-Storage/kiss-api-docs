@@ -227,7 +227,7 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/tenants/01J8ZQK3M7V
 
 This endpoint only reaches a tenant that carries an id from your system. One with `external_tenant_id: null` (see [above](#tenants-you-did-not-create)) answers `409 tenant_not_externally_linked`. If your token reaches more than one of the tenant's records, it answers `409 tenant_profile_ambiguous` instead: narrow the token to a single location and retry.
 
-Names carry one more condition. `first_name` and `last_name` live on the tenant's shared account rather than the per-location record, so they hold the same value everywhere that tenant appears. If the tenant has records at more than one of your locations, a name change answers `409 tenant_spans_locations`. Narrowing the token does not help, because the name is still shared with a location the narrower token cannot reach. `phone` is held per location, so it still updates even when the name cannot.
+Names carry one more condition. `first_name` and `last_name` live on the tenant's shared account rather than the per-location record, so they hold the same value everywhere that tenant appears. If the tenant has records at more than one of your locations, a name change answers `409 tenant_spans_locations`. Narrowing the token does not help, because the name is still shared with a location the narrower token cannot reach. `phone` is held per location, so it still updates for these tenants, but only in a request of its own. A request carrying both is rejected whole, and nothing is written.
 
 Needs the `tenants:write` scope. Full field list and error shapes on the [reference page](/reference/v-2-tenants-patch).
 
