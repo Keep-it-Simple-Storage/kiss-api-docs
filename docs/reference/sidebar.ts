@@ -67,7 +67,7 @@ const sidebar: SidebarsConfig = {
         {
           type: "doc",
           id: "reference/v-2-tenants-patch",
-          label: "Correct a tenant",
+          label: "Update a tenant",
           className: "api-method patch",
         },
       ],

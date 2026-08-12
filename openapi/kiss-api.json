@@ -940,8 +940,8 @@
             }
           }
         },
-        "summary": "Correct a tenant",
-        "description": "Correct a tenant's `first_name`, `last_name`, or `phone` (at least one required; nothing else is accepted). Addressed by the KISS `tenant_id` (ULID). Returns the corrected tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant with no id from your system, an ambiguous target, or (for a name) one that spans locations your token doesn't reach; see the [correction guide](/guides/pms/quickstart#correcting-a-tenant) for each case. Needs the `tenants:write` scope."
+        "summary": "Update a tenant",
+        "description": "Update a tenant's `first_name`, `last_name`, or `phone`. Send at least one; nothing else is accepted. Addressed by the KISS `tenant_id` (ULID). Returns the updated tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant carrying no id from your system, an ambiguous target, or (for a name) one that spans locations your token cannot reach; see [Updating a tenant](/guides/pms/quickstart#updating-a-tenant) for each case. Needs the `tenants:write` scope."
       }
     },
     "/units": {
