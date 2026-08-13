@@ -101,7 +101,7 @@ const META = {
   'v2.tenants.patch': {
     summary: 'Update a tenant',
     description:
-      "Update a tenant's `first_name`, `last_name`, or `phone`. Send at least one; nothing else is accepted. Addressed by the KISS `tenant_id` (ULID). Returns the updated tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`, which is always present and flags a phone number shared with another account. Answers `409` for a tenant carrying no id from your system, an ambiguous target, or (for a name) one that spans locations your token cannot reach; see [Updating a tenant](/guides/pms/quickstart#updating-a-tenant) for each case. Needs the `tenants:write` scope.",
+      "Update a tenant's `first_name`, `last_name`, or `phone`, or re-key their `external_tenant_id` when the id you gave earlier has changed. Send at least one. Addressed by the KISS `tenant_id` (ULID). A re-key moves the id everywhere the tenant is used, so their units and any linked guests move with it, and answers `409 external_tenant_id_conflict` if another tenant already holds the new id. Returns the updated tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`. Answers `409` for a tenant carrying no id from your system, an ambiguous target, or a change that reaches locations your token cannot; see [Updating a tenant](/guides/pms/quickstart#updating-a-tenant). Needs the `tenants:write` scope.",
   },
   'v2.locks.logs.store': {
     summary: 'Report lock activity',
