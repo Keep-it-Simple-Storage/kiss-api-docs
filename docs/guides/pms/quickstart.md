@@ -81,7 +81,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | --- | --- | --- |
 | Look up units you did not just write | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `external_unit_id` ↔ `unit_id` mapping. Returns a page at a time; narrow it with `filter[external_location_code]` to one store. Supports `ETag` / `If-None-Match`. |
 | Look up tenants | <Method m="get" /> [`/tenants`](/reference/v-2-tenants-index) | Lists the tenants at your locations with the `external_tenant_id` ↔ `tenant_id` mapping, plus name, `phone_number`, and location. Paged and filterable; supports `ETag` / `If-None-Match`. Needs the `tenants:read` scope. |
-| Tenant details changed | <Method m="patch" /> [`/tenants/{tenant_id}`](/reference/v-2-tenants-patch) | Update `first_name`, `last_name`, or `phone` on a tenant carrying your id. Returns `meta.warnings` when the phone number is shared with another account. Needs the `tenants:write` scope. |
+| Tenant details changed | <Method m="patch" /> [`/tenants/{tenant_id}`](/reference/v-2-tenants-patch) | Update `first_name`, `last_name`, or `phone`, or re-key `external_tenant_id`, on a tenant carrying your id. Returns `meta.warnings` when the phone number is shared with another account. Needs the `tenants:write` scope. |
 | Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`. A batch with at least one success answers `200`; a batch where every item failed answers `422` with the same body. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user. Sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`lockout`, `auction`, `unrentable`, `balance_due`, and so on). Send only what changed. |
@@ -192,7 +192,7 @@ Claiming an existing tenant is not self-serve yet. If a `phone_number` in this l
 
 ## Updating a tenant
 
-`PATCH /tenants/{tenant_id}` updates a tenant's name or phone number. Send at least one of `first_name`, `last_name`, or `phone`; nothing else is accepted. It does not onboard a tenant or move one between units, which the tenancy endpoints above do.
+`PATCH /tenants/{tenant_id}` updates a tenant's name or phone number, or re-keys the id you gave them. Send at least one of `first_name`, `last_name`, `phone`, or `external_tenant_id`. It does not onboard a tenant or move one between units, which the tenancy endpoints above do.
 
 ```bash
 curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/tenants/01J8ZQK3M7V2XPB4NRTC6H9DSE \
@@ -228,6 +228,16 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/tenants/01J8ZQK3M7V
 This endpoint only reaches a tenant that carries an id from your system. One with `external_tenant_id: null` (see [above](#tenants-you-did-not-create)) answers `409 tenant_not_externally_linked`. If your token reaches more than one of the tenant's records, it answers `409 tenant_profile_ambiguous` instead: narrow the token to a single location and retry.
 
 Names carry one more condition. `first_name` and `last_name` live on the tenant's shared account rather than the per-location record, so they hold the same value everywhere that tenant appears. If the tenant has records at more than one of your locations, a name change answers `409 tenant_spans_locations`. Narrowing the token does not help, because the name is still shared with a location the narrower token cannot reach. `phone` is held per location, so it still updates for these tenants, but only in a request of its own. A request carrying both is rejected whole, and nothing is written.
+
+### Re-keying `external_tenant_id`
+
+If the id you gave a tenant changes on your side, send the new value as `external_tenant_id` (the old `pms_tenant_id` name still works). KISS carries it across everything keyed on that id: the tenant's records at each of your locations, their units, and any guests linked to them. Because the id is the match key your tenancy writes use, keep sending the new value from then on. A later write with the old id would not find the tenant, and would create a second one.
+
+If another tenant in your account already holds the new id, the write answers `409 external_tenant_id_conflict` and nothing changes. Pick an id no other tenant uses, or ask support to merge the two.
+
+A re-key changes the id everywhere the tenant appears, so it needs a token that reaches every location the tenant is at. One scoped to fewer answers `409 tenant_spans_locations`; widen the token, or ask support to run it. Setting `external_tenant_id` on a tenant that has none is a different operation, claiming an account KISS already holds, and answers `409 tenant_not_externally_linked`.
+
+If KISS still syncs this company from another system, the response also carries a `meta.warnings` note that a later sync could re-send the old id. Change it at the source too, so the two stay in step.
 
 Needs the `tenants:write` scope. Full field list and error shapes on the [reference page](/reference/v-2-tenants-patch).
 
