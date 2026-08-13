@@ -81,7 +81,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | --- | --- | --- |
 | Look up units you did not just write | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `external_unit_id` ↔ `unit_id` mapping. Returns a page at a time; narrow it with `filter[external_location_code]` to one store. Supports `ETag` / `If-None-Match`. |
 | Look up tenants | <Method m="get" /> [`/tenants`](/reference/v-2-tenants-index) | Lists the tenants at your locations with the `external_tenant_id` ↔ `tenant_id` mapping, plus name, `phone_number`, and location. Paged and filterable; supports `ETag` / `If-None-Match`. Needs the `tenants:read` scope. |
-| Tenant details changed | <Method m="patch" /> [`/tenants/{tenant_id}`](/reference/v-2-tenants-patch) | Update `first_name`, `last_name`, or `phone`, or re-key `external_tenant_id`, on a tenant carrying your id. Returns `meta.warnings` when the phone number is shared with another account. Needs the `tenants:write` scope. |
+| Tenant details changed | <Method m="patch" /> [`/tenants/{tenant_id}`](/reference/v-2-tenants-patch) | Update `first_name`, `last_name`, or `phone` on a tenant carrying your id, re-key its `external_tenant_id`, or claim one that has none by sending `external_tenant_id` with a matching `phone`. Returns `meta.warnings` when the phone number is shared with another account. Needs the `tenants:write` scope. |
 | Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`. A batch with at least one success answers `200`; a batch where every item failed answers `422` with the same body. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user. Sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`lockout`, `auction`, `unrentable`, `balance_due`, and so on). Send only what changed. |
@@ -187,7 +187,7 @@ Not every row will be one of yours. A tenant can exist in KISS with no id from y
 :::caution Pushing your own id over one of these creates a second record
 Tenancy writes match on `external_tenant_id` alone. Send your own id for a tenant listed here with `external_tenant_id: null` and KISS has no way to tell it is the same person, so it creates a second tenant on the same phone number. Both records then exist and access can end up split across them.
 
-Claiming an existing tenant is not self-serve yet. If a `phone_number` in this list matches someone in your own records, send those to your KISS contact and they will link them before you write. Tenants you create yourself always carry your id and match normally. Updating one of these through `PATCH /tenants/{tenant_id}` answers `409 tenant_not_externally_linked` rather than silently attaching your id.
+If a `phone_number` in this list matches someone in your own records, claim the tenant instead of writing blind: send `external_tenant_id` and `phone` to `PATCH /tenants/{tenant_id}` and KISS links it by matching the phone number already on file. See [Claiming a tenant with no id from you](#claiming-a-tenant-with-no-id-from-you). Tenants you create yourself always carry your id and match normally. A write to one of these that omits `external_tenant_id` still answers `409 tenant_not_externally_linked` rather than silently attaching your id.
 :::
 
 ## Updating a tenant
@@ -225,7 +225,7 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/tenants/01J8ZQK3M7V
 
 `tenant_ids` lists only the accounts your token can see; a collision with a tenant outside your reach still raises the warning, just without an id you could look up.
 
-This endpoint only reaches a tenant that carries an id from your system. One with `external_tenant_id: null` (see [above](#tenants-you-did-not-create)) answers `409 tenant_not_externally_linked`. If your token reaches more than one of the tenant's records, it answers `409 tenant_profile_ambiguous` instead: narrow the token to a single location and retry.
+This endpoint only reaches a tenant that carries an id from your system, unless the write is a claim (see [below](#claiming-a-tenant-with-no-id-from-you)). Any other write to one with `external_tenant_id: null` (see [above](#tenants-you-did-not-create)) answers `409 tenant_not_externally_linked`. If your token reaches more than one of the tenant's records, it answers `409 tenant_profile_ambiguous` instead: narrow the token to a single location and retry.
 
 Names carry one more condition. `first_name` and `last_name` live on the tenant's shared account rather than the per-location record, so they hold the same value everywhere that tenant appears. If the tenant has records at more than one of your locations, a name change answers `409 tenant_spans_locations`. Narrowing the token does not help, because the name is still shared with a location the narrower token cannot reach. `phone` is held per location, so it still updates for these tenants, but only in a request of its own. A request carrying both is rejected whole, and nothing is written.
 
@@ -235,9 +235,35 @@ If the id you gave a tenant changes on your side, send the new value as `externa
 
 If another tenant in your account already holds the new id, the write answers `409 external_tenant_id_conflict` and nothing changes. Pick an id no other tenant uses, or ask support to merge the two.
 
-A re-key changes the id everywhere the tenant appears, so it needs a token that reaches every location the tenant is at. One scoped to fewer answers `409 tenant_spans_locations`; widen the token, or ask support to run it. Setting `external_tenant_id` on a tenant that has none is a different operation, claiming an account KISS already holds, and answers `409 tenant_not_externally_linked`.
+A re-key changes the id everywhere the tenant appears, so it needs a token that reaches every location the tenant is at. One scoped to fewer answers `409 tenant_spans_locations`; widen the token, or ask support to run it. Setting `external_tenant_id` on a tenant that has none is a different operation, claiming an account KISS already holds; see [Claiming a tenant with no id from you](#claiming-a-tenant-with-no-id-from-you).
 
-If KISS still syncs this company from another system, the response also carries a `meta.warnings` note that a later sync could re-send the old id. Change it at the source too, so the two stay in step.
+If KISS still syncs this company from another system, the response also carries an `external_tenant_id_cutover` entry in `meta.warnings`: a later sync could still send the old id and re-create the tenant as a separate record. Change it at the source too, so the two stay in step. The same warning, worded for the case at hand, can also follow a claim; see [Claiming a tenant with no id from you](#claiming-a-tenant-with-no-id-from-you).
+
+### Claiming a tenant with no id from you
+
+A tenant with `external_tenant_id: null` (see [Tenants you did not create](#tenants-you-did-not-create)) can be linked to your system directly, no request to support needed. Send `external_tenant_id` (the `pms_tenant_id` alias also works) together with `phone`, and KISS matches it against the phone number already on file for that tenant, the same `phone_number` `GET /tenants` returns on the null-id row. This is a claim: an assertion that a tenant KISS already holds is a person you know by that id, and the phone number is the proof.
+
+Only a tenant's own primary record can be claimed. Shared-access guests (`type: secondary-tenant`) and classified guest records (`type: unit-accessor`) carry no id from your system by design, and each points at the primary it was shared from rather than standing on its own. `GET /tenants` lists these rows alongside primaries, and `filter[type]=secondary-tenant` will even narrow a request to them, so a partner reconciling a full roster will run into them. A claim against one still answers `409 tenant_not_externally_linked`. Claim only the rows with `type: primary`.
+
+```bash
+curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/tenants/01J8ZR7T1K9F3XW5PDNB2QH4CV \
+  -H "Authorization: Bearer $KISS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"external_tenant_id": "T-990214", "phone": "+15125559981"}'
+```
+
+`phone` here is proof, not a change: it is not written, and the tenant's number on file stays whatever it already was. `first_name` and `last_name` sent in the same request are still applied.
+
+No `phone` in the body of a claim answers `409 claim_phone_required`. A phone that does not parse, that the tenant has none on record, or that differs from what KISS holds answers `409 claim_phone_mismatch`; neither path creates a phone record on the tenant.
+
+A claim attaches the id everywhere the tenant appears, the same reach a re-key needs, so it also needs a token that covers every location the tenant is at. One scoped to fewer answers `409 tenant_spans_locations`. If another tenant in your account already holds the id, the write answers `409 external_tenant_id_conflict`, the same collision a re-key can hit.
+
+Another write can link the tenant to a different id between the moment a claim is accepted and the moment it applies. When that happens the claim answers `409 claim_raced` rather than reporting success on an id that never actually landed, and nothing changes. Re-read the tenant: if the id now on it is not the one you meant to set, send that value as a re-key instead of retrying the claim.
+
+On success the id also lands on the tenant's units, wherever `tenant_id` matches and no id was already stamped there, archived units included, so a tenancy write for that tenant matches correctly from then on. This is the fix for the duplicate-record risk in [Tenants you did not create](#tenants-you-did-not-create): claim the tenant first instead of writing your id blind.
+
+A successful claim can carry two entries in `meta.warnings`. A `phone_number_shared` entry means the phone you sent as proof also answers for another account: since the phone is the entire proof on a claim, a shared number means the match could not tell the two accounts apart, and the id may have landed on the wrong person. Check `tenant_ids` on the warning and, if it names the wrong account, correct it with a re-key. An `external_tenant_id_cutover` entry means your account still has an inbound sync that does not yet know this id, and a sync before it learns could re-create the tenant separately; see [Re-keying `external_tenant_id`](#re-keying-external_tenant_id) for the same warning on a re-key.
 
 Needs the `tenants:write` scope. Full field list and error shapes on the [reference page](/reference/v-2-tenants-patch).
 
