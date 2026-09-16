@@ -124,10 +124,10 @@ What the SDK does:
 
 What it does not do: your sign-in, your API calls, or your UI. Those stay in your app; the SDK is only the lock-communication layer.
 
-It is built as **native iOS and Android** components, so you can integrate it directly in a native app or wrap it for Flutter or React Native. The lock protocol ships as a closed-source binary, so the sensitive part stays inside the SDK while you build against a small, documented API.
+It ships as **native iOS and Android** components, plus a **React Native Turbo Native Module** if your app is built on RN. The lock protocol itself ships compiled, not as source, so the sensitive part stays inside the SDK while you build against a small, documented API.
 
-:::info Coming soon
-The partner-distributable SDK is in development and is not self-serve yet. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to request access**, and we will provide the binaries, supported versions, and the integration guide.
+:::info Access is by partnership agreement
+The SDK isn't on a public package registry. Once your partnership agreement with KISS is signed, we grant your team direct access to a private repository scoped to your organization, and you install it as a normal dependency from there. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to get started.**
 :::
 
 ## Keep going
