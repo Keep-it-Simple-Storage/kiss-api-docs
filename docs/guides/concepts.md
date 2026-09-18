@@ -86,6 +86,10 @@ The evaluator resolves every unit that has a lock, or that sits in a zone with a
 
 The `access_reason` field explains why a unit ended up in its state. It is populated whenever a tenant is assigned, so for both `tenant_permitted` and `tenant_denied`; for `vacant`, `auction`, and `unrentable` it is `null`.
 
+:::note One exception, on the tenant's own bundle
+[`GET /access`](/reference/v-2-access), the bundle a tenant app reads for itself, reports `access_reason: null` on a **permitted** unit and fills it in only on a denial. The permitted reasons below apply everywhere else. Gate a tap on `access_state`, and you get the same answer on either surface.
+:::
+
 **Permitted reasons**
 
 | Reason | What happened |
