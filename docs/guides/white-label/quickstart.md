@@ -70,6 +70,9 @@ The response uses the standard `{ message, data, meta }` envelope; the facility 
         "unit_name": "B204",
         "access_state": "tenant_permitted",
         "access_reason": "active",
+        "offline_access_mode": "server_expiry",
+        "access_expires_at": "2026-06-21T23:59:59+00:00",
+        "access_hours": { "start": "06:00", "end": "22:00" },
         "evaluated_at": "2026-06-16T14:30:00Z",
         "bundles": [
           {
@@ -87,6 +90,10 @@ The response uses the standard `{ message, data, meta }` envelope; the facility 
         "serial_number": "EP-12",
         "type": "gate",
         "key": "<encrypted>",
+        "access_hours": { "start": "06:00", "end": "22:00" },
+        "offline_access_mode": "server_expiry",
+        "access_expires_at": "2026-06-21T23:59:59+00:00",
+        "is_remotely_openable": false,
         "zones": [
           { "id": "01KTSZ…", "name": "Building B", "display_name": "Building B", "access_start_time": "06:00", "access_end_time": "22:00" }
         ]
@@ -102,6 +109,7 @@ Key things to build against:
 - **`bundles` are present only when access is permitted.** A denied, vacant, auction, or unrentable unit returns no bundles, so there is nothing to tap.
 - **The lock `key` is encrypted and bound to the bearer token** that fetched it, so only that device can use it. Keys are served per tap, never exported.
 - **Entry-point `zones` carry `access_start_time` / `access_end_time`** so the app can enforce access hours offline.
+- **`access_expires_at` is yours to enforce, and it is the one field you must not ignore.** When `offline_access_mode` is `server_expiry`, that timestamp is how long the cached decision may be trusted without talking to us. The lock is offline and cannot check it, so a cached key keeps physically working: if your app stops honouring the expiry, a tenant who stopped paying keeps opening the door. Refuse the tap yourself once it passes, and clear the cached key. `default` mode means no server-side expiry applies.
 
 Because the response is self-contained and cached, the app keeps working with no connectivity after the first successful fetch.
 
@@ -121,10 +129,10 @@ What the SDK does:
 
 What it does not do: your sign-in, your API calls, or your UI. Those stay in your app; the SDK is only the lock-communication layer.
 
-It is built as **native iOS and Android** components, so you can integrate it directly in a native app or wrap it for Flutter or React Native. The lock protocol ships as a closed-source binary, so the sensitive part stays inside the SDK while you build against a small, documented API.
+It is built as **native iOS and Android** components, with a React Native wrapper available, so you can integrate it directly or wrap it for another runtime. The lock protocol ships as a closed-source binary, so the sensitive part stays inside the SDK while you build against a small, documented API.
 
-:::info Coming soon
-The partner-distributable SDK is in development and is not self-serve yet. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to request access**, and we will provide the binaries, supported versions, and the integration guide.
+:::info Requesting access
+The SDK is not self-serve. **Ask your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com))** and we will grant repository access and provide the supported versions, the integration guide, and the chip types your site's hardware uses.
 :::
 
 ## Keep going
