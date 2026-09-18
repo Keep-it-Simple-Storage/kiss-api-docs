@@ -135,9 +135,10 @@ curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/tenant-tokens \
 }
 ```
 
-Five things to build against:
+Six things to build against:
 
-- **The token is short-lived** (15 minutes) and carries the tenant's own authority, nothing of yours. Mint one when your app needs a KISS session and re-mint when it expires; do not hold one for the life of a user's session in your app.
+- **The token lasts 15 minutes** and carries the tenant's own authority, nothing of yours. Reuse it for every call your app makes in that window rather than minting per request, and mint a fresh one when it expires or when a `401` says it already has. Do not treat it as a login that lasts as long as the user's session in your app — your app's session and this token have separate lifetimes.
+- **Keep the token string as long as you keep the access bundle it fetched.** The lock keys in `GET /access` are encrypted against the token that requested them, so the SDK needs that same string to unwrap a key — including after the token has expired for API calls, which is what makes an offline tap work hours later. Discard the cached bundle and the token together, and fetch both again.
 - **`tenants:auth` is a separate scope.** Neither `tenants:read`, `tenants:write`, nor the unit scopes imply it, so a token that already syncs units cannot sign a tenant in until you add it explicitly. Tokens issued before it existed do not carry it — create a new one, or ask KISS to add it.
 - **The tenant must already exist in KISS and carry your id.** An id your token cannot reach — another company, a location outside a location-scoped token, an archived account, or an id KISS has never seen — answers `404`. Attach your id to an account that has none with [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) first.
 - **`409 tenant_profile_ambiguous`** means two separate tenant accounts your token reaches carry that id, so there is no single person to sign in. Reconcile the duplicate ids on your side, or ask your KISS contact to merge the records. A tenant renting at several of your locations under one id is unaffected and signs in normally.
@@ -156,5 +157,5 @@ Some requests are subject to rate limits. See **[Rate limits](/guides/rate-limit
 ## Best practices
 
 - **Store partner tokens securely.** Environment variables or a secrets manager, never source code. Use separate tokens per environment, and scope a test token to your test location so it cannot reach production.
-- **Cache the tenant token until it expires,** then mint a fresh one. Do not re-mint on every call.
+- **Hold a tenant token for its 15-minute window,** then mint a fresh one. Do not mint per request, and do not tie its lifetime to your app's own session.
 - **Keep tenant tokens on the device.** Server-side operations use partner API tokens.
