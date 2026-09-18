@@ -238,6 +238,33 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 
 ---
 
+### Signing in a tenant KISS can't find
+
+**Error (HTTP 404):**
+```json
+{
+  "message": "Tenant not found."
+}
+```
+
+**Fix:** `POST /auth/tenant-tokens` looks for a tenant carrying that `external_tenant_id` at a location your token reaches. A `404` means no such tenant: the id belongs to another company, the location is outside a location-scoped token, the account is archived, or KISS has never been told that id. Read the roster with `GET /tenants` to see what KISS holds, and attach your id to an account that carries none with [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch).
+
+---
+
+### Signing in when one id answers for two tenants
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "Your token reaches more than one tenant with that external_tenant_id.",
+  "code": "tenant_profile_ambiguous"
+}
+```
+
+**Fix:** Two separate tenant accounts carry that id, so there is no single person to sign in. This is duplicate data rather than a scoping problem: reconcile the ids on your side, or ask your KISS contact to merge the records. A tenant who simply rents at several of your locations under one id is not affected and signs in normally.
+
+---
+
 ### Updating a name that spans locations
 
 **Error (HTTP 409):**
@@ -293,7 +320,7 @@ If this returns a `200`, the API is up and the issue is in your request. If it d
 
 ### 2. Check your token
 
-A `401` on every request usually means your token is wrong or expired. For PMS integrators, verify the API token in the KISS dashboard under Company > API. For tenant tokens, obtain a fresh access token.
+A `401` on every request usually means your token is wrong or expired. For PMS integrators, verify the API token in the KISS dashboard under Company > API. Tenant tokens expire 15 minutes after they are minted, so a `401` there usually just means it is time to mint a fresh one with `POST /auth/tenant-tokens`.
 
 ### 3. Read the error message
 

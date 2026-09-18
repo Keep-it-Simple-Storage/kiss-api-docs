@@ -26,19 +26,16 @@ Operators who use the KISS tenant app (ONELock Access) instead of building their
 
 The tenant app does four things:
 
-1. **Sign the user in.** Your users sign in through your app's own authentication, with no second KISS login. Your backend obtains a short-lived KISS access token for the signed-in user (see [Authentication](/guides/authentication)); the app uses it for the calls below.
+1. **Sign the user in.** Your users sign in through your app's own authentication, with no second KISS login. Your backend exchanges its company token plus the tenant's id in your system for a short-lived KISS access token (`POST /auth/tenant-tokens`, see [Authentication](/guides/authentication#mint-a-tenant-token)); the app uses it for the calls below.
 2. **Fetch the user's access.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it on launch and refresh on pull-to-refresh.
 3. **Open the lock.** Pass the NFC key to the KISS SDK, which talks to the offline lock during a tap. Keys are served per tap, never stored as a static dump.
 4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoints so managers and support see real lock activity.
-
-:::info Coming soon
-Step 1 keeps your own login: a partner-brokered token mint (your backend exchanges its company token for a tenant access token) is being built so you never stack a second sign-in on top of your app's. Until it ships, set up tenant auth with your KISS contact. See [Authentication](/guides/authentication).
-:::
 
 ## Endpoints
 
 | When | Call | What it does |
 | --- | --- | --- |
+| Sign a tenant in | <Method m="post" /> [`/auth/tenant-tokens`](/guides/authentication#mint-a-tenant-token) | Exchange your company token plus the tenant's id in your system for a short-lived tenant access token. |
 | Fetch the user's access | <Method m="get" /> [`/access`](/reference/v-2-access) | The user's units, NFC keys, entry points, and timezone: everything to operate offline. |
 | Report a lock tap | <Method m="post" /> [`/locks/{lock}/logs`](/reference/v-2-locks-logs-store) | Record open/close success, failure, or blocked. |
 | Report an entry-point tap | <Method m="post" /> [`/entry-points/{id}/logs`](/reference/v-2-entry-points-logs-store) | Record a gate or door tap. |

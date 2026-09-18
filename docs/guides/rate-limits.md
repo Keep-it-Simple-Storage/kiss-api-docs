@@ -28,8 +28,9 @@ Treat `429` as a normal, recoverable signal, not an error to surface to users:
 | Surface | Scope | Limit |
 | --- | --- | --- |
 | Authentication (token requests, `POST /auth/tokens`) | Per IP address | 5 attempts per minute |
+| Tenant sign-in (`POST /auth/tenant-tokens`) | Per API token | 120 requests per minute |
 
-Other surfaces (unit writes and reads) are **not** rate-limited today, but that may change. Build your client to handle `429` everywhere regardless, and keep reads cheap with `ETag` / `If-None-Match`.
+Other surfaces (unit writes and reads) are **not** separately rate-limited today, but that may change. Build your client to handle `429` everywhere regardless, and keep reads cheap with `ETag` / `If-None-Match`.
 
 :::info Coming soon
 Throttling on writes and reads, plus the exact counts and windows, is a product decision in progress and will be published here (and in the [API Reference](/reference/kiss-api-reference)) once locked. Design for retries and treat `429` as the contract.
@@ -40,4 +41,4 @@ Throttling on writes and reads, plus the exact counts and windows, is a product 
 - **Cache reads** with `ETag` / `If-None-Match`. A `304 Not Modified` is cheap and avoids re-downloading unchanged data.
 - **Batch unit updates** through `PATCH /units` (bulk) instead of many per-unit calls.
 - **Schedule full reconciliations off-peak**; use targeted events (assign/remove primary user, fact patches) the rest of the time.
-- **Reuse one token per integration** rather than minting many.
+- **Reuse one token per integration** rather than minting many. For tenant sign-in, hold each tenant's token until it expires instead of minting one per request.

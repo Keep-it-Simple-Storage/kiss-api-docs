@@ -68,6 +68,8 @@ Add `tenants:read` if you need [`GET /tenants`](/reference/v-2-tenants-index) to
 
 Add `tenants:write` if you need [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) to update a tenant's name or phone number. It is a separate scope from `tenants:read`, `units:write`, and `pms:write`: none of them imply it, so a token that already syncs units cannot write to a tenant until you add it explicitly.
 
+Add `tenants:auth` if your app signs its own users in and needs a KISS session for them — see [Signing in your tenants](#signing-in-your-tenants). It is separate from every other scope for the same reason: it mints a token that acts as one of your tenants.
+
 ### Use the token
 
 Include it in the `Authorization` header of every request:
@@ -104,13 +106,48 @@ OAuth 2.0 for multi-company partners (cross-company scopes and refresh tokens) i
 
 ## Signing in your tenants
 
-Your tenants sign in through **your own app's authentication**. KISS does not add a second login. Instead, your backend turns the user it has already authenticated into a KISS session: holding your company API token, it requests a short-lived, tenant-scoped KISS access token for that tenant, and hands it to your app. The app then sends that token as `Authorization: Bearer <token>` on `GET /access` and the lock SDK.
+Your tenants sign in through **your own app's authentication**. KISS does not add a second login. Instead, your backend turns the user it has already authenticated into a KISS session: holding your company API token, it exchanges the tenant's id in your own system for a short-lived, tenant-scoped KISS access token, and hands that to your app. The app then sends it as `Authorization: Bearer <token>` on `GET /access` and passes it to the lock SDK.
 
-Because the token is minted server to server from a tenant your system already knows, the user never sees a KISS login screen, and you keep full control of the experience in your own app.
+Because the token is minted server to server for a tenant your system already knows, the user never sees a KISS login screen, and you keep full control of the experience in your own app.
 
-:::info Coming soon
-This partner-brokered token mint (your backend exchanges its company token plus a tenant identifier for a tenant access token) is being built so Back Office partners never have to stack a second login on top of their own. Until it ships, your tenant auth is set up directly with your KISS contact during onboarding.
-:::
+### Mint a tenant token
+
+`POST /auth/tenant-tokens`, authenticated with your company API token carrying the `tenants:auth` scope.
+
+```bash
+curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/tenant-tokens \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"external_tenant_id": "YOUR-TENANT-ID"}'
+```
+
+`external_tenant_id` is the id **your** system holds for that tenant — the same value `GET /tenants` returns and `PATCH /tenants/{tenant_id}` writes. The response carries the token, the moment it expires, and the tenant it belongs to:
+
+```json
+{
+  "message": "User logged in successfully.",
+  "data": {
+    "token": "1|xxxxxxxx",
+    "expires_at": "2026-09-18T15:48:31.000000Z",
+    "user": { "id": "01KTSC4X57H4M49E661CW41BXE", "type": "tenant" }
+  },
+  "meta": {}
+}
+```
+
+Five things to build against:
+
+- **The token is short-lived** (15 minutes) and carries the tenant's own authority, nothing of yours. Mint one when your app needs a KISS session and re-mint when it expires; do not hold one for the life of a user's session in your app.
+- **`tenants:auth` is a separate scope.** Neither `tenants:read`, `tenants:write`, nor the unit scopes imply it, so a token that already syncs units cannot sign a tenant in until you add it explicitly. Tokens issued before it existed do not carry it — create a new one, or ask KISS to add it.
+- **The tenant must already exist in KISS and carry your id.** An id your token cannot reach — another company, a location outside a location-scoped token, an archived account, or an id KISS has never seen — answers `404`. Attach your id to an account that has none with [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) first.
+- **`409 tenant_profile_ambiguous`** means two separate tenant accounts your token reaches carry that id, so there is no single person to sign in. Reconcile the duplicate ids on your side, or ask your KISS contact to merge the records. A tenant renting at several of your locations under one id is unaffected and signs in normally.
+- **What the session reaches.** It is the tenant's own session for reading access and opening locks: `GET /access`, their own units and entry points, and the log endpoints. It is deliberately *not* allowed to make a payment (`POST /units/{unit_id}/payments` answers `403`), cannot switch to another tenant account, and reaches nothing on the partner or manager surface.
+
+| Status | Meaning |
+| --- | --- |
+| `403 Forbidden` | The token lacks the `tenants:auth` scope |
+| `404 Not Found` | No tenant with that `external_tenant_id` at a location your token reaches |
+| `409 Conflict` | That id answers for more than one tenant your token can reach |
 
 ## Rate limits
 
@@ -119,6 +156,5 @@ Some requests are subject to rate limits. See **[Rate limits](/guides/rate-limit
 ## Best practices
 
 - **Store partner tokens securely.** Environment variables or a secrets manager, never source code. Use separate tokens per environment, and scope a test token to your test location so it cannot reach production.
-- **Cache the tenant token for the session.** Do not re-authenticate on every call.
-- **Handle `401` gracefully.** A partner token may be revoked; a tenant token may have expired. Re-authenticate accordingly.
+- **Cache the tenant token until it expires,** then mint a fresh one. Do not re-mint on every call.
 - **Keep tenant tokens on the device.** Server-side operations use partner API tokens.
