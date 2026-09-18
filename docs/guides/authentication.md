@@ -135,9 +135,10 @@ curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/tenant-tokens \
 }
 ```
 
-Six things to build against:
+Seven things to build against:
 
-- **The token lasts 15 minutes** and carries the tenant's own authority, nothing of yours. Reuse it for every call your app makes in that window rather than minting per request, and mint a fresh one when it expires or when a `401` says it already has. Do not treat it as a login that lasts as long as the user's session in your app — your app's session and this token have separate lifetimes.
+- **The token lasts 15 minutes** and carries the tenant's own authority, nothing of yours. Reuse it for every call your app makes in that window rather than minting per request, and mint a fresh one when it expires or when a `401` says it already has. Minting again *is* the refresh: your backend holds the company token, so it can produce a new one at any time without a refresh-token exchange. Do not treat it as a login that lasts as long as the user's session in your app; the two have separate lifetimes.
+- **What the expiry is for.** It limits how long a token that leaks (a log, a stale cache) can fetch new data. It is not what decides whether a tenant may open a lock: that is re-evaluated server-side on every `GET /access`, so a tenant who has moved out or fallen behind gets an empty bundle no matter how fresh their token is. A short lifetime therefore costs you a re-mint, not access.
 - **Keep the token string as long as you keep the access bundle it fetched.** The lock keys in `GET /access` are encrypted against the token that requested them, so the SDK needs that same string to unwrap a key — including after the token has expired for API calls, which is what makes an offline tap work hours later. Discard the cached bundle and the token together, and fetch both again.
 - **`tenants:auth` is a separate scope.** Neither `tenants:read`, `tenants:write`, nor the unit scopes imply it, so a token that already syncs units cannot sign a tenant in until you add it explicitly. Tokens issued before it existed do not carry it — create a new one, or ask KISS to add it.
 - **The tenant must already exist in KISS and carry your id.** An id your token cannot reach — another company, a location outside a location-scoped token, an archived account, or an id KISS has never seen — answers `404`. Attach your id to an account that has none with [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) first.
