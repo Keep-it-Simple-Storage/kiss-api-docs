@@ -23,8 +23,8 @@ You can self-serve in the KISS web admin portal:
 
 1. Sign in to the [KISS Dashboard](https://app.keepitsimplestorage.com) and open **Company Settings**.
 2. Click the **API** tab. (This needs company admin permission; if you do not see it, ask KISS to adjust your user or issue the token for you.)
-3. Name the token (for example `acme-pms-integration`), select the scopes the integration needs, and create it. If your company has more than one location, you can also limit the token to specific ones under **Limit to locations**.
-4. **Copy the token immediately.** It is shown once; store it in a secrets manager.
+3. Name the token (for example `acme-pms-integration`) and create it. A new token carries the unit and log scopes by default; the tenant scopes are opt-in, so open **Customize permissions** and tick the ones you need — `Tenants Read`, `Tenants Write`, or `Tenant Sign-In`. If your company has more than one location, you can also limit the token to specific ones under **Limit to locations**.
+4. **Copy the token immediately.** It is shown once, in a dialog you cannot reopen, and it is not stored anywhere we can read it back — not even by KISS support. If you lose it, create a new token and revoke the old one.
 
 ### Location-scoped tokens
 
