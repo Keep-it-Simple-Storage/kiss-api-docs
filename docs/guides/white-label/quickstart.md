@@ -151,10 +151,10 @@ This is the part most worth designing for. A completed tap does not return a sim
 
 The outcomes map onto what you report in step 4: a confirmed tap logs `lock.open_successful`, and an unconfirmed one logs `lock.open_unconfirmed` with the telemetry fields that describe it.
 
-It is built as **native iOS and Android** components, so you can integrate it directly in a native app or wrap it for Flutter or React Native. The lock protocol ships as a closed-source binary, so the sensitive part stays inside the SDK while you build against a small, documented API.
+It is built as **native iOS and Android** components, with the lock protocol compiled in rather than shipped as source, so the sensitive part stays inside the SDK while you build against a small, documented API. What partners consume today is the **React Native Turbo Native Module**, which wraps those compiled native components for an RN app. Building a fully native iOS or Android app? The native components exist, but they are not packaged for standalone distribution yet — reach out to your KISS contact to talk through timing.
 
-:::info Coming soon
-The partner-distributable SDK is in development and is not self-serve yet. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to request access**, and we will provide the binaries, supported versions, and the integration guide.
+:::info Access is by partnership agreement
+The SDK isn't on a public package registry. Once your partnership agreement with KISS is signed, we add your team to the private SDK repository as a GitHub collaborator or via a deploy key, and you install it as a normal git dependency, pinned to a release tag. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to get started.**
 :::
 
 ## Keep going
