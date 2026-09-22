@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"external_tenant_id":{"type":"string","maxLength":255}},"required":["external_tenant_id"],"title":"StoreTenantTokenRequest"}}}}}

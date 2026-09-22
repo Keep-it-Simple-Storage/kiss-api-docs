@@ -13,6 +13,9 @@
   ],
   "tags": [
     {
+      "name": "Auth"
+    },
+    {
       "name": "Units"
     },
     {
@@ -58,7 +61,8 @@
                       ]
                     },
                     "data": {
-                      "type": "string"
+                      "type": "array",
+                      "items": {}
                     },
                     "meta": {
                       "type": "string"
@@ -101,6 +105,160 @@
         },
         "summary": "Get user access",
         "description": "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh."
+      }
+    },
+    "/auth/tenant-tokens": {
+      "post": {
+        "operationId": "v2.auth.tenant-tokens.store",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreTenantTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A tenant-scoped access token, valid for 15 minutes, plus the tenant it belongs to. Send it as `Authorization: Bearer <token>` on `GET /access` and hand it to the lock SDK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string"
+                        },
+                        "expires_at": {
+                          "type": "string"
+                        },
+                        "user": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            },
+                            "first_name": {
+                              "type": "string"
+                            },
+                            "last_name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "type",
+                            "first_name",
+                            "last_name"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "expires_at",
+                        "user"
+                      ]
+                    },
+                    "meta": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 0,
+                      "maxItems": 0,
+                      "additionalItems": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "A company token without the `tenants:auth` scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No tenant carries that `external_tenant_id` at a location your token reaches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Your token reaches more than one tenant with that `external_tenant_id`, so there is no single session to mint. `code` is `tenant_profile_ambiguous`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "code"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationException"
+          }
+        },
+        "summary": "Sign a tenant in",
+        "description": "Exchange your company API token plus the tenant's ID in your own system (`external_tenant_id`, the same value `GET /tenants` returns) for a short-lived access token scoped to that tenant. Your app sends it as `Authorization: Bearer <token>` on `GET /access` and hands it to the lock SDK, so your users never see a KISS login screen on top of your own. The token lasts 15 minutes; hold it for the session and mint a fresh one when it expires. Needs the `tenants:auth` scope."
       }
     },
     "/health": {
@@ -1975,6 +2133,28 @@
               }
             }
           },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "code"
+                  ]
+                }
+              }
+            }
+          },
           "422": {
             "$ref": "#/components/responses/ValidationException"
           }
@@ -2093,6 +2273,10 @@
             "type": "string",
             "maxLength": 40,
             "nullable": true
+          },
+          "client_now": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -2144,6 +2328,14 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "external_unit_id": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "crm_unit_id": {
+            "type": "string",
+            "maxLength": 255
           },
           "lockout": {
             "type": "boolean",
@@ -2351,9 +2543,14 @@
               "entry_point.close_unconfirmed"
             ]
           },
-          "zone_id": {
+          "reason": {
             "type": "string",
             "description": "Accepted for client parity with V1 (the apps may send it); the log is\nrecorded against the entry point's resolved zone, so it is not yet used.",
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "zone_id": {
+            "type": "string",
             "nullable": true
           },
           "happened_at": {
@@ -2423,12 +2620,29 @@
             "type": "string",
             "maxLength": 40,
             "nullable": true
+          },
+          "client_now": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
           "key"
         ],
         "title": "StoreEntryPointLogRequest"
+      },
+      "StoreTenantTokenRequest": {
+        "type": "object",
+        "properties": {
+          "external_tenant_id": {
+            "type": "string",
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "external_tenant_id"
+        ],
+        "title": "StoreTenantTokenRequest"
       },
       "SyncUnitsRequest": {
         "type": "object",
@@ -2706,8 +2920,8 @@
           }
         }
       },
-      "NotFoundHttpException": {
-        "description": "Not found",
+      "AuthorizationException": {
+        "description": "Authorization error",
         "content": {
           "application/json": {
             "schema": {
@@ -2725,8 +2939,8 @@
           }
         }
       },
-      "AuthorizationException": {
-        "description": "Authorization error",
+      "NotFoundHttpException": {
+        "description": "Not found",
         "content": {
           "application/json": {
             "schema": {
