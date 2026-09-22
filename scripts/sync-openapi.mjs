@@ -31,6 +31,7 @@ const OUT = 'openapi/kiss-api.json';
 // public site. Consolidate into the app once that side has proven itself.
 const ALLOW = new Set([
   'v2.access',
+  'v2.auth.tenant-tokens.store',
   'v2.units.index',
   'v2.units.show',
   'v2.units.sync',
@@ -54,6 +55,11 @@ const META = {
     summary: 'Get user access',
     description:
       "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh.",
+  },
+  'v2.auth.tenant-tokens.store': {
+    summary: 'Sign a tenant in',
+    description:
+      "Exchange your company API token plus the tenant's ID in your own system (`external_tenant_id`, the same value `GET /tenants` returns) for a short-lived access token scoped to that tenant. Your app sends it as `Authorization: Bearer <token>` on `GET /access` and hands it to the lock SDK, so your users never see a KISS login screen on top of your own. The token lasts 15 minutes; hold it for the session and mint a fresh one when it expires. Needs the `tenants:auth` scope.",
   },
   'v2.units.index': {
     summary: 'List units',

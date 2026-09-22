@@ -18,3 +18,8 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# This project builds with npm (package-lock.json); a pnpm lockfile here makes
+# Netlify switch package managers and fail the build.
+pnpm-lock.yaml
+pnpm-workspace.yaml

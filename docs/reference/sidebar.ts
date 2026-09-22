@@ -8,6 +8,18 @@ const sidebar: SidebarsConfig = {
     },
     {
       type: "category",
+      label: "Auth",
+      items: [
+        {
+          type: "doc",
+          id: "reference/v-2-auth-tenant-tokens-store",
+          label: "Sign a tenant in",
+          className: "api-method post",
+        },
+      ],
+    },
+    {
+      type: "category",
       label: "Units",
       items: [
         {

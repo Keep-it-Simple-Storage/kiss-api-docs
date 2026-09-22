@@ -1,0 +1,69 @@
+---
+id: v-2-auth-tenant-tokens-store
+title: "Sign a tenant in"
+description: "Exchange your company API token plus the tenant's ID in your own system (`external_tenant_id`, the same value `GET /tenants` returns) for a short-lived access token scoped to that tenant. Your app sends it as `Authorization: Bearer <token>` on `GET /access` and hands it to the lock SDK, so your users never see a KISS login screen on top of your own. The token lasts 15 minutes; hold it for the session and mint a fresh one when it expires. Needs the `tenants:auth` scope."
+sidebar_label: "Sign a tenant in"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWG1v20YM/isEv2wDFDvN2g/Thg1Z2w1Bhy6o3QGDYcQXibauke7UI+XEM/TfB55kx7GdtsCGbhjmD7F1Lzw+JJ/nqKzR1xSMWO8uckxxeTYwjRQDIWecnIi/IccDFh8IExSzYEwneN5IgdMEA71viOVHn68wXcdHGyjHVEJDCWbeCTnRKVPXpc3iOcN37J2OcVZQZfSXrGrCFP31O8oEE6yDeiWWWGfpTig4U151Tl3ZfGcPS7BugQlW5u4XcgspMD179qxtkx13JsdsTBMUK6UaGSm+cZwZK+I3HS5s284O195x58zZ6al+5cRZsLXiwRTPoY8XZ76mHEyWETPE6CWwNKXNYe4DPHkGlXWNECdQlw2DFNRvBStwTaV3C903gBG5XMcMw0zD7YP9I4YvhR/JBArwXTT//Qy8g9nPL8cw7I6dgXE5FKbbLz4eUvrsBkYvXg3wb0tLRcxmQYe5aBPMjXyChQjg6H66q20gvjJydLphCh83f6xO2qQfODIxt4Hlypnq+HRpHp/dqzabY3/OA6u7Nqb7e7pgPIDeA522CVb0IKAmBLPCBK1QxUe9ray76CZPIzfuH0yeW024KfuxuSmZ9t3ZZLfPZe/BtGPE09MnhyR461Q5yIkWFOWfodCSPQ9ehuAD+CWFpaXbwUFaNoa2KL4+RuXMV7Vxq469cGul8I1EEs06qnKqQGcQyf5ZCPUxHE8Pcbz2G2HJTAiWVGuMwOxQCGdgBIwqRHQbVr4JPfhAJiuI/xUYvznE+PuBp1D5QIrUgXdbadUcPg4/AY4aGQgsg/PA1i1KAiZmjYd4FW0ZwCzzOc10UV8IV3Xwc1vSlamu7aLxDc8+k76qJ58ew379JpRnZ4eh/E3vqC7/pCz6p9jLu/RNMPrCxw7ZZ21OYmxJOexMgJ+D1gXMLZV5VwHzbtVyi1czdi+Jlw8vqE9T2/bxwPcAYujbA8R3WWHcgjrKbXTn/PKiL+q9FuELhosXYHuG+lsHvGKhCr48Xta6k01FCrahvkfoJWwGgaQJjr+KjYkBLnyQk9Iu99oX6Fua2EcY6V0ZQOSeqWtgcjn/1U6Fj7QqkZcRqt6CDI6WFICJwMCri9EISr+w6l8gUrqD+FozvonOAMYaughC713eab++hcKXsT9S9DFQPdvVI6U7GJgH4iLqyG1BThf3d/MAXhPl/ME7oSIpvHbUtedICqOdKQ512fBBd40JMoUlaZ1P1tiEElMsRGpOh0NT2xNT14MbotoK26ouSbtxs6BB5iudHy7PDvhwGXzeZPGhnar9rAlWVvGASFzCdDLdnRrFUd4ye5ew6ox62Y/jdUwrJv2Pn3yotFHDbeVGJVKheHP/gvDyzqjzjzX0O+Jm3dzH0/vuPCZbbb+hOQVymRJL49VhPQJ/XFiGsFkNmWpKly5yee2tE70pWMA6oUX3+sNaZl1mwbjtwq7q48UgoJfED/DcOzGZdIUWnQtUR7nSXFcmymPXKOLILhyYbY/v9l1d38vs/3LwH5aDnklCdzKsS2NdfI1Rqq97aZigbtGlD8RhmmChCpJOcL2+NkxvQ9m2Ovy+oaCMnia4NMGa67IjdYIFmVxfkCZrvKEVpvi8q7GTcfdKEgtA77X9a71NNjvOs4xq+eDa6Y7IXf46Gqse9P8IqGJ7gsHcYhL/pogJ+ljzUWLi2BpL4xZNbA6ws6mfPwHp2tIF
+sidebar_class_name: "post api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Sign a tenant in"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/auth/tenant-tokens"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Exchange your company API token plus the tenant's ID in your own system (`external_tenant_id`, the same value `GET /tenants` returns) for a short-lived access token scoped to that tenant. Your app sends it as `Authorization: Bearer <token>` on `GET /access` and hands it to the lock SDK, so your users never see a KISS login screen on top of your own. The token lasts 15 minutes; hold it for the session and mint a fresh one when it expires. Needs the `tenants:auth` scope.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-auth-tenant-tokens-store.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-auth-tenant-tokens-store.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

@@ -26,19 +26,16 @@ Operators who use the KISS tenant app (ONELock Access) instead of building their
 
 The tenant app does four things:
 
-1. **Sign the user in.** Your users sign in through your app's own authentication, with no second KISS login. Your backend obtains a short-lived KISS access token for the signed-in user (see [Authentication](/guides/authentication)); the app uses it for the calls below.
+1. **Sign the user in.** Your users sign in through your app's own authentication, with no second KISS login. Your backend exchanges its company token plus the tenant's id in your system for a short-lived KISS access token (`POST /auth/tenant-tokens`, see [Authentication](/guides/authentication#mint-a-tenant-token)); the app uses it for the calls below.
 2. **Fetch the user's access.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it on launch and refresh on pull-to-refresh.
 3. **Open the lock.** The `key` on each lock is an **encrypted envelope**, not a usable key. Unwrap it with the KISS SDK, then hand the unwrapped key back to the SDK, which talks to the offline lock during a tap.
 4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoints so managers and support see real lock activity.
-
-:::info Coming soon
-Step 1 keeps your own login: a partner-brokered token mint (your backend exchanges its company token for a tenant access token) is being built so you never stack a second sign-in on top of your app's. Until it ships, set up tenant auth with your KISS contact. See [Authentication](/guides/authentication).
-:::
 
 ## Endpoints
 
 | When | Call | What it does |
 | --- | --- | --- |
+| Sign a tenant in | <Method m="post" /> [`/auth/tenant-tokens`](/guides/authentication#mint-a-tenant-token) | Exchange your company token plus the tenant's id in your system for a short-lived tenant access token. |
 | Fetch the user's access | <Method m="get" /> [`/access`](/reference/v-2-access) | The user's units, NFC keys, entry points, and timezone: everything to operate offline. |
 | Report a lock tap | <Method m="post" /> [`/locks/{lock}/logs`](/reference/v-2-locks-logs-store) | Record open/close success, failure, or blocked. |
 | Report an entry-point tap | <Method m="post" /> [`/entry-points/{id}/logs`](/reference/v-2-entry-points-logs-store) | Record a gate or door tap. |
@@ -79,6 +76,9 @@ The response uses the standard `{ message, data, meta }` envelope; the facility 
         "unit_name": "B204",
         "access_state": "tenant_permitted",
         "access_reason": null,
+        "offline_access_mode": "server_expiry",
+        "access_expires_at": "2026-06-21T23:59:59+00:00",
+        "access_hours": { "start": "06:00", "end": "22:00" },
         "evaluated_at": "2026-06-16T14:30:00+00:00",
         "bundles": [
           {
@@ -100,6 +100,10 @@ The response uses the standard `{ message, data, meta }` envelope; the facility 
         "key": "<encrypted>",
         "access_state": null,
         "access_reason": null,
+        "access_hours": { "start": "06:00", "end": "22:00" },
+        "offline_access_mode": "server_expiry",
+        "access_expires_at": "2026-06-21T23:59:59+00:00",
+        "is_remotely_openable": false,
         "zones": [
           { "id": "01KTSZ…", "name": "Building B", "display_name": "Building B", "access_start_time": "06:00", "access_end_time": "22:00" }
         ]
@@ -117,6 +121,7 @@ Key things to build against:
 - **`bundles` are present only when access is permitted.** A denied, vacant, auction, or unrentable unit returns no bundles, so there is nothing to tap.
 - **The lock `key` is encrypted and bound to the bearer token** that fetched it, so only the session that fetched it can unwrap it. Unwrap it with the SDK before tapping; see [The lock SDK](#the-lock-sdk).
 - **Entry-point `zones` carry `access_start_time` / `access_end_time`** so the app can enforce access hours offline.
+- **`access_expires_at` is yours to enforce, and it is the one field you must not ignore.** When `offline_access_mode` is `server_expiry`, that timestamp is how long the cached decision may be trusted without talking to us. The lock is offline and cannot check it, so a cached key keeps physically working: if your app stops honouring the expiry, a tenant who stopped paying keeps opening the door. Refuse the tap yourself once it passes, and clear the cached key. `default` mode means no server-side expiry applies.
 - **`zones` is the guest sharing section.** It is an empty array for an ordinary renter, and carries a shared zone with its own entry points and keys for someone given access to a zone rather than a unit.
 
 Because the response is self-contained and cached, the app keeps working with no connectivity after the first successful fetch.
