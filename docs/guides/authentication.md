@@ -24,7 +24,7 @@ You can self-serve in the KISS web admin portal:
 1. Sign in to the [KISS Dashboard](https://app.keepitsimplestorage.com) and open **Company Settings**.
 2. Click the **API** tab. (This needs company admin permission; if you do not see it, ask KISS to adjust your user or issue the token for you.)
 3. Name the token (for example `acme-pms-integration`) and create it. A new token carries the unit and log scopes by default; the tenant scopes are opt-in, so open **Customize permissions** and tick the ones you need — `Tenants Read`, `Tenants Write`, or `Tenant Sign-In`. If your company has more than one location, you can also limit the token to specific ones under **Limit to locations**.
-4. **Copy the token immediately.** It is shown once, in a dialog you cannot reopen, and it is not stored anywhere we can read it back — not even by KISS support. If you lose it, create a new token and revoke the old one.
+4. **Copy the token immediately.** It is shown once and cannot be retrieved afterwards by anyone, including KISS support. If you lose it, create a new token and revoke the old one.
 
 ### Location-scoped tokens
 
@@ -137,9 +137,9 @@ curl -X POST https://api-app.keepitsimplestorage.com/api/v2/auth/tenant-tokens \
 
 Seven things to build against:
 
-- **The token lasts 15 minutes** and carries the tenant's own authority, nothing of yours. Reuse it for every call your app makes in that window rather than minting per request, and mint a fresh one when it expires or when a `401` says it already has. Minting again *is* the refresh: your backend holds the company token, so it can produce a new one at any time without a refresh-token exchange. Do not treat it as a login that lasts as long as the user's session in your app; the two have separate lifetimes.
+- **The token lasts 15 minutes** and carries the tenant's own authority, nothing of yours. Minting again *is* the refresh: your backend holds the company token, so it can produce a new one at any time, with no refresh-token exchange and no separate grant. Its lifetime is independent of whatever session your own app keeps for that user.
 - **What the expiry is for.** It limits how long a token that leaks (a log, a stale cache) can fetch new data. It is not what decides whether a tenant may open a lock: that is re-evaluated server-side on every `GET /access`, so a tenant who has moved out or fallen behind gets an empty bundle no matter how fresh their token is. A short lifetime therefore costs you a re-mint, not access.
-- **Keep the token string as long as you keep the access bundle it fetched.** The lock keys in `GET /access` are encrypted against the token that requested them, so the SDK needs that same string to unwrap a key — including after the token has expired for API calls, which is what makes an offline tap work hours later. Discard the cached bundle and the token together, and fetch both again.
+- **The token string and the access bundle it fetched are a pair.** The lock keys in `GET /access` are encrypted against the token that requested them, so the SDK needs that same string to unwrap a key — including after the token has expired for API calls, which is what makes an offline tap work hours later. A bundle without its token cannot be used.
 - **`tenants:auth` is a separate scope.** Neither `tenants:read`, `tenants:write`, nor the unit scopes imply it, so a token that already syncs units cannot sign a tenant in until you add it explicitly. Tokens issued before it existed do not carry it — create a new one, or ask KISS to add it.
 - **The tenant must already exist in KISS and carry your id.** An id your token cannot reach — another company, a location outside a location-scoped token, an archived account, or an id KISS has never seen — answers `404`. Attach your id to an account that has none with [`PATCH /tenants/{tenant_id}`](/reference/v-2-tenants-patch) first.
 - **`409 tenant_profile_ambiguous`** means two separate tenant accounts your token reaches carry that id, so there is no single person to sign in. Reconcile the duplicate ids on your side, or ask your KISS contact to merge the records. A tenant renting at several of your locations under one id is unaffected and signs in normally.
@@ -158,5 +158,5 @@ Some requests are subject to rate limits. See **[Rate limits](/guides/rate-limit
 ## Best practices
 
 - **Store partner tokens securely.** Environment variables or a secrets manager, never source code. Use separate tokens per environment, and scope a test token to your test location so it cannot reach production.
-- **Hold a tenant token for its 15-minute window,** then mint a fresh one. Do not mint per request, and do not tie its lifetime to your app's own session.
+- **A tenant token is valid for 15 minutes.** Minting again is the refresh; there is no refresh-token exchange.
 - **Keep tenant tokens on the device.** Server-side operations use partner API tokens.
