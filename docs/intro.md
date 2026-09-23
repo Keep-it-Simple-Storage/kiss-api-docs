@@ -28,7 +28,7 @@ https://api-app.keepitsimplestorage.com/api/v2
 
 <Cards columns={3}>
   <Card title="Tenant mobile app" subtitle="ONELock Access" icon="mobile">
-    Tenants sign in on their phone, then open their lock with an NFC tap. The app caches a signed access bundle so it keeps working offline.
+    Tenants sign in on their phone, then open their lock with an NFC tap. The app caches an access bundle, with its keys encrypted to the tenant's session, so it keeps working offline.
   </Card>
   <Card title="Manager mobile app" subtitle="ONELock Manager" icon="manager">
     Site staff install and assign locks to units, open units when needed, and apply manual overrides such as an on-site lockout or an exemption.
@@ -50,7 +50,7 @@ That keeps one mental model no matter who is integrating:
 - **KISS evaluates** those facts into an access decision after every write.
 - **The tenant's app reads** the evaluated result and opens the lock.
 
-You never compute access yourself or hold key material. You keep the facts current; KISS does the rest and serves keys per tap.
+You never compute access yourself or hold key material. You keep the facts current; KISS does the rest and serves the keys through each tenant's access bundle.
 
 ## Choose your path
 

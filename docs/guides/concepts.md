@@ -136,7 +136,7 @@ A push write will not silently take over a unit owned by a pull-mode integration
 
 ## NFC keys
 
-When the tenant app calls `GET /access`, the response includes an NFC key for each permitted lock and entry point. The app passes the key to the KISS SDK to open the lock on a tap, then reports the result. Keys are **served, never exported** (borrowed per tap), so KISS can revoke and rotate them, and the app caches the bundle to keep working offline.
+When the tenant app calls `GET /access`, the response includes an NFC key for each permitted lock and entry point. The key arrives encrypted: the app unwraps it with the KISS SDK and hands it to the SDK to open the lock on a tap, then reports the result. Keys are **served, never exported**: they come with each access fetch, so KISS can revoke and rotate them, and the app caches the bundle to keep working offline. A revocation or rotation reaches a device on its next fetch, not instantly.
 
 :::note Locks are installed in the Manager app
 The API manages unit facts and tenancy, not lock hardware. Installing a physical lock and pairing it to a unit (the unit-and-lock pairing KISS calls a **bundle**) is done on-site with the ONELock Manager app, which registers the lock over NFC. There is no API call to attach a lock to a unit; once a lock is paired, its key flows to permitted tenants through `GET /access`.

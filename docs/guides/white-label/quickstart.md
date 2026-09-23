@@ -27,7 +27,7 @@ Operators who use the KISS tenant app (ONELock Access) instead of building their
 The tenant app does four things:
 
 1. **Sign the user in.** Your users sign in through your app's own authentication, with no second KISS login. Your backend exchanges its company token plus the tenant's id in your system for a short-lived KISS access token (`POST /auth/tenant-tokens`, see [Authentication](/guides/authentication#mint-a-tenant-token)); the app uses it for the calls below.
-2. **Fetch the user's access.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it on launch and refresh on pull-to-refresh.
+2. **Fetch the user's access.** A single call, `GET /access`, returns everything the app needs to operate offline. Cache it, together with the token that fetched it, on launch; refresh it on pull-to-refresh and whenever the app is online before it shows lock actions.
 3. **Open the lock.** The `key` on each lock is an **encrypted envelope**, not a usable key. Unwrap it with the KISS SDK, then hand the unwrapped key back to the SDK, which talks to the offline lock during a tap.
 4. **Report activity.** After each tap (success, failure, or blocked), report it back through the logs endpoints so managers and support see real lock activity.
 
@@ -120,11 +120,12 @@ Key things to build against:
 - **Entry points invert that.** A gate the user may open reports `access_state: null` and `access_reason: null`; a value in either field means the user is blocked, and `key` is then `null` too.
 - **`bundles` are present only when access is permitted.** A denied, vacant, auction, or unrentable unit returns no bundles, so there is nothing to tap.
 - **The lock `key` is encrypted and bound to the bearer token** that fetched it, so only the session that fetched it can unwrap it. Unwrap it with the SDK before tapping; see [The lock SDK](#the-lock-sdk).
+- **The `ETag` ignores the token.** It changes when the access data changes, not when the token does, so after you mint a new token a request with `If-None-Match` can answer `304` and leave you holding envelopes only the old token can unwrap. Keep each bundle with the token that fetched it, and fetch without `If-None-Match` after a token change if you want envelopes for the new one.
 - **Entry-point `zones` carry `access_start_time` / `access_end_time`** so the app can enforce access hours offline.
 - **`access_expires_at` is yours to enforce, and it is the one field you must not ignore.** When `offline_access_mode` is `server_expiry`, that timestamp is how long the cached decision may be trusted without talking to us. The lock is offline and cannot check it, so a cached key keeps physically working: if your app stops honouring the expiry, a tenant who stopped paying keeps opening the door. Refuse the tap yourself once it passes, and clear the cached key. `default` mode means no server-side expiry applies.
 - **`zones` is the guest sharing section.** It is an empty array for an ordinary renter, and carries a shared zone with its own entry points and keys for someone given access to a zone rather than a unit.
 
-Because the response is self-contained and cached, the app keeps working with no connectivity after the first successful fetch.
+Because the response is self-contained and cached, the app keeps working with no connectivity after the first successful fetch. Cache the bundle as it arrives, with its envelopes still encrypted: unwrap a key only at tap time, and never persist the unwrapped key. The SDK has no notion of expiry or revocation and opens with whatever key it is handed, so a revoked grant stops working on a device only once the app re-fetches (or `access_expires_at` passes).
 
 :::note Machine schema in the reference
 `GET /access` is live in production and its contract is settled. Build against the shape above; its [API Reference](/reference/v-2-access) page mirrors the same endpoint.
@@ -137,7 +138,7 @@ The NFC key from `GET /access` is not something your app sends to the lock direc
 What the SDK does:
 
 - **Unwraps the key.** `unwrapAccessKey()` turns the encrypted `lock.key` envelope from the bundle into the plain key the lock expects. It takes the envelope, the same tenant access token you fetched it with, and an encryption secret KISS gives you during onboarding. The token is part of the decryption, so a rotated or expired token cannot unwrap an envelope fetched under a different one.
-- **Runs the tap.** You start a scan, the SDK connects to whichever lock answers, and you call unlock or lock with the unwrapped key. It speaks the lock's own protocol, which is the part you cannot build yourself, and needs no connectivity.
+- **Runs the tap.** You start a scan, the SDK connects to whichever supported lock answers, and you call unlock or lock on the session with the unwrapped key, then close the session (on every path, including errors; it is not automatic). It speaks the lock's own protocol, which is the part you cannot build yourself, and needs no connectivity.
 - **Reports structured results and errors.** A genuine failure (wrong key, NFC disabled, scan timeout, wrong lock) rejects with a stable error code you branch on rather than a message.
 
 What it does not do: your sign-in, your API calls, or your UI. Those stay in your app; the SDK is only the lock-communication layer.
@@ -150,13 +151,31 @@ This is the part most worth designing for. A completed tap does not return a sim
 | --- | --- |
 | `confirmed` | The motor reported completion. The only observed guarantee. |
 | `fieldLostAfterStart` | The phone was pulled away mid-cycle. The lock finishes on its own, so this is a real success. |
-| Other `unconfirmed*` values | The actuation almost certainly ran, but the SDK could not observe it finishing. |
+| Other `unconfirmed*` values | The SDK could not observe the actuation finishing. Most of these probably ran, but not all: `unconfirmedNoMotor` most likely did not, and some leave the bolt position unknown. |
 
-**Do not render anything other than `confirmed` as a failure.** These values exist so your UI and your telemetry can tell an observed success from an inferred one. Two are worth special handling: a lock that reports no motor progress at all is deterministic for that lock, and an undervolt or a mid-stroke reset leaves the bolt position genuinely unknown, so neither should be drawn as locked or unlocked. The SDK reference lists the full set.
+**Do not render anything other than `confirmed` as a failure.** These values exist so your UI and your telemetry can tell an observed success from an inferred one. A few are worth special handling:
 
-The outcomes map onto what you report in step 4: a confirmed tap logs `lock.open_successful`, and an unconfirmed one logs `lock.open_unconfirmed` with the telemetry fields that describe it.
+- `unconfirmedNoMotor`: the connection held but the motor never moved, most likely because no charge reached it. Ask the tenant to tap again rather than showing the lock as changed.
+- `unconfirmedProgressNotDefined`: that lock's firmware never reports progress, so it is deterministic per lock. See it once and you will always see it for that lock.
+- `unconfirmedUndervolt` and `unconfirmedLockReset`: the lock lost power mid-run, so the bolt position is genuinely unknown. Never draw either as locked or unlocked.
 
-It is built as **native iOS and Android** components, with the lock protocol compiled in rather than shipped as source, so the sensitive part stays inside the SDK while you build against a small, documented API. What partners consume today is the **React Native Turbo Native Module**, which wraps those compiled native components for an RN app. Building a fully native iOS or Android app? The native components exist, but they are not packaged for standalone distribution yet — reach out to your KISS contact to talk through timing.
+The SDK reference lists the full set.
+
+The outcomes map onto what you report in step 4:
+
+| Outcome | Log `key` (unlock / lock) | Also send |
+| --- | --- | --- |
+| `confirmed` | `lock.open_successful` / `lock.close_successful` | |
+| `fieldLostAfterStart` | `lock.open_successful` / `lock.close_successful` | `field_lost_after_start: true` |
+| Any `unconfirmed*` | `lock.open_unconfirmed` / `lock.close_unconfirmed` | which `unconfirmed*` outcome it was, in `reason` (the outcome name works). It is the only field that tells the causes apart |
+
+`lock.close_successful_confirmed` is not an SDK outcome: send it when the tenant confirms in your UI that the lock is physically shut.
+
+The SDK ships today as a **React Native** package, and it runs on both iOS and Android. The lock protocol inside it is compiled in rather than shipped as source, so the sensitive part stays inside the SDK while you build against a small, documented API. It needs a custom development client or an EAS build, and it will not load under Expo Go. **React Native is the only supported way to integrate right now.** If your app is fully native (Swift or Kotlin) or built with another cross-platform framework, there is no SDK for it yet, so talk to your KISS contact about timing.
+
+:::caution NAC1080 locks only
+The SDK opens NAC1080-based locks. ST25DV-based locks are not supported yet: a tap on one is reported through `onUnsupportedChip` and the scan carries on, so the lock never connects. They can still appear in `GET /access`.
+:::
 
 :::info Access is by partnership agreement
 The SDK isn't on a public package registry. Once your partnership agreement with KISS is signed, we add your team to the private SDK repository as a GitHub collaborator or via a deploy key, and you install it as a normal git dependency, pinned to a release tag. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to get started.**
