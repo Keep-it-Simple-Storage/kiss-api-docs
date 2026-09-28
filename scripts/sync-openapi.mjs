@@ -41,6 +41,7 @@ const ALLOW = new Set([
   'v2.tenants.index',
   'v2.tenants.show',
   'v2.tenants.patch',
+  'v2.access-logs.index',
   'v2.locks.logs.store',
   'v2.entry-points.logs.store',
   'v2.health',
@@ -109,6 +110,16 @@ const META = {
     description:
       "Update a tenant's `first_name`, `last_name`, or `phone`, re-key their `external_tenant_id` when the id you gave earlier has changed, or claim a tenant that carries none of your ids by sending `external_tenant_id` with a `phone` matching what KISS already has on file. Send at least one. Addressed by the KISS `tenant_id` (ULID). A re-key or claim moves the id everywhere the tenant is used, so their units and any linked guests move with it. A claim's `phone` is proof only and is never written; it answers `409 claim_phone_required` when missing, `409 claim_phone_mismatch` when it does not parse or does not match what KISS holds, and `409 claim_raced` if a concurrent write already linked the tenant to a different id first. Both a re-key and a claim answer `409 external_tenant_id_conflict` if another tenant already holds the id. Returns the updated tenant in the same shape as `GET /tenants/{tenant_id}`, plus `meta.warnings`. Answers `409` for a non-claim write to a tenant carrying no id from your system, an ambiguous target, or a change that reaches locations your token cannot; see [Updating a tenant](/guides/pms/quickstart#updating-a-tenant). Needs the `tenants:write` scope.",
   },
+  'v2.access-logs.index': {
+    summary: 'List access logs',
+    description:
+      'Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. ' +
+      'Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, ' +
+      'falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. ' +
+      'Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). ' +
+      'Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. ' +
+      'Needs the `read:logs` scope.',
+  },
   'v2.locks.logs.store': {
     summary: 'Report lock activity',
     description:
@@ -126,7 +137,7 @@ const META = {
 };
 
 // Sidebar/category order for the kept tags.
-const TAG_ORDER = ['Units', 'Tenants', 'Access', 'Logs', 'Health'];
+const TAG_ORDER = ['Units', 'Tenants', 'Access', 'Access Logs', 'Logs', 'Health'];
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
 
