@@ -98,6 +98,18 @@ const sidebar: SidebarsConfig = {
     },
     {
       type: "category",
+      label: "Access Logs",
+      items: [
+        {
+          type: "doc",
+          id: "reference/v-2-access-logs-index",
+          label: "List access logs",
+          className: "api-method get",
+        },
+      ],
+    },
+    {
+      type: "category",
       label: "Logs",
       items: [
         {

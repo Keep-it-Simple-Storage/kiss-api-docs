@@ -1,0 +1,69 @@
+---
+id: v-2-access-logs-index
+title: "List access logs"
+description: "Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. Needs the `read:logs` scope."
+sidebar_label: "List access logs"
+hide_title: true
+hide_table_of_contents: true
+api: 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
+sidebar_class_name: "get api-method"
+info_path: reference/kiss-api-reference
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List access logs"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/access-logs"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. Needs the `read:logs` scope.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./v-2-access-logs-index.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./v-2-access-logs-index.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./v-2-access-logs-index.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

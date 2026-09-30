@@ -25,6 +25,9 @@
       "name": "Access"
     },
     {
+      "name": "Access Logs"
+    },
+    {
       "name": "Logs"
     },
     {
@@ -105,6 +108,230 @@
         },
         "summary": "Get user access",
         "description": "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh."
+      }
+    },
+    "/access-logs": {
+      "get": {
+        "operationId": "v2.access-logs.index",
+        "tags": [
+          "Access Logs"
+        ],
+        "parameters": [
+          {
+            "name": "filter[location]",
+            "in": "query",
+            "description": "Only logs at this location, addressed by its KISS `location_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[unit]",
+            "in": "query",
+            "description": "Only logs for this unit, addressed by its KISS `unit_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[key]",
+            "in": "query",
+            "description": "Exact event key, e.g. `lock.open_successful`, `lock.close_successful`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[log_type]",
+            "in": "query",
+            "description": "Restrict to one loggable type: `units`, `locks`, or `entrypoints`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[performer]",
+            "in": "query",
+            "description": "Full name substring of the person who performed the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[from]",
+            "in": "query",
+            "description": "Earliest event time (Y-m-d or ISO 8601).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[to]",
+            "in": "query",
+            "description": "Latest event time (Y-m-d or ISO 8601).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page to return. Paging details come back in `meta.pagination`.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Rows per page. Defaults to 15, capped at 100.",
+            "schema": {
+              "type": "integer",
+              "default": 15
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of access logs, newest first by effective time. An unrestricted token sees all company logs; a location-scoped token sees only logs at its assigned locations. Send the `ETag` back as `If-None-Match` to skip pages that have not changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "unit_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unit_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "location_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "location_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "performer_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "effective_at": {
+                            "type": "string"
+                          },
+                          "happened_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "unit_id",
+                          "unit_name",
+                          "location_id",
+                          "location_name",
+                          "performer_name",
+                          "reason",
+                          "effective_at",
+                          "happened_at",
+                          "created_at"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "last_page": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "current_page",
+                            "per_page",
+                            "total",
+                            "last_page"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "pagination"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent."
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "Token missing the `read:logs` scope, token has no locations assigned, or the caller is not a partner token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "List access logs",
+        "description": "Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. Needs the `read:logs` scope."
       }
     },
     "/auth/tenant-tokens": {
@@ -2277,6 +2504,32 @@
           "client_now": {
             "type": "string",
             "nullable": true
+          },
+          "lock_fw_version": {
+            "type": "string",
+            "description": "KEEP-1984: what an ST25DV lock reported about itself on this tap\n(firmware, capability byte, battery mV, temperature in 0.1 degC).\nDeliberately untyped here, for the KEEP-1150 reason above: an\nout-of-range or malformed reading must not 422 the open/close log.\ntelemetryFromRequest() range-checks each one and drops it to null.",
+            "nullable": true
+          },
+          "lock_fw_build": {
+            "type": "string",
+            "nullable": true
+          },
+          "lock_capabilities": {
+            "type": "string",
+            "nullable": true
+          },
+          "battery_mv": {
+            "type": "string",
+            "nullable": true
+          },
+          "temperature_dc": {
+            "type": "string",
+            "nullable": true
+          },
+          "outcome": {
+            "type": "string",
+            "description": "KEEP-1983: why the tap ended (AccessLogOutcome). Any string is\naccepted for the same reason as error_code: an outcome the server\ndoes not know yet (a newer app) is coerced to null by tryFrom rather\nthan 422ing the log.",
+            "nullable": true
           }
         },
         "required": [
@@ -2623,6 +2876,32 @@
           },
           "client_now": {
             "type": "string",
+            "nullable": true
+          },
+          "lock_fw_version": {
+            "type": "string",
+            "description": "KEEP-1984: what an ST25DV lock reported about itself on this tap\n(firmware, capability byte, battery mV, temperature in 0.1 degC).\nDeliberately untyped here, for the KEEP-1150 reason above: an\nout-of-range or malformed reading must not 422 the open/close log.\ntelemetryFromRequest() range-checks each one and drops it to null.",
+            "nullable": true
+          },
+          "lock_fw_build": {
+            "type": "string",
+            "nullable": true
+          },
+          "lock_capabilities": {
+            "type": "string",
+            "nullable": true
+          },
+          "battery_mv": {
+            "type": "string",
+            "nullable": true
+          },
+          "temperature_dc": {
+            "type": "string",
+            "nullable": true
+          },
+          "outcome": {
+            "type": "string",
+            "description": "KEEP-1983: why the tap ended (AccessLogOutcome). Any string is\naccepted for the same reason as error_code: an outcome the server\ndoes not know yet (a newer app) is coerced to null by tryFrom rather\nthan 422ing the log.",
             "nullable": true
           }
         },
