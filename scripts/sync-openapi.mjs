@@ -47,6 +47,31 @@ const ALLOW = new Set([
   'v2.health',
 ]);
 
+// The two log endpoints' request schemas take their field descriptions from
+// code comments in kiss-api, which are written for maintainers, not partners.
+// These replace them (always, not only when missing) with partner copy, so the
+// public reference stays readable however those comments change.
+const LOG_BODY_DESCRIPTIONS = (prefix) => ({
+  reason:
+    `Required when \`key\` is \`${prefix}.open_failure\` or \`${prefix}.close_failure\`, optional otherwise. ` +
+    'On a failure, short text saying what went wrong. On an unconfirmed key, the cause token for that outcome; ' +
+    'see [Reporting a tap](/guides/white-label/quickstart#reporting-a-tap).',
+  error_code:
+    'Why the tap failed, as one of the server\'s snake_case error codes (see ' +
+    '[Reporting a tap](/guides/white-label/quickstart#reporting-a-tap)). Any other value is accepted but stored as null.',
+  first_error_code: 'The error code of the first failed attempt, when the tap took more than one. Same values as `error_code`.',
+  scanned_lock_serial: 'The lock the phone actually reached: `"0x"` followed by the lock SDK\'s `session.lockId`.',
+  field_lost_after_start:
+    '`true` when the lock started the action and the phone moved away before it finished (the lock SDK\'s ' +
+    '`fieldLostAfterStart` outcome). Send it with the successful key.',
+  package: 'Optional: the name of the library that ran the tap, for diagnostics.',
+  package_version: 'Optional: the version of that library.',
+});
+
+// Request fields the API accepts but partners are not asked to send yet. Kept
+// out of the public reference until the guides document them.
+const UNPUBLISHED_LOG_BODY_PROPS = ['outcome', 'lock_fw_version', 'lock_fw_build', 'battery_mv'];
+
 // Friendly names + blurbs for endpoints the spec doesn't (yet) carry. The
 // schemas always come from the live spec; only these human labels are added
 // here. Ideal long-term home is the controller docblocks so Scramble emits
@@ -124,11 +149,21 @@ const META = {
     summary: 'Report lock activity',
     description:
       'Record a lock event (open or close: success, failure, or blocked) after an NFC interaction.',
+    paramDescriptions: {
+      lock: "The lock's `id` (a ULID) from `GET /access`, at `bundles[].lock.id`. Not its `serial_number`.",
+    },
+    bodyDescriptions: LOG_BODY_DESCRIPTIONS('lock'),
+    dropBodyProps: UNPUBLISHED_LOG_BODY_PROPS,
   },
   'v2.entry-points.logs.store': {
     summary: 'Report entry-point activity',
     description:
       'Record an entry-point event (gate or door) after an NFC interaction.',
+    paramDescriptions: {
+      entryPoint: "The entry point's `id` (a ULID) from `GET /access`, at `entry_points[].id`.",
+    },
+    bodyDescriptions: LOG_BODY_DESCRIPTIONS('entry_point'),
+    dropBodyProps: UNPUBLISHED_LOG_BODY_PROPS,
   },
   'v2.health': {
     summary: 'Health check',
@@ -156,6 +191,27 @@ function pickResponseVariant(op, index) {
   }
 
   op.responses['200'].content['application/json'].schema = picked;
+}
+
+/**
+ * Apply an endpoint's body overrides (field descriptions, unpublished fields)
+ * to its JSON request schema, following a component $ref when there is one.
+ */
+function overrideBodySchema(spec, op, meta) {
+  let schema = op.requestBody?.content?.['application/json']?.schema;
+  const ref = schema?.$ref;
+  if (typeof ref === 'string' && ref.startsWith('#/components/schemas/')) {
+    schema = spec.components?.schemas?.[ref.slice('#/components/schemas/'.length)];
+  }
+  if (!schema?.properties) return;
+
+  for (const name of meta.dropBodyProps || []) {
+    delete schema.properties[name];
+    if (Array.isArray(schema.required)) schema.required = schema.required.filter((r) => r !== name);
+  }
+  for (const [name, description] of Object.entries(meta.bodyDescriptions || {})) {
+    if (schema.properties[name]) schema.properties[name].description = description;
+  }
 }
 
 /** Recursively rewrite OpenAPI 3.1 constructs into 3.0.3 equivalents. */
@@ -241,6 +297,14 @@ async function main() {
           // one of them is what a partner will ever receive.
           if (typeof meta.pickResponse === 'number') {
             pickResponseVariant(op, meta.pickResponse);
+          }
+          if (meta.paramDescriptions && Array.isArray(op.parameters)) {
+            for (const param of op.parameters) {
+              if (meta.paramDescriptions[param.name]) param.description = meta.paramDescriptions[param.name];
+            }
+          }
+          if (meta.bodyDescriptions || meta.dropBodyProps) {
+            overrideBodySchema(spec, op, meta);
           }
         }
         keptItem[method] = op;

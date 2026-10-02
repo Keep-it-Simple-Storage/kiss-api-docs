@@ -14,7 +14,7 @@ Welcome to the KISS API. KISS is an access control platform for self-storage, an
 
 ## Overview
 
-KISS locks are NFC devices with no battery and no network connection: the tenant's phone powers and operates the lock through a tap, the same technology used for contactless payments. Because the lock itself is offline, everything intelligent happens in the apps and the platform behind them.
+KISS smart locks are NFC devices with no network connection: the tenant's phone operates the lock with a tap, the same technology used for contactless payments. Because the lock itself is offline, everything intelligent happens in the apps and the platform behind them.
 
 The **KISS API** is how external systems take part in that platform. Whether you run a property management system, build your own tenant app, or pull access data into your own tools, you talk to one versioned REST API.
 
@@ -28,7 +28,7 @@ https://api-app.keepitsimplestorage.com/api/v2
 
 <Cards columns={3}>
   <Card title="Tenant mobile app" subtitle="ONELock Access" icon="mobile">
-    Tenants sign in on their phone, then open their lock with an NFC tap. The app caches an access bundle, with its keys encrypted to the tenant's session, so it keeps working offline.
+    Tenants sign in on their phone, then open their lock with an NFC tap. The app caches an access bundle, with its keys still encrypted, so it keeps working offline.
   </Card>
   <Card title="Manager mobile app" subtitle="ONELock Manager" icon="manager">
     Site staff install and assign locks to units, open units when needed, and apply manual overrides such as an on-site lockout or an exemption.

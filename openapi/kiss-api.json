@@ -339,7 +339,7 @@
             "name": "lock",
             "in": "path",
             "required": true,
-            "description": "The lock ulid",
+            "description": "The lock's `id` (a ULID) from `GET /access`, at `bundles[].lock.id`. Not its `serial_number`.",
             "schema": {
               "type": "string"
             }
@@ -422,7 +422,7 @@
             "name": "entryPoint",
             "in": "path",
             "required": true,
-            "description": "The entry point ulid",
+            "description": "The entry point's `id` (a ULID) from `GET /access`, at `entry_points[].id`.",
             "schema": {
               "type": "string"
             }
@@ -2202,7 +2202,7 @@
           },
           "reason": {
             "type": "string",
-            "description": "KEEP-1277: `nullable` is REQUIRED here, not cosmetic. `reason` is\noptional for every key except the two failure keys above, but the\nglobal ConvertEmptyStringsToNull middleware rewrites an empty string\nto null, and without `nullable` a null value then fails the `string`\nrule and 422s the whole request.",
+            "description": "Required when `key` is `lock.open_failure` or `lock.close_failure`, optional otherwise. On a failure, short text saying what went wrong. On an unconfirmed key, the cause token for that outcome; see [Reporting a tap](/guides/white-label/quickstart#reporting-a-tap).",
             "maxLength": 1000,
             "nullable": true
           },
@@ -2231,12 +2231,13 @@
           },
           "error_code": {
             "type": "string",
-            "description": "KEEP-1150: telemetry must never fail the whole request. An error\ncode the server does not recognise is coerced to null in the\ncontroller (AccessLogErrorCode::tryFrom), so validating it with\nRule::in only served to 422 the primary open/close outcome log and\ndrop it entirely. Accept any string; the model's enum cast + the\ncontroller tryFrom still guarantee only valid values or null persist.",
+            "description": "Why the tap failed, as one of the server's snake_case error codes (see [Reporting a tap](/guides/white-label/quickstart#reporting-a-tap)). Any other value is accepted but stored as null.",
             "nullable": true
           },
           "first_error_code": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "The error code of the first failed attempt, when the tap took more than one. Same values as `error_code`."
           },
           "duration_ms": {
             "type": "integer",
@@ -2256,23 +2257,25 @@
           "scanned_lock_serial": {
             "type": "string",
             "maxLength": 255,
-            "nullable": true
+            "nullable": true,
+            "description": "The lock the phone actually reached: `\"0x\"` followed by the lock SDK's `session.lockId`."
           },
           "field_lost_after_start": {
             "type": "boolean",
-            "description": "KEEP-1148: flags a real open the phone was pulled away from mid-motor.",
+            "description": "`true` when the lock started the action and the phone moved away before it finished (the lock SDK's `fieldLostAfterStart` outcome). Send it with the successful key.",
             "nullable": true
           },
           "package": {
             "type": "string",
-            "description": "KEEP-1154: which NFC engine + version produced the tap (kiss_core /\ntapt_nfc + its version), so performance can be sliced by NFC stack\nacross apps and the bench.",
+            "description": "Optional: the name of the library that ran the tap, for diagnostics.",
             "maxLength": 40,
             "nullable": true
           },
           "package_version": {
             "type": "string",
             "maxLength": 40,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the version of that library."
           },
           "client_now": {
             "type": "string",
@@ -2545,7 +2548,7 @@
           },
           "reason": {
             "type": "string",
-            "description": "Accepted for client parity with V1 (the apps may send it); the log is\nrecorded against the entry point's resolved zone, so it is not yet used.",
+            "description": "Required when `key` is `entry_point.open_failure` or `entry_point.close_failure`, optional otherwise. On a failure, short text saying what went wrong. On an unconfirmed key, the cause token for that outcome; see [Reporting a tap](/guides/white-label/quickstart#reporting-a-tap).",
             "maxLength": 1000,
             "nullable": true
           },
@@ -2578,12 +2581,13 @@
           },
           "error_code": {
             "type": "string",
-            "description": "KEEP-1150: telemetry must never fail the whole request. An error\ncode the server does not recognise is coerced to null in the\ncontroller (AccessLogErrorCode::tryFrom), so validating it with\nRule::in only served to 422 the primary open/close outcome log and\ndrop it entirely. Accept any string; the model's enum cast + the\ncontroller tryFrom still guarantee only valid values or null persist.",
+            "description": "Why the tap failed, as one of the server's snake_case error codes (see [Reporting a tap](/guides/white-label/quickstart#reporting-a-tap)). Any other value is accepted but stored as null.",
             "nullable": true
           },
           "first_error_code": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "The error code of the first failed attempt, when the tap took more than one. Same values as `error_code`."
           },
           "duration_ms": {
             "type": "integer",
@@ -2603,23 +2607,25 @@
           "scanned_lock_serial": {
             "type": "string",
             "maxLength": 255,
-            "nullable": true
+            "nullable": true,
+            "description": "The lock the phone actually reached: `\"0x\"` followed by the lock SDK's `session.lockId`."
           },
           "field_lost_after_start": {
             "type": "boolean",
-            "description": "KEEP-1148: flags a real open the phone was pulled away from mid-motor.",
+            "description": "`true` when the lock started the action and the phone moved away before it finished (the lock SDK's `fieldLostAfterStart` outcome). Send it with the successful key.",
             "nullable": true
           },
           "package": {
             "type": "string",
-            "description": "KEEP-1154: which NFC engine + version produced the tap (kiss_core /\ntapt_nfc + its version), so performance can be sliced by NFC stack\nacross apps and the bench.",
+            "description": "Optional: the name of the library that ran the tap, for diagnostics.",
             "maxLength": 40,
             "nullable": true
           },
           "package_version": {
             "type": "string",
             "maxLength": 40,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the version of that library."
           },
           "client_now": {
             "type": "string",

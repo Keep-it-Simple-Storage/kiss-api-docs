@@ -1,1 +1,1 @@
-{"parameters":[{"name":"lock","in":"path","required":true,"description":"The lock ulid","schema":{"type":"string"}}]}
+{"parameters":[{"name":"lock","in":"path","required":true,"description":"The lock's `id` (a ULID) from `GET /access`, at `bundles[].lock.id`. Not its `serial_number`.","schema":{"type":"string"}}]}
