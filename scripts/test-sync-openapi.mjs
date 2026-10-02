@@ -190,6 +190,54 @@ mustFail('dotted component name that collides once shortened', (s) => {
   s.paths['/health'].get.responses['503'] = {$ref: '#/components/responses/Foo.Bar.ValidationException'};
 });
 
+// --- evasions the normalisation must see through ----------------------------
+
+for (const [name, text] of [
+  ['standard number with a slash', 'ISO/IEC 15693 tags'],
+  ['chip name with a space', 'NAC 1080 locks'],
+  ['chip name with a hyphen', 'ST-25DV tags'],
+  ['markdown-escaped package name', 'mirrors kiss\\_core'],
+  ['HTML-entity hyphen', 'see KEEP&#45;7'],
+  ['hex HTML-entity hyphen', 'see KEEP&#x2d;7'],
+  ['named HTML-entity hyphen', 'see KEEP&hyphen;7'],
+  ['hash separator', 'see KEEP#7'],
+  ['colon separator', 'see KEEP:7'],
+  ['ticket number glued to a word', 'see amine_KEEP-7'],
+  ['server path', 'see app/Http/Controllers/Foo'],
+  ['static call', 'see Thing::store'],
+  ['Greek look-alike letters', 'see ΚΕΕΡ-7'],
+  ['Cyrillic look-alike letters', 'see КЕЕР-7'],
+]) mustFail(name, inUnitSchema(text));
+
+// --- withheld fields as keys on any operation ---------------------------------
+
+mustFail('withheld fields in another endpoint\'s response', (s) => {
+  const content = s.paths['/access-logs'].get.responses['200'].content['application/json'];
+  content.schema = {type: 'object', properties: {battery_mv: {type: 'integer'}, lock_fw_version: {type: 'integer'}}};
+});
+mustFail('outcome key in another endpoint\'s response', (s) => {
+  s.paths['/access-logs'].get.responses['200'].content['application/json'].schema = {type: 'object', properties: {outcome: {type: 'string'}}};
+});
+mustFail('withheld field as another endpoint\'s query parameter', (s) => {
+  s.paths['/access-logs'].get.parameters.push({name: 'battery_mv', in: 'query', schema: {type: 'integer'}});
+});
+mustPass('outcome stays legitimate on the unit sync', undefined, (out, text) => text.includes('"outcome"') || 'unit sync outcome missing');
+
+// --- keyword values on rebuilt log fields -------------------------------------
+
+mustFail('prose in a field format', (s) => { body(s, LOCK_LOGS).properties.reason.format = RAW; });
+mustFail('unknown field type', (s) => { body(s, LOCK_LOGS).properties.reason.type = RAW; });
+mustFail('non-numeric length', (s) => { body(s, LOCK_LOGS).properties.reason.maxLength = RAW; });
+mustFail('non-boolean nullable', (s) => { body(s, LOCK_LOGS).properties.reason.nullable = RAW; });
+mustPass('log tags pinned and security scopes dropped', (s) => {
+  Object.assign(s.paths[LOCK_LOGS].post, {tags: ['Internal'], security: [{scheme: ['write:everything']}]});
+}, (out, text) => {
+  const op = out.paths[LOCK_LOGS].post;
+  if (JSON.stringify(op.tags) !== '["Logs"]') return `tags ${JSON.stringify(op.tags)}`;
+  if (JSON.stringify(op.security) !== '[{"scheme":[]}]') return `security ${JSON.stringify(op.security)}`;
+  return lacks(text, 'Internal', 'write:everything');
+});
+
 // --- upstream text on the log endpoints is replaced, not published -----------
 
 mustPass('upstream-shaped spec', undefined, (out, text) => {

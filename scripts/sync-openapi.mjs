@@ -118,6 +118,19 @@ const LOG_BODY_PROPS = (prefix) => ({
 // nested properties or items, titles, examples, extensions) is either refused
 // or dropped.
 const SAFE_FIELD_KEYWORDS = ['type', 'format', 'maxLength', 'minLength', 'minimum', 'maximum', 'nullable'];
+// ...and only these values for them, so a keyword cannot carry text.
+const SAFE_TYPES = ['string', 'number', 'integer', 'boolean', 'object', 'array', 'null'];
+const SAFE_FORMATS = ['date-time', 'date', 'uuid', 'uri', 'int32', 'int64', 'email'];
+const SAFE_KEYWORD_VALUE = {
+  type: (v) => SAFE_TYPES.includes(v),
+  format: (v) => SAFE_FORMATS.includes(v),
+  maxLength: Number.isFinite,
+  minLength: Number.isFinite,
+  minimum: Number.isFinite,
+  maximum: Number.isFinite,
+  nullable: (v) => typeof v === 'boolean',
+};
+const LOG_TAGS = ['Logs'];
 const NESTING_KEYWORDS = ['allOf', 'oneOf', 'anyOf', 'not', 'properties', 'items', 'additionalProperties',
   'patternProperties', 'prefixItems', '$ref', 'if', 'then', 'else'];
 const LOG_RESPONSES = (kind) => {
@@ -136,6 +149,10 @@ const LOG_RESPONSES = (kind) => {
 // not listed above, so they are never published; the guard also fails the sync
 // if one shows up in the log endpoints' output any other way.
 const WITHHELD_LOG_FIELDS = ['outcome', 'lock_fw_version', 'lock_fw_build', 'battery_mv'];
+// As a key, a withheld field name fails the sync on ANY operation, except
+// where it is legitimately part of that operation's own contract.
+const WITHHELD_KEY = /^(outcome|battery_mv|lock_fw_\w*)$/i;
+const WITHHELD_KEY_EXEMPT = {'v2.units.sync': ['outcome']}; // per-unit result of the sync
 const LOG_OPERATIONS = ['v2.locks.logs.store', 'v2.entry-points.logs.store'];
 
 // ---------------------------------------------------------------------------
@@ -144,15 +161,19 @@ const LOG_OPERATIONS = ['v2.locks.logs.store', 'v2.entry-points.logs.store'];
 // "-") and tested against these. A match fails the sync, and so the deploy,
 // rather than publishing it.
 // ---------------------------------------------------------------------------
+// Separators an evasion might put inside a name: space, _, #, :, /, ., \, -.
+const SEP = String.raw`[\s_#:/.\\-]*`;
 const LEAK_PATTERNS = [
-  /\bKEEP[\s_-]*\d+/i,
-  /kiss[\s_-]?core/i,
-  /tapt[\s_-]?nfc/i,
-  /kiss[\s_-]?mobile[\s_-]?apps/i,
+  new RegExp(`KEEP${SEP}\\d+`, 'i'), // no \b: "amine_KEEP-1" counts too
+  new RegExp(`kiss${SEP}core`, 'i'),
+  new RegExp(`tapt${SEP}nfc`, 'i'),
+  new RegExp(`kiss${SEP}mobile${SEP}apps`, 'i'),
   /\bApp(\\+|\.)[A-Z]/,
+  /Http[\\/]Controllers/i,
+  /::/, // PHP static calls (Foo::bar)
   /linear\.app/i,
   /github\.com\/Keep-it-Simple-Storage\/(kiss_mobile_apps|kiss-api\b)/i,
-  /NAC1080/i, /SmAcK/i, /ST\s?25/i, /ISO\s?15693/i, /NTAG/i, /M24LR/i, /MIFARE/i,
+  /NAC[\s-]?1080/i, /SmAcK/i, /\bST[\s-]?25/i, /15693/, /NTAG/i, /M24LR/i, /MIFARE/i,
   /lock_sdk_core/i, /uniffi/i,
   // A dotted or backslashed PascalCase path: a server class name (Foo.Bar,
   // Foo\Bar). The live spec has no legitimate one today, so nothing is exempt.
@@ -340,6 +361,9 @@ function buildLogOperation(spec, op, pathItem, meta, claimed) {
     // 3.1 nullable types are folded here rather than in downConvert(), so the
     // keyword order (and the output) is the same for a 3.1 or 3.0 source.
     const src = {...up};
+    if ('nullable' in src && !SAFE_KEYWORD_VALUE.nullable(src.nullable)) {
+      throw new Error(`${id}: body field "${field}" has an unexpected nullable value; review it before publishing`);
+    }
     if (Array.isArray(src.type)) {
       const nonNull = src.type.filter((t) => t !== 'null');
       if (nonNull.length !== 1) throw new Error(`${id}: body field "${field}" has a union type; review it before publishing`);
@@ -347,7 +371,13 @@ function buildLogOperation(spec, op, pathItem, meta, claimed) {
       src.type = nonNull[0];
     }
     const prop = {};
-    for (const k of SAFE_FIELD_KEYWORDS) if (k in src) prop[k] = src[k];
+    for (const k of SAFE_FIELD_KEYWORDS) {
+      if (!(k in src)) continue;
+      if (!SAFE_KEYWORD_VALUE[k](src[k])) {
+        throw new Error(`${id}: body field "${field}" has an unexpected ${k} value; review it before publishing`);
+      }
+      prop[k] = src[k];
+    }
     if (approved) {
       const upEnum = Array.isArray(up.enum) ? up.enum : [];
       const published = approved.filter((v) => upEnum.includes(v));
@@ -373,14 +403,17 @@ function buildLogOperation(spec, op, pathItem, meta, claimed) {
   spec.components.schemas[name] = {type: 'object', ...(required.length ? {required} : {}), properties};
 
   return {
-    ...(Array.isArray(op.tags) ? {tags: op.tags} : {}),
+    tags: LOG_TAGS,
     operationId: id,
     summary: meta.summary,
     description: meta.description,
     parameters,
     requestBody: {required: true, content: {'application/json': {schema: {$ref: ref}}}},
     responses: structuredClone(log.responses),
-    ...(Array.isArray(op.security) ? {security: op.security} : {}),
+    // Scheme names only: scopes are upstream strings.
+    ...(Array.isArray(op.security)
+      ? {security: op.security.map((req) => Object.fromEntries(Object.keys(req || {}).map((name) => [name, []])))}
+      : {}),
   };
 }
 
@@ -448,12 +481,32 @@ function pruneComponents(paths, components, security) {
   return out;
 }
 
-/** NFKC, no format characters (zero-width etc.), every dash folded to "-". */
+const NAMED_ENTITIES = {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', hyphen: '-', dash: '-',
+  ndash: '-', mdash: '-', minus: '-', lowbar: '_', colon: ':', num: '#', sol: '/', bsol: '\\', period: '.'};
+// Greek and Cyrillic letters that look like Latin ones.
+const CONFUSABLES = {
+  'Α': 'A', 'Β': 'B', 'Ε': 'E', 'Ζ': 'Z', 'Η': 'H', 'Ι': 'I', 'Κ': 'K', 'Μ': 'M', 'Ν': 'N', 'Ο': 'O', 'Ρ': 'P',
+  'Τ': 'T', 'Υ': 'Y', 'Χ': 'X', 'α': 'a', 'ε': 'e', 'ι': 'i', 'κ': 'k', 'ν': 'v', 'ο': 'o', 'ρ': 'p', 'τ': 't',
+  'υ': 'u', 'χ': 'x', 'А': 'A', 'В': 'B', 'Е': 'E', 'К': 'K', 'М': 'M', 'Н': 'H', 'О': 'O', 'Р': 'P', 'С': 'C',
+  'Т': 'T', 'Х': 'X', 'Ѕ': 'S', 'І': 'I', 'Ј': 'J', 'а': 'a', 'е': 'e', 'к': 'k', 'о': 'o', 'р': 'p', 'с': 'c',
+  'у': 'y', 'х': 'x', 'ѕ': 's', 'і': 'i', 'ј': 'j',
+};
+
+/**
+ * The form a string is matched in: HTML entities decoded, NFKC, format
+ * characters (zero-width etc.) removed, every dash folded to "-", markdown
+ * backslash escapes removed, and Greek/Cyrillic look-alikes folded to Latin.
+ */
 function normalise(text) {
   return text
+    .replace(/&#x([0-9a-f]+);?/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);?/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&([a-z]+);/gi, (m, name) => NAMED_ENTITIES[name.toLowerCase()] ?? m)
     .normalize('NFKC')
     .replace(/\p{Cf}/gu, '')
-    .replace(/[\p{Pd}−⁃﹣－]/gu, '-');
+    .replace(/[\p{Pd}−⁃﹣－]/gu, '-')
+    .replace(/\\([!-/:-@[-`{-~])/g, '$1')
+    .replace(/[Ͱ-ϿЀ-ӿ]/g, (c) => CONFUSABLES[c] ?? c);
 }
 
 /** Visit every key and string value in a JSON tree, with its location. */
@@ -481,19 +534,24 @@ function guard(out, label = 'output') {
     }
   });
 
-  // Withheld log fields: as a key anywhere in the log endpoints' output, or a
-  // firmware/battery field name in any of their strings. (`outcome` as a word
-  // is fine in prose, and is a legitimate field on other endpoints.)
+  // Withheld log fields. On every operation (and what it references): as an
+  // object key, a parameter `name` or a `required` entry, unless exempt for
+  // that operation. On the log endpoints, also any string naming a firmware
+  // or battery field. (`outcome` as a word is fine in prose.)
   for (const [path, item] of Object.entries(out.paths || {})) {
     for (const [method, op] of Object.entries(item)) {
-      if (!HTTP_METHODS.has(method) || !LOG_OPERATIONS.includes(op?.operationId)) continue;
+      if (!HTTP_METHODS.has(method) || !op) continue;
+      const exempt = WITHHELD_KEY_EXEMPT[op.operationId] || [];
+      const isLog = LOG_OPERATIONS.includes(op.operationId);
       const refs = [...referencedComponents(op, out.components)].map((r) => {
         const [, , section, name] = r.split('/');
         return out.components?.[section]?.[name];
       });
       walkStrings({op, pathLevel: item.parameters, refs}, (raw, at) => {
         const text = normalise(raw);
-        if ((at.endsWith('(key)') && WITHHELD_LOG_FIELDS.includes(text)) || /lock_fw_|battery_mv/i.test(text)) {
+        const isName = at.endsWith('(key)') || at.endsWith('.name') || /\.required\[\d+\]$/.test(at);
+        if ((isName && WITHHELD_KEY.test(text) && !exempt.includes(text.toLowerCase())) ||
+            (isLog && /lock_fw_|battery_mv/i.test(text))) {
           problems.push(`${op.operationId}: withheld field "${text}" at ${path} ${method} ${at}`);
         }
       });
