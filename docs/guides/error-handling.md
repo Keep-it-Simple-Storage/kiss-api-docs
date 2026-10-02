@@ -55,7 +55,7 @@ A response can flag a concern without failing. [`PATCH /tenants/{tenant_id}`](/r
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
 | `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
-| `409` | Conflict | Source-type collision (a push write against a pull-owned unit), a rejected tenant update (see below), **or** `Idempotency-Key` reused with a different payload. |
+| `409` | Conflict | Source-type collision (a push write against a pull-owned unit), an `external_unit_id` another unit already holds, a rejected tenant update (see below), **or** `Idempotency-Key` reused with a different payload. |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
 
@@ -207,6 +207,22 @@ An `entryPoint` ID that doesn't exist returns `404` with a generic not-found mes
 ```
 
 **Fix:** The unit you're trying to write to is owned by a pull-mode integration. A push write cannot silently take it over; the source-of-truth rule protects partner data. (Standalone units, managed only in the dashboard, are adopted by a push write and do not conflict.) If you need to migrate a pull-owned unit to push, reach out to KISS support.
+
+---
+
+### Using an `external_unit_id` another unit holds
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "That external_unit_id (A-142) already belongs to another unit in your account. Use a free id.",
+  "code": "external_unit_id_conflict"
+}
+```
+
+In a bulk `PATCH /units`, the same `code` appears on the item's entry in `data.errors` instead, and the other items still apply.
+
+**Fix:** each `external_unit_id` belongs to one unit in your account. You get this when you create a unit (bulk `PATCH /units`, or `PUT /units/{unit_id}/tenancy` for a unit KISS doesn't have yet), or change a unit's id with `PATCH /units/{unit_id}`, using an id a different live unit already holds. Look up which unit holds it with `GET /units`, then either address that unit by its `unit_id` or choose a free id. A unit that has been removed gives up its id, so reusing the id of a removed unit is fine.
 
 ---
 
