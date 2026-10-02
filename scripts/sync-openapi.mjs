@@ -1,14 +1,20 @@
 // Fetches the live Scramble OpenAPI spec, keeps only the partner-facing
 // endpoints (the curated allowlist), down-converts 3.1 -> 3.0.3 so the
-// Docusaurus OpenAPI plugin can render it, and writes openapi/kiss-api.json.
+// Docusaurus OpenAPI plugin can render it, and writes openapi/kiss-api.json
+// (plus the identical static/openapi/kiss-api.json download).
 //
 // Run: node scripts/sync-openapi.mjs
 // The full spec lives at the source URL; this is the curated slice the portal
 // renders as Quo-style endpoint pages. The "Full API spec" link points callers
 // at the complete surface.
+//
+// The output is public, and upstream text is written for maintainers. So the
+// two log endpoints are rebuilt entirely from partner copy here, and a final
+// guard walks every published key and string and refuses to write output that
+// carries an internal reference. Tests: npm run test:sync.
 
 import {writeFileSync, readFileSync, existsSync, mkdirSync} from 'node:fs';
-import {dirname} from 'node:path';
+import {dirname, join} from 'node:path';
 
 // kiss-api serves the partner slice publicly at /docs/partner-api.json. The
 // full spec at /docs/api.json is gated on a session user, so a build could
@@ -22,11 +28,14 @@ import {dirname} from 'node:path';
 // Point OPENAPI_SOURCE at a local file (e.g. the output of
 // `php artisan scramble:export`) to regenerate from a spec in hand.
 const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/partner-api.json';
-const OUT = 'openapi/kiss-api.json';
-const STATIC_OUT = 'static/openapi/kiss-api.json';
-// OPENAPI_DRY_RUN=1 runs every transform and guard but writes nothing (the
-// sync tests use it). OPENAPI_NO_FALLBACK=1 makes a failed fetch fatal instead
-// of falling back to the committed snapshot.
+// OPENAPI_OUT_DIR writes (and, on fallback, reads) the two output files under
+// another directory instead of the repo root (the sync tests use it).
+// OPENAPI_DRY_RUN=1 runs every transform and guard but writes nothing.
+// OPENAPI_NO_FALLBACK=1 makes a failed fetch fatal instead of falling back to
+// the committed snapshot.
+const OUT_DIR = process.env.OPENAPI_OUT_DIR || '.';
+const OUT = join(OUT_DIR, 'openapi/kiss-api.json');
+const STATIC_OUT = join(OUT_DIR, 'static/openapi/kiss-api.json');
 const DRY_RUN = process.env.OPENAPI_DRY_RUN === '1';
 const NO_FALLBACK = process.env.OPENAPI_NO_FALLBACK === '1';
 const DOCS_URL = 'https://docs.keepitsimplestorage.com';
@@ -54,22 +63,31 @@ const ALLOW = new Set([
   'v2.health',
 ]);
 
-// The two log endpoints' request bodies. Upstream, their field descriptions
-// come from code comments in kiss-api, which are written for maintainers, not
-// partners. So the published body is an ALLOWLIST: only the fields below are
-// published, each with this partner copy in place of whatever upstream says.
-//
-// - A field upstream adds (e.g. one partners are not asked to send yet) is
-//   dropped, with a warning, until it is listed here.
-// - A field listed here that upstream no longer has (a rename) fails the sync,
-//   so the copy cannot silently fall back to the raw upstream text.
+// ---------------------------------------------------------------------------
+// The two log endpoints. Nothing upstream wrote for them is published: each
+// operation, its parameters, its request body and its responses are rebuilt
+// from the partner copy below. From upstream, only these survive:
+// - which listed body fields exist (a listed field missing upstream, e.g. a
+//   rename, fails the sync; a new upstream field is not published until it is
+//   listed here),
+// - each listed field's type keywords (SAFE_FIELD_KEYWORDS), and
+// - which `required` fields and approved `enum` values upstream still has.
 //
 // Links are absolute: these strings also ship in the downloadable spec.
+// ---------------------------------------------------------------------------
 const REPORTING_A_TAP = `${DOCS_URL}/guides/white-label/quickstart#reporting-a-tap`;
+const CLIENT_REPORTABLE_KEYS = ['lock', 'entry_point'].flatMap((p) => [
+  `${p}.open_successful`, `${p}.open_failure`, `${p}.open_blocked`,
+  `${p}.close_successful`, `${p}.close_successful_confirmed`, `${p}.close_failure`, `${p}.close_blocked`,
+  `${p}.open_unconfirmed`, `${p}.close_unconfirmed`,
+]);
 const LOG_BODY_PROPS = (prefix) => ({
-  key:
-    `What happened on the tap, as the tenant was shown it. On this endpoint use a \`${prefix}.*\` value; ` +
-    `see [Reporting a tap](${REPORTING_A_TAP}) for which one to send.`,
+  key: {
+    description:
+      `What happened on the tap, as the tenant was shown it. On this endpoint use a \`${prefix}.*\` value; ` +
+      `see [Reporting a tap](${REPORTING_A_TAP}) for which one to send.`,
+    enum: CLIENT_REPORTABLE_KEYS,
+  },
   reason:
     `Required when \`key\` is \`${prefix}.open_failure\` or \`${prefix}.close_failure\`, optional otherwise. ` +
     'On a failure, short text saying what went wrong. On an unconfirmed key, the cause token for that outcome; ' +
@@ -77,7 +95,10 @@ const LOG_BODY_PROPS = (prefix) => ({
   happened_at: 'When the tap happened on the device (ISO 8601). Send it to backfill a tap recorded while offline.',
   app_version: 'Optional: your app\'s version, e.g. `2.4.0`. Up to 20 characters.',
   app_build: 'Optional: your app\'s build number. Up to 20 characters.',
-  platform: 'Optional: `ios` or `android`. You can send it in the `X-Client-Platform` header instead.',
+  platform: {
+    description: 'Optional: `ios` or `android`. You can send it in the `X-Client-Platform` header instead.',
+    enum: ['ios', 'android'],
+  },
   error_code:
     'Why the tap failed, as one of the server\'s snake_case error codes (see ' +
     `[Reporting a tap](${REPORTING_A_TAP})). Any other value is accepted but stored as null.`,
@@ -93,20 +114,53 @@ const LOG_BODY_PROPS = (prefix) => ({
   package_version: 'Optional: the version of that library.',
   client_now: 'Optional: the device\'s current time when it sends the log (ISO 8601), so KISS can spot a phone clock that is wrong.',
 });
+// The only keywords copied from an upstream field. Anything else (composition,
+// nested properties or items, titles, examples, extensions) is either refused
+// or dropped.
+const SAFE_FIELD_KEYWORDS = ['type', 'format', 'maxLength', 'minLength', 'minimum', 'maximum', 'nullable'];
+const NESTING_KEYWORDS = ['allOf', 'oneOf', 'anyOf', 'not', 'properties', 'items', 'additionalProperties',
+  'patternProperties', 'prefixItems', '$ref', 'if', 'then', 'else'];
+const LOG_RESPONSES = (kind) => {
+  const thing = kind === 'lock' ? 'lock' : 'entry point';
+  const scope = kind === 'lock' ? 'locks on units they hold' : 'entry points their zones reach';
+  return {
+    201: {description: 'The tap was recorded. The response uses the standard `{ message, data, meta }` envelope.'},
+    401: {description: 'The token is missing, invalid or expired.'},
+    403: {description: `The token may not log against this ${thing}. A tenant may only log against ${scope}.`},
+    404: {description: `No ${thing} with that \`id\`.`},
+    422: {description: 'The body failed validation, or the `Idempotency-Key` header is missing. The tap was not recorded.'},
+  };
+};
 
 // Log fields the API accepts but partners are not asked to send yet. They are
-// already excluded by the allowlist above; naming them also lets the final
-// guard fail the sync if one reaches the log endpoints' output any other way
-// (a parameter, an example, an inline schema).
+// not listed above, so they are never published; the guard also fails the sync
+// if one shows up in the log endpoints' output any other way.
 const WITHHELD_LOG_FIELDS = ['outcome', 'lock_fw_version', 'lock_fw_build', 'battery_mv'];
-
-// Final guard on everything the sync publishes. A match fails the sync (and so
-// the Netlify deploy) rather than publishing it.
-const LEAK_PATTERN = /KEEP-\d+|kiss_core|tapt_nfc|SmAcK|ST25|ISO ?15693|NAC1080|kiss_mobile_apps|\bApp\.(Http|Models)\./i;
-// Checked only within the log endpoints and their schemas: `outcome` is a
-// legitimate field elsewhere (e.g. the unit sync results).
-const WITHHELD_PATTERN = /"outcome"|lock_fw_|battery_mv/i;
 const LOG_OPERATIONS = ['v2.locks.logs.store', 'v2.entry-points.logs.store'];
+
+// ---------------------------------------------------------------------------
+// The final guard. Every published key and string value is normalised (NFKC,
+// format characters such as zero-width spaces removed, every dash folded to
+// "-") and tested against these. A match fails the sync, and so the deploy,
+// rather than publishing it.
+// ---------------------------------------------------------------------------
+const LEAK_PATTERNS = [
+  /\bKEEP[\s_-]*\d+/i,
+  /kiss[\s_-]?core/i,
+  /tapt[\s_-]?nfc/i,
+  /kiss[\s_-]?mobile[\s_-]?apps/i,
+  /\bApp(\\+|\.)[A-Z]/,
+  /linear\.app/i,
+  /github\.com\/Keep-it-Simple-Storage\/(kiss_mobile_apps|kiss-api\b)/i,
+  /NAC1080/i, /SmAcK/i, /ST\s?25/i, /ISO\s?15693/i, /NTAG/i, /M24LR/i, /MIFARE/i,
+  /lock_sdk_core/i, /uniffi/i,
+  // A dotted or backslashed PascalCase path: a server class name (Foo.Bar,
+  // Foo\Bar). The live spec has no legitimate one today, so nothing is exempt.
+  /\b[A-Z][A-Za-z0-9]*(?:(?:\\+|\.)[A-Z][A-Za-z0-9]*)+\b/,
+];
+// Strings matching one of these are exempt from the PascalCase-path rule only.
+// Keep this list short and explicit.
+const PASCAL_PATH_EXEMPT = [];
 
 // Friendly names + blurbs for endpoints the spec doesn't (yet) carry. The
 // schemas always come from the live spec; only these human labels are added
@@ -185,22 +239,29 @@ const META = {
     summary: 'Report lock activity',
     description:
       'Record a lock event (open or close: success, failure, or blocked) after an NFC interaction.',
-    paramDescriptions: {
-      lock: "The lock's `id` (a ULID) from `GET /access`, at `bundles[].lock.id`. Not its `serial_number`.",
+    // Rebuilt from partner copy; see buildLogOperation().
+    log: {
+      params: {
+        lock: "The lock's `id` (a ULID) from `GET /access`, at `bundles[].lock.id`. Not its `serial_number`.",
+      },
+      body: LOG_BODY_PROPS('lock'),
+      responses: LOG_RESPONSES('lock'),
     },
-    bodyProps: LOG_BODY_PROPS('lock'),
   },
   'v2.entry-points.logs.store': {
     summary: 'Report entry-point activity',
     description:
       'Record an entry-point event (gate or door) after an NFC interaction.',
-    paramDescriptions: {
-      entryPoint: "The entry point's `id` (a ULID) from `GET /access`, at `entry_points[].id`.",
+    log: {
+      params: {
+        entryPoint: "The entry point's `id` (a ULID) from `GET /access`, at `entry_points[].id`.",
+      },
+      body: LOG_BODY_PROPS('entry_point'),
+      // Not published: the endpoint ignores it, and a value it does not know
+      // answers 422, so the tap is never recorded. Partners should omit it.
+      omitBody: ['zone_id'],
+      responses: LOG_RESPONSES('entry_point'),
     },
-    bodyProps: LOG_BODY_PROPS('entry_point'),
-    // Not published: the endpoint ignores it, and a value it does not know
-    // answers 422, so the tap is never recorded. Partners should omit it.
-    omitBodyProps: ['zone_id'],
   },
   'v2.health': {
     summary: 'Health check',
@@ -208,10 +269,12 @@ const META = {
   },
 };
 
+
 // Sidebar/category order for the kept tags.
 const TAG_ORDER = ['Units', 'Tenants', 'Access', 'Access Logs', 'Logs', 'Health'];
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
+const SCHEMA_REF_PREFIX = '#/components/schemas/';
 
 /**
  * Collapse a union 200 body down to one branch. Leaves the operation untouched
@@ -230,78 +293,101 @@ function pickResponseVariant(op, index) {
   op.responses['200'].content['application/json'].schema = picked;
 }
 
-const SCHEMA_REF_PREFIX = '#/components/schemas/';
-
 /**
- * Apply an endpoint's body allowlist (see LOG_BODY_PROPS). The body must be a
- * $ref to a component schema that no other operation uses, so the overrides
- * land on exactly one published schema; anything else fails the sync.
+ * Rebuild a log endpoint from partner copy (see LOG_BODY_PROPS). Its body must
+ * be a $ref to a component schema no other log endpoint uses; that schema is
+ * replaced with one rebuilt from the listed fields. Returns the new operation.
  */
-function applyBodyProps(spec, op, meta, claimed) {
-  const media = op.requestBody?.content?.['application/json'];
-  const ref = media?.schema?.$ref;
+function buildLogOperation(spec, op, pathItem, meta, claimed) {
+  const id = op.operationId;
+  const {log} = meta;
+
+  // Parameters: only the listed ones, rebuilt. Upstream may declare them at
+  // path level or operation level.
+  const upstreamParams = [...(pathItem.parameters || []), ...(op.parameters || [])].filter(Boolean);
+  const parameters = Object.entries(log.params).map(([name, description]) => {
+    const up = upstreamParams.find((p) => p.name === name);
+    if (!up) throw new Error(`${id}: parameter "${name}" not found (renamed?)`);
+    if (up.in !== 'path') throw new Error(`${id}: parameter "${name}" is no longer a path parameter`);
+    return {name, in: 'path', required: true, description, schema: {type: 'string'}};
+  });
+  const extraParams = upstreamParams.filter((p) => !(p.name in log.params)).map((p) => p.name);
+  if (extraParams.length) {
+    console.warn(`[sync-openapi] WARNING: ${id}: upstream parameter(s) not published: ${extraParams.join(', ')}`);
+  }
+
+  // Body.
+  const ref = op.requestBody?.content?.['application/json']?.schema?.$ref;
   if (typeof ref !== 'string' || !ref.startsWith(SCHEMA_REF_PREFIX)) {
-    throw new Error(`${op.operationId}: request body is not a $ref to a component schema, so its overrides cannot be applied`);
+    throw new Error(`${id}: request body is not a $ref to a component schema, so it cannot be rebuilt`);
   }
   const name = ref.slice(SCHEMA_REF_PREFIX.length);
-  const schema = spec.components?.schemas?.[name];
-  if (!schema?.properties) {
-    throw new Error(`${op.operationId}: request body schema ${name} is missing or has no properties`);
-  }
+  const upstream = spec.components?.schemas?.[name];
+  if (!upstream?.properties) throw new Error(`${id}: request body schema ${name} is missing or has no properties`);
   if (claimed.has(name)) {
-    throw new Error(`${op.operationId}: request body schema ${name} is also used by ${claimed.get(name)}; give each its own schema`);
+    throw new Error(`${id}: request body schema ${name} is also used by ${claimed.get(name)}; give each its own schema`);
   }
-  claimed.set(name, op.operationId);
+  claimed.set(name, id);
 
-  const missing = Object.keys(meta.bodyProps).filter((prop) => !(prop in schema.properties));
-  if (missing.length) {
-    throw new Error(`${op.operationId}: listed body field(s) not in the upstream schema (renamed?): ${missing.join(', ')}`);
-  }
+  const properties = {};
+  for (const [field, copy] of Object.entries(log.body)) {
+    const up = upstream.properties[field];
+    if (!up) throw new Error(`${id}: listed body field "${field}" is not in the upstream schema (renamed?)`);
+    const nested = NESTING_KEYWORDS.filter((k) => k in up);
+    if (nested.length) throw new Error(`${id}: body field "${field}" now uses ${nested.join(', ')}; review it before publishing`);
 
-  const dropped = Object.keys(schema.properties).filter((prop) => !(prop in meta.bodyProps));
-  for (const prop of dropped) delete schema.properties[prop];
-  if (Array.isArray(schema.required)) {
-    schema.required = schema.required.filter((r) => r in meta.bodyProps);
-    if (!schema.required.length) delete schema.required;
+    const {description, enum: approved} = typeof copy === 'string' ? {description: copy} : copy;
+    // 3.1 nullable types are folded here rather than in downConvert(), so the
+    // keyword order (and the output) is the same for a 3.1 or 3.0 source.
+    const src = {...up};
+    if (Array.isArray(src.type)) {
+      const nonNull = src.type.filter((t) => t !== 'null');
+      if (nonNull.length !== 1) throw new Error(`${id}: body field "${field}" has a union type; review it before publishing`);
+      if (src.type.includes('null')) src.nullable = true;
+      src.type = nonNull[0];
+    }
+    const prop = {};
+    for (const k of SAFE_FIELD_KEYWORDS) if (k in src) prop[k] = src[k];
+    if (approved) {
+      const upEnum = Array.isArray(up.enum) ? up.enum : [];
+      const published = approved.filter((v) => upEnum.includes(v));
+      if (!published.length) throw new Error(`${id}: body field "${field}" has none of its approved enum values upstream`);
+      const extra = upEnum.filter((v) => !approved.includes(v));
+      if (extra.length || published.length < approved.length) {
+        console.warn(`[sync-openapi] WARNING: ${id}: "${field}" enum differs upstream; publishing only approved values present upstream`);
+      }
+      prop.enum = published;
+    }
+    prop.description = description;
+    properties[field] = prop;
   }
-  const known = new Set([...WITHHELD_LOG_FIELDS, ...(meta.omitBodyProps || [])]);
-  const unexpected = dropped.filter((prop) => !known.has(prop));
+  const known = new Set([...WITHHELD_LOG_FIELDS, ...(log.omitBody || [])]);
+  const unexpected = Object.keys(upstream.properties).filter((f) => !(f in log.body) && !known.has(f));
   if (unexpected.length) {
     console.warn(
-      `[sync-openapi] WARNING: ${op.operationId}: new upstream body field(s) not published: ${unexpected.join(', ')}. ` +
+      `[sync-openapi] WARNING: ${id}: new upstream body field(s) not published: ${unexpected.join(', ')}. ` +
       'Add them to LOG_BODY_PROPS with partner copy to publish them.'
     );
   }
+  const required = (Array.isArray(upstream.required) ? upstream.required : []).filter((f) => f in properties);
+  spec.components.schemas[name] = {type: 'object', ...(required.length ? {required} : {}), properties};
 
-  for (const [prop, description] of Object.entries(meta.bodyProps)) {
-    schema.properties[prop].description = description;
-  }
-
-  // Examples are written upstream too, and may show a dropped field.
-  const mentionsDropped = (node) => dropped.some((prop) => JSON.stringify(node).includes(`"${prop}"`));
-  for (const holder of [media, schema, ...Object.values(schema.properties)]) {
-    for (const key of ['example', 'examples']) {
-      if (key in holder && (holder === media || mentionsDropped(holder[key]))) delete holder[key];
-    }
-  }
+  return {
+    ...(Array.isArray(op.tags) ? {tags: op.tags} : {}),
+    operationId: id,
+    summary: meta.summary,
+    description: meta.description,
+    parameters,
+    requestBody: {required: true, content: {'application/json': {schema: {$ref: ref}}}},
+    responses: structuredClone(log.responses),
+    ...(Array.isArray(op.security) ? {security: op.security} : {}),
+  };
 }
 
-/** Apply partner descriptions to path parameters, at path level and operation level. */
-function applyParamDescriptions(op, pathItem, meta) {
-  const params = [...(pathItem.parameters || []), ...(op.parameters || [])];
-  for (const [name, description] of Object.entries(meta.paramDescriptions)) {
-    const matches = params.filter((p) => p?.name === name);
-    if (!matches.length) {
-      throw new Error(`${op.operationId}: parameter "${name}" not found (renamed?), so its description cannot be applied`);
-    }
-    for (const p of matches) p.description = description;
-  }
-}
-
-/** Every component $ref reachable from the kept paths, following refs inside components. */
-function referencedComponents(paths, components) {
+/** Every component $ref reachable from `root`, following refs inside components. */
+function referencedComponents(root, components) {
   const seen = new Set();
-  const queue = [paths];
+  const queue = [root];
   while (queue.length) {
     const node = queue.pop();
     if (Array.isArray(node)) { queue.push(...node); continue; }
@@ -318,44 +404,43 @@ function referencedComponents(paths, components) {
 }
 
 /**
- * Keep only the schemas and responses a kept operation references, and give
- * schemas named after server classes (`App.Http.Requests...`) their short
- * name, so internal namespaces do not ship.
+ * Keep only the components a kept operation references (security schemes: the
+ * ones named in a `security` requirement), and give every component named
+ * after a server class (`App.Http.Requests...`) its short name, in every
+ * section, so internal namespaces do not ship.
  */
-function pruneComponents(paths, components) {
+function pruneComponents(paths, components, security) {
   if (!components) return components;
   const used = referencedComponents(paths, components);
-  const out = {...components};
-  for (const section of ['schemas', 'responses']) {
-    if (!components[section]) continue;
-    out[section] = Object.fromEntries(
-      Object.entries(components[section]).filter(([name]) => used.has(`#/components/${section}/${name}`))
-    );
-  }
+  const schemes = new Set();
+  const collectSchemes = (reqs) => (reqs || []).forEach((r) => Object.keys(r || {}).forEach((k) => schemes.add(k)));
+  collectSchemes(security);
+  for (const item of Object.values(paths))
+    for (const [m, op] of Object.entries(item)) if (HTTP_METHODS.has(m)) collectSchemes(op?.security);
 
-  const renames = {};
-  for (const name of Object.keys(out.schemas || {})) {
-    if (!name.includes('.')) continue;
-    const short = name.split('.').pop();
-    if (out.schemas[short] || Object.values(renames).includes(short)) {
-      throw new Error(`schema ${name} would be renamed to ${short}, which already exists`);
+  const out = {};
+  const renames = {}; // '#/components/<section>/<old>' -> '#/components/<section>/<new>'
+  for (const [section, entries] of Object.entries(components)) {
+    if (!entries || typeof entries !== 'object') continue;
+    const keep = Object.entries(entries).filter(([name]) =>
+      section === 'securitySchemes' ? schemes.has(name) : used.has(`#/components/${section}/${name}`)
+    );
+    const renamed = {};
+    for (const [name, value] of keep) {
+      const short = /[.\\]/.test(name) ? name.split(/[.\\]+/).pop() : name;
+      if (renamed[short] || (short !== name && entries[short] && keep.some(([n]) => n === short))) {
+        throw new Error(`component ${section}/${name} would be renamed to ${short}, which already exists`);
+      }
+      if (short !== name) renames[`#/components/${section}/${name}`] = `#/components/${section}/${short}`;
+      if (value && typeof value === 'object' && typeof value.title === 'string' && /[.\\]/.test(value.title)) delete value.title;
+      renamed[short] = value;
     }
-    renames[name] = short;
-  }
-  for (const [from, to] of Object.entries(renames)) {
-    out.schemas[to] = out.schemas[from];
-    delete out.schemas[from];
-  }
-  for (const schema of Object.values(out.schemas || {})) {
-    if (typeof schema.title === 'string' && (schema.title.includes('.') || renames[schema.title])) delete schema.title;
+    if (Object.keys(renamed).length) out[section] = renamed;
   }
   const rewrite = (node) => {
     if (Array.isArray(node)) return node.forEach(rewrite);
     if (!node || typeof node !== 'object') return;
-    if (typeof node.$ref === 'string' && node.$ref.startsWith(SCHEMA_REF_PREFIX)) {
-      const name = node.$ref.slice(SCHEMA_REF_PREFIX.length);
-      if (renames[name]) node.$ref = SCHEMA_REF_PREFIX + renames[name];
-    }
+    if (typeof node.$ref === 'string' && renames[node.$ref]) node.$ref = renames[node.$ref];
     Object.values(node).forEach(rewrite);
   };
   rewrite(paths);
@@ -363,28 +448,60 @@ function pruneComponents(paths, components) {
   return out;
 }
 
-/** Fail on anything that must not be published. */
-function guard(out) {
-  const problems = [];
-  const all = JSON.stringify(out);
-  const leak = all.match(LEAK_PATTERN);
-  if (leak) problems.push(`internal reference "${leak[0]}" near: ${all.slice(Math.max(0, leak.index - 80), leak.index + 40)}`);
+/** NFKC, no format characters (zero-width etc.), every dash folded to "-". */
+function normalise(text) {
+  return text
+    .normalize('NFKC')
+    .replace(/\p{Cf}/gu, '')
+    .replace(/[\p{Pd}−⁃﹣－]/gu, '-');
+}
 
-  for (const item of Object.values(out.paths || {})) {
+/** Visit every key and string value in a JSON tree, with its location. */
+function walkStrings(node, visit, at = '$') {
+  if (typeof node === 'string') return visit(node, at);
+  if (Array.isArray(node)) return node.forEach((v, i) => walkStrings(v, visit, `${at}[${i}]`));
+  if (!node || typeof node !== 'object') return;
+  for (const [k, v] of Object.entries(node)) {
+    visit(k, `${at} (key)`);
+    walkStrings(v, visit, `${at}.${k}`);
+  }
+}
+
+/** Fail on anything that must not be published. */
+function guard(out, label = 'output') {
+  const problems = [];
+  walkStrings(out, (raw, at) => {
+    const text = normalise(raw);
+    for (const pattern of LEAK_PATTERNS) {
+      const m = text.match(pattern);
+      if (!m) continue;
+      if (pattern === LEAK_PATTERNS.at(-1) && PASCAL_PATH_EXEMPT.some((e) => e.test(text))) continue;
+      problems.push(`internal reference "${m[0]}" at ${at}`);
+      break;
+    }
+  });
+
+  // Withheld log fields: as a key anywhere in the log endpoints' output, or a
+  // firmware/battery field name in any of their strings. (`outcome` as a word
+  // is fine in prose, and is a legitimate field on other endpoints.)
+  for (const [path, item] of Object.entries(out.paths || {})) {
     for (const [method, op] of Object.entries(item)) {
-      if (!HTTP_METHODS.has(method.toLowerCase()) || !LOG_OPERATIONS.includes(op?.operationId)) continue;
-      const refs = [...referencedComponents({op, params: item.parameters}, out.components)];
-      const scope = JSON.stringify([op, item.parameters, refs.map((r) => {
+      if (!HTTP_METHODS.has(method) || !LOG_OPERATIONS.includes(op?.operationId)) continue;
+      const refs = [...referencedComponents(op, out.components)].map((r) => {
         const [, , section, name] = r.split('/');
         return out.components?.[section]?.[name];
-      })]);
-      const hit = scope.match(WITHHELD_PATTERN);
-      if (hit) problems.push(`${op.operationId}: withheld field "${hit[0]}" would be published`);
+      });
+      walkStrings({op, pathLevel: item.parameters, refs}, (raw, at) => {
+        const text = normalise(raw);
+        if ((at.endsWith('(key)') && WITHHELD_LOG_FIELDS.includes(text)) || /lock_fw_|battery_mv/i.test(text)) {
+          problems.push(`${op.operationId}: withheld field "${text}" at ${path} ${method} ${at}`);
+        }
+      });
     }
   }
 
   if (problems.length) {
-    throw new Error('refusing to publish:\n' + problems.map((p) => `  - ${p}`).join('\n'));
+    throw new Error(`refusing to publish ${label}:\n` + problems.slice(0, 20).map((p) => `  - ${p}`).join('\n'));
   }
 }
 
@@ -428,6 +545,15 @@ async function loadSpec() {
   return res.json();
 }
 
+/** Write the spec and its byte-identical static download. */
+function publish(serialized) {
+  if (DRY_RUN) return;
+  for (const file of [OUT, STATIC_OUT]) {
+    mkdirSync(dirname(file), {recursive: true});
+    writeFileSync(file, serialized);
+  }
+}
+
 async function main() {
   let spec;
   try {
@@ -440,8 +566,12 @@ async function main() {
         `[sync-openapi] Publishing the committed ${OUT} instead, which may be behind the API. ` +
         'The site will build and look healthy either way, so check this if the reference looks stale.'
       );
-      // The committed copy still has to pass the guard.
-      guard(JSON.parse(readFileSync(OUT, 'utf8')));
+      // The committed copies still have to pass the guard, and the static
+      // download is rewritten from the guarded spec so the two cannot differ.
+      const committed = readFileSync(OUT, 'utf8');
+      guard(JSON.parse(committed), OUT);
+      if (existsSync(STATIC_OUT)) guard(JSON.parse(readFileSync(STATIC_OUT, 'utf8')), STATIC_OUT);
+      publish(committed);
       return;
     }
     throw new Error(`could not load ${SOURCE} (${err.message})`);
@@ -449,20 +579,22 @@ async function main() {
 
   // Keep only allowlisted operations.
   const keptPaths = {};
-  const claimed = new Map(); // component schema -> the operation whose body overrides it
+  const claimed = new Map(); // component schema -> the log operation rebuilt onto it
   let kept = 0;
   for (const [path, item] of Object.entries(spec.paths || {})) {
     const keptItem = {};
+    let isLogPath = false;
     for (const [method, op] of Object.entries(item)) {
-      if (!HTTP_METHODS.has(method.toLowerCase())) {
-        keptItem[method] = op; // path-level params etc.
-        continue;
-      }
-      if (op && ALLOW.has(op.operationId)) {
-        const meta = META[op.operationId];
+      if (!HTTP_METHODS.has(method.toLowerCase()) || !op || !ALLOW.has(op.operationId)) continue;
+      const meta = META[op.operationId];
+      if (meta?.log) {
+        keptItem[method] = buildLogOperation(spec, op, item, meta, claimed);
+        isLogPath = true;
+      } else {
         if (meta) {
-          if (!op.summary) op.summary = meta.summary;
-          if (!op.description) op.description = meta.description;
+          // Partner copy always wins over upstream text.
+          op.summary = meta.summary;
+          op.description = meta.description;
           // Endpoints shared with the staff surface document both callers'
           // parameters. Publishing the staff-only ones here would advertise
           // query params a company token silently ignores.
@@ -475,16 +607,18 @@ async function main() {
           if (typeof meta.pickResponse === 'number') {
             pickResponseVariant(op, meta.pickResponse);
           }
-          if (meta.paramDescriptions) applyParamDescriptions(op, item, meta);
-          if (meta.bodyProps) applyBodyProps(spec, op, meta, claimed);
         }
         keptItem[method] = op;
-        kept++;
       }
+      kept++;
     }
-    if (Object.keys(keptItem).some((m) => HTTP_METHODS.has(m.toLowerCase()))) {
-      keptPaths[path] = keptItem;
+    if (!Object.keys(keptItem).length) continue;
+    // Path-level keys (shared parameters etc.) ride along, except on a log
+    // path, whose operations were rebuilt with everything they need.
+    if (!isLogPath) {
+      for (const [key, value] of Object.entries(item)) if (!HTTP_METHODS.has(key.toLowerCase())) keptItem[key] = value;
     }
+    keptPaths[path] = keptItem;
   }
 
   const found = new Set();
@@ -526,25 +660,18 @@ async function main() {
     servers: spec.servers,
     tags,
     paths: keptPaths,
-    components: pruneComponents(keptPaths, spec.components),
+    components: pruneComponents(keptPaths, spec.components, spec.security),
     security: spec.security,
   };
 
   downConvert(out);
   guard(out);
 
-  const serialized = JSON.stringify(out, null, 2) + '\n';
-  if (DRY_RUN) {
-    console.log(`[sync-openapi] dry run: ${kept} operations across ${tags.length} tags passed every check`);
-    return;
-  }
-  mkdirSync(dirname(OUT), {recursive: true});
-  writeFileSync(OUT, serialized);
-  // Publish the curated spec as a static download too (the reference "Export"
-  // button points here). Only the curated slice ships, never the full spec.
-  mkdirSync(dirname(STATIC_OUT), {recursive: true});
-  writeFileSync(STATIC_OUT, serialized);
-  console.log(`[sync-openapi] wrote ${OUT} (+ ${STATIC_OUT}): ${kept} operations across ${tags.length} tags`);
+  publish(JSON.stringify(out, null, 2) + '\n');
+  console.log(
+    `[sync-openapi] ${DRY_RUN ? 'dry run, nothing written' : `wrote ${OUT} (+ ${STATIC_OUT})`}: ` +
+    `${kept} operations across ${tags.length} tags`
+  );
 }
 
 main().catch((err) => {
