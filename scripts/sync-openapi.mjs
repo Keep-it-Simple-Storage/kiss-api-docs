@@ -23,6 +23,13 @@ import {dirname} from 'node:path';
 // `php artisan scramble:export`) to regenerate from a spec in hand.
 const SOURCE = process.env.OPENAPI_SOURCE || 'https://app.keepitsimplestorage.com/docs/partner-api.json';
 const OUT = 'openapi/kiss-api.json';
+const STATIC_OUT = 'static/openapi/kiss-api.json';
+// OPENAPI_DRY_RUN=1 runs every transform and guard but writes nothing (the
+// sync tests use it). OPENAPI_NO_FALLBACK=1 makes a failed fetch fatal instead
+// of falling back to the committed snapshot.
+const DRY_RUN = process.env.OPENAPI_DRY_RUN === '1';
+const NO_FALLBACK = process.env.OPENAPI_NO_FALLBACK === '1';
+const DOCS_URL = 'https://docs.keepitsimplestorage.com';
 
 // Curated, partner-facing endpoints (by Scramble operationId). kiss-api applies
 // its own allowlist before serving the spec, so this is an intersection rather
@@ -47,30 +54,59 @@ const ALLOW = new Set([
   'v2.health',
 ]);
 
-// The two log endpoints' request schemas take their field descriptions from
-// code comments in kiss-api, which are written for maintainers, not partners.
-// These replace them (always, not only when missing) with partner copy, so the
-// public reference stays readable however those comments change.
-const LOG_BODY_DESCRIPTIONS = (prefix) => ({
+// The two log endpoints' request bodies. Upstream, their field descriptions
+// come from code comments in kiss-api, which are written for maintainers, not
+// partners. So the published body is an ALLOWLIST: only the fields below are
+// published, each with this partner copy in place of whatever upstream says.
+//
+// - A field upstream adds (e.g. one partners are not asked to send yet) is
+//   dropped, with a warning, until it is listed here.
+// - A field listed here that upstream no longer has (a rename) fails the sync,
+//   so the copy cannot silently fall back to the raw upstream text.
+//
+// Links are absolute: these strings also ship in the downloadable spec.
+const REPORTING_A_TAP = `${DOCS_URL}/guides/white-label/quickstart#reporting-a-tap`;
+const LOG_BODY_PROPS = (prefix) => ({
+  key:
+    `What happened on the tap, as the tenant was shown it. On this endpoint use a \`${prefix}.*\` value; ` +
+    `see [Reporting a tap](${REPORTING_A_TAP}) for which one to send.`,
   reason:
     `Required when \`key\` is \`${prefix}.open_failure\` or \`${prefix}.close_failure\`, optional otherwise. ` +
     'On a failure, short text saying what went wrong. On an unconfirmed key, the cause token for that outcome; ' +
-    'see [Reporting a tap](/guides/white-label/quickstart#reporting-a-tap).',
+    `see [Reporting a tap](${REPORTING_A_TAP}).`,
+  happened_at: 'When the tap happened on the device (ISO 8601). Send it to backfill a tap recorded while offline.',
+  app_version: 'Optional: your app\'s version, e.g. `2.4.0`. Up to 20 characters.',
+  app_build: 'Optional: your app\'s build number. Up to 20 characters.',
+  platform: 'Optional: `ios` or `android`. You can send it in the `X-Client-Platform` header instead.',
   error_code:
     'Why the tap failed, as one of the server\'s snake_case error codes (see ' +
-    '[Reporting a tap](/guides/white-label/quickstart#reporting-a-tap)). Any other value is accepted but stored as null.',
+    `[Reporting a tap](${REPORTING_A_TAP})). Any other value is accepted but stored as null.`,
   first_error_code: 'The error code of the first failed attempt, when the tap took more than one. Same values as `error_code`.',
-  scanned_lock_serial: 'The lock the phone actually reached: `"0x"` followed by the lock SDK\'s `session.lockId`.',
+  duration_ms: 'Optional: how long the whole interaction took, in milliseconds, including any retries.',
+  attempt_count: 'Optional: how many attempts the interaction took, counting the first.',
+  nfc_antenna_profile: 'Optional. Leave it out unless KISS asks you to send it.',
+  scanned_lock_serial: 'The lock the phone actually reached: `0x` followed by the lock SDK\'s `session.lockId`.',
   field_lost_after_start:
     '`true` when the lock started the action and the phone moved away before it finished (the lock SDK\'s ' +
     '`fieldLostAfterStart` outcome). Send it with the successful key.',
   package: 'Optional: the name of the library that ran the tap, for diagnostics.',
   package_version: 'Optional: the version of that library.',
+  client_now: 'Optional: the device\'s current time when it sends the log (ISO 8601), so KISS can spot a phone clock that is wrong.',
 });
 
-// Request fields the API accepts but partners are not asked to send yet. Kept
-// out of the public reference until the guides document them.
-const UNPUBLISHED_LOG_BODY_PROPS = ['outcome', 'lock_fw_version', 'lock_fw_build', 'battery_mv'];
+// Log fields the API accepts but partners are not asked to send yet. They are
+// already excluded by the allowlist above; naming them also lets the final
+// guard fail the sync if one reaches the log endpoints' output any other way
+// (a parameter, an example, an inline schema).
+const WITHHELD_LOG_FIELDS = ['outcome', 'lock_fw_version', 'lock_fw_build', 'battery_mv'];
+
+// Final guard on everything the sync publishes. A match fails the sync (and so
+// the Netlify deploy) rather than publishing it.
+const LEAK_PATTERN = /KEEP-\d+|kiss_core|tapt_nfc|SmAcK|ST25|ISO ?15693|NAC1080|kiss_mobile_apps|\bApp\.(Http|Models)\./i;
+// Checked only within the log endpoints and their schemas: `outcome` is a
+// legitimate field elsewhere (e.g. the unit sync results).
+const WITHHELD_PATTERN = /"outcome"|lock_fw_|battery_mv/i;
+const LOG_OPERATIONS = ['v2.locks.logs.store', 'v2.entry-points.logs.store'];
 
 // Friendly names + blurbs for endpoints the spec doesn't (yet) carry. The
 // schemas always come from the live spec; only these human labels are added
@@ -142,7 +178,7 @@ const META = {
       'Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, ' +
       'falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. ' +
       'Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). ' +
-      'Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. ' +
+      'Results are paged (15 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. ' +
       'Needs the `read:logs` scope.',
   },
   'v2.locks.logs.store': {
@@ -152,8 +188,7 @@ const META = {
     paramDescriptions: {
       lock: "The lock's `id` (a ULID) from `GET /access`, at `bundles[].lock.id`. Not its `serial_number`.",
     },
-    bodyDescriptions: LOG_BODY_DESCRIPTIONS('lock'),
-    dropBodyProps: UNPUBLISHED_LOG_BODY_PROPS,
+    bodyProps: LOG_BODY_PROPS('lock'),
   },
   'v2.entry-points.logs.store': {
     summary: 'Report entry-point activity',
@@ -162,8 +197,10 @@ const META = {
     paramDescriptions: {
       entryPoint: "The entry point's `id` (a ULID) from `GET /access`, at `entry_points[].id`.",
     },
-    bodyDescriptions: LOG_BODY_DESCRIPTIONS('entry_point'),
-    dropBodyProps: UNPUBLISHED_LOG_BODY_PROPS,
+    bodyProps: LOG_BODY_PROPS('entry_point'),
+    // Not published: the endpoint ignores it, and a value it does not know
+    // answers 422, so the tap is never recorded. Partners should omit it.
+    omitBodyProps: ['zone_id'],
   },
   'v2.health': {
     summary: 'Health check',
@@ -193,24 +230,161 @@ function pickResponseVariant(op, index) {
   op.responses['200'].content['application/json'].schema = picked;
 }
 
-/**
- * Apply an endpoint's body overrides (field descriptions, unpublished fields)
- * to its JSON request schema, following a component $ref when there is one.
- */
-function overrideBodySchema(spec, op, meta) {
-  let schema = op.requestBody?.content?.['application/json']?.schema;
-  const ref = schema?.$ref;
-  if (typeof ref === 'string' && ref.startsWith('#/components/schemas/')) {
-    schema = spec.components?.schemas?.[ref.slice('#/components/schemas/'.length)];
-  }
-  if (!schema?.properties) return;
+const SCHEMA_REF_PREFIX = '#/components/schemas/';
 
-  for (const name of meta.dropBodyProps || []) {
-    delete schema.properties[name];
-    if (Array.isArray(schema.required)) schema.required = schema.required.filter((r) => r !== name);
+/**
+ * Apply an endpoint's body allowlist (see LOG_BODY_PROPS). The body must be a
+ * $ref to a component schema that no other operation uses, so the overrides
+ * land on exactly one published schema; anything else fails the sync.
+ */
+function applyBodyProps(spec, op, meta, claimed) {
+  const media = op.requestBody?.content?.['application/json'];
+  const ref = media?.schema?.$ref;
+  if (typeof ref !== 'string' || !ref.startsWith(SCHEMA_REF_PREFIX)) {
+    throw new Error(`${op.operationId}: request body is not a $ref to a component schema, so its overrides cannot be applied`);
   }
-  for (const [name, description] of Object.entries(meta.bodyDescriptions || {})) {
-    if (schema.properties[name]) schema.properties[name].description = description;
+  const name = ref.slice(SCHEMA_REF_PREFIX.length);
+  const schema = spec.components?.schemas?.[name];
+  if (!schema?.properties) {
+    throw new Error(`${op.operationId}: request body schema ${name} is missing or has no properties`);
+  }
+  if (claimed.has(name)) {
+    throw new Error(`${op.operationId}: request body schema ${name} is also used by ${claimed.get(name)}; give each its own schema`);
+  }
+  claimed.set(name, op.operationId);
+
+  const missing = Object.keys(meta.bodyProps).filter((prop) => !(prop in schema.properties));
+  if (missing.length) {
+    throw new Error(`${op.operationId}: listed body field(s) not in the upstream schema (renamed?): ${missing.join(', ')}`);
+  }
+
+  const dropped = Object.keys(schema.properties).filter((prop) => !(prop in meta.bodyProps));
+  for (const prop of dropped) delete schema.properties[prop];
+  if (Array.isArray(schema.required)) {
+    schema.required = schema.required.filter((r) => r in meta.bodyProps);
+    if (!schema.required.length) delete schema.required;
+  }
+  const known = new Set([...WITHHELD_LOG_FIELDS, ...(meta.omitBodyProps || [])]);
+  const unexpected = dropped.filter((prop) => !known.has(prop));
+  if (unexpected.length) {
+    console.warn(
+      `[sync-openapi] WARNING: ${op.operationId}: new upstream body field(s) not published: ${unexpected.join(', ')}. ` +
+      'Add them to LOG_BODY_PROPS with partner copy to publish them.'
+    );
+  }
+
+  for (const [prop, description] of Object.entries(meta.bodyProps)) {
+    schema.properties[prop].description = description;
+  }
+
+  // Examples are written upstream too, and may show a dropped field.
+  const mentionsDropped = (node) => dropped.some((prop) => JSON.stringify(node).includes(`"${prop}"`));
+  for (const holder of [media, schema, ...Object.values(schema.properties)]) {
+    for (const key of ['example', 'examples']) {
+      if (key in holder && (holder === media || mentionsDropped(holder[key]))) delete holder[key];
+    }
+  }
+}
+
+/** Apply partner descriptions to path parameters, at path level and operation level. */
+function applyParamDescriptions(op, pathItem, meta) {
+  const params = [...(pathItem.parameters || []), ...(op.parameters || [])];
+  for (const [name, description] of Object.entries(meta.paramDescriptions)) {
+    const matches = params.filter((p) => p?.name === name);
+    if (!matches.length) {
+      throw new Error(`${op.operationId}: parameter "${name}" not found (renamed?), so its description cannot be applied`);
+    }
+    for (const p of matches) p.description = description;
+  }
+}
+
+/** Every component $ref reachable from the kept paths, following refs inside components. */
+function referencedComponents(paths, components) {
+  const seen = new Set();
+  const queue = [paths];
+  while (queue.length) {
+    const node = queue.pop();
+    if (Array.isArray(node)) { queue.push(...node); continue; }
+    if (!node || typeof node !== 'object') continue;
+    if (typeof node.$ref === 'string' && node.$ref.startsWith('#/components/') && !seen.has(node.$ref)) {
+      seen.add(node.$ref);
+      const [, , section, name] = node.$ref.split('/');
+      const target = components?.[section]?.[name];
+      if (target) queue.push(target);
+    }
+    queue.push(...Object.values(node));
+  }
+  return seen;
+}
+
+/**
+ * Keep only the schemas and responses a kept operation references, and give
+ * schemas named after server classes (`App.Http.Requests...`) their short
+ * name, so internal namespaces do not ship.
+ */
+function pruneComponents(paths, components) {
+  if (!components) return components;
+  const used = referencedComponents(paths, components);
+  const out = {...components};
+  for (const section of ['schemas', 'responses']) {
+    if (!components[section]) continue;
+    out[section] = Object.fromEntries(
+      Object.entries(components[section]).filter(([name]) => used.has(`#/components/${section}/${name}`))
+    );
+  }
+
+  const renames = {};
+  for (const name of Object.keys(out.schemas || {})) {
+    if (!name.includes('.')) continue;
+    const short = name.split('.').pop();
+    if (out.schemas[short] || Object.values(renames).includes(short)) {
+      throw new Error(`schema ${name} would be renamed to ${short}, which already exists`);
+    }
+    renames[name] = short;
+  }
+  for (const [from, to] of Object.entries(renames)) {
+    out.schemas[to] = out.schemas[from];
+    delete out.schemas[from];
+  }
+  for (const schema of Object.values(out.schemas || {})) {
+    if (typeof schema.title === 'string' && (schema.title.includes('.') || renames[schema.title])) delete schema.title;
+  }
+  const rewrite = (node) => {
+    if (Array.isArray(node)) return node.forEach(rewrite);
+    if (!node || typeof node !== 'object') return;
+    if (typeof node.$ref === 'string' && node.$ref.startsWith(SCHEMA_REF_PREFIX)) {
+      const name = node.$ref.slice(SCHEMA_REF_PREFIX.length);
+      if (renames[name]) node.$ref = SCHEMA_REF_PREFIX + renames[name];
+    }
+    Object.values(node).forEach(rewrite);
+  };
+  rewrite(paths);
+  rewrite(out);
+  return out;
+}
+
+/** Fail on anything that must not be published. */
+function guard(out) {
+  const problems = [];
+  const all = JSON.stringify(out);
+  const leak = all.match(LEAK_PATTERN);
+  if (leak) problems.push(`internal reference "${leak[0]}" near: ${all.slice(Math.max(0, leak.index - 80), leak.index + 40)}`);
+
+  for (const item of Object.values(out.paths || {})) {
+    for (const [method, op] of Object.entries(item)) {
+      if (!HTTP_METHODS.has(method.toLowerCase()) || !LOG_OPERATIONS.includes(op?.operationId)) continue;
+      const refs = [...referencedComponents({op, params: item.parameters}, out.components)];
+      const scope = JSON.stringify([op, item.parameters, refs.map((r) => {
+        const [, , section, name] = r.split('/');
+        return out.components?.[section]?.[name];
+      })]);
+      const hit = scope.match(WITHHELD_PATTERN);
+      if (hit) problems.push(`${op.operationId}: withheld field "${hit[0]}" would be published`);
+    }
+  }
+
+  if (problems.length) {
+    throw new Error('refusing to publish:\n' + problems.map((p) => `  - ${p}`).join('\n'));
   }
 }
 
@@ -259,20 +433,23 @@ async function main() {
   try {
     spec = await loadSpec();
   } catch (err) {
-    if (existsSync(OUT)) {
+    // A local source is a deliberate input, so it never falls back.
+    if (!NO_FALLBACK && /^https?:/.test(SOURCE) && existsSync(OUT)) {
       console.warn(
         `[sync-openapi] WARNING: fetch of ${SOURCE} failed (${err.message}).\n` +
         `[sync-openapi] Publishing the committed ${OUT} instead, which may be behind the API. ` +
         'The site will build and look healthy either way, so check this if the reference looks stale.'
       );
+      // The committed copy still has to pass the guard.
+      guard(JSON.parse(readFileSync(OUT, 'utf8')));
       return;
     }
-    console.error(`[sync-openapi] fetch failed (${err.message}) and no committed spec at ${OUT}`);
-    process.exit(1);
+    throw new Error(`could not load ${SOURCE} (${err.message})`);
   }
 
   // Keep only allowlisted operations.
   const keptPaths = {};
+  const claimed = new Map(); // component schema -> the operation whose body overrides it
   let kept = 0;
   for (const [path, item] of Object.entries(spec.paths || {})) {
     const keptItem = {};
@@ -298,14 +475,8 @@ async function main() {
           if (typeof meta.pickResponse === 'number') {
             pickResponseVariant(op, meta.pickResponse);
           }
-          if (meta.paramDescriptions && Array.isArray(op.parameters)) {
-            for (const param of op.parameters) {
-              if (meta.paramDescriptions[param.name]) param.description = meta.paramDescriptions[param.name];
-            }
-          }
-          if (meta.bodyDescriptions || meta.dropBodyProps) {
-            overrideBodySchema(spec, op, meta);
-          }
+          if (meta.paramDescriptions) applyParamDescriptions(op, item, meta);
+          if (meta.bodyProps) applyBodyProps(spec, op, meta, claimed);
         }
         keptItem[method] = op;
         kept++;
@@ -355,21 +526,28 @@ async function main() {
     servers: spec.servers,
     tags,
     paths: keptPaths,
-    components: spec.components,
+    components: pruneComponents(keptPaths, spec.components),
     security: spec.security,
   };
 
   downConvert(out);
+  guard(out);
 
-  mkdirSync(dirname(OUT), {recursive: true});
   const serialized = JSON.stringify(out, null, 2) + '\n';
+  if (DRY_RUN) {
+    console.log(`[sync-openapi] dry run: ${kept} operations across ${tags.length} tags passed every check`);
+    return;
+  }
+  mkdirSync(dirname(OUT), {recursive: true});
   writeFileSync(OUT, serialized);
   // Publish the curated spec as a static download too (the reference "Export"
   // button points here). Only the curated slice ships, never the full spec.
-  const STATIC_OUT = 'static/openapi/kiss-api.json';
   mkdirSync(dirname(STATIC_OUT), {recursive: true});
   writeFileSync(STATIC_OUT, serialized);
   console.log(`[sync-openapi] wrote ${OUT} (+ ${STATIC_OUT}): ${kept} operations across ${tags.length} tags`);
 }
 
-main();
+main().catch((err) => {
+  console.error(`[sync-openapi] ERROR: ${err.message}`);
+  process.exit(1);
+});

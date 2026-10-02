@@ -38,7 +38,7 @@ The tenant app does four things:
 | Sign a tenant in | <Method m="post" /> [`/auth/tenant-tokens`](/guides/authentication#mint-a-tenant-token) | Exchange your company token plus the tenant's id in your system for a short-lived tenant access token. |
 | Fetch the user's access | <Method m="get" /> [`/access`](/reference/v-2-access) | The user's units, NFC keys, entry points, and timezone: everything to operate offline. |
 | Report a lock tap | <Method m="post" /> [`/locks/{lock}/logs`](/reference/v-2-locks-logs-store) | Record open/close success, failure, or blocked. |
-| Report an entry-point tap | <Method m="post" /> [`/entry-points/{id}/logs`](/reference/v-2-entry-points-logs-store) | Record a gate or door tap. |
+| Report an entry-point tap | <Method m="post" /> [`/entry-points/{entryPoint}/logs`](/reference/v-2-entry-points-logs-store) | Record a gate or door tap. |
 
 Each call links to its reference page; tenant sign-in is covered in [Authentication](/guides/authentication). The access bundle is the heart of the integration, so it's detailed below.
 
@@ -46,7 +46,7 @@ Each call links to its reference page; tenant sign-in is covered in [Authenticat
 They are writes, so the header is **required**, not optional: without it the call answers `422 Idempotency-Key header is required.` and the tap is never recorded. Send any opaque string up to 255 characters (a UUID per tap works well), and reuse the same value if you retry that tap. A successful log answers `201`. See the [Idempotency-Key](/guides/authentication#use-the-token) rules for what a retry replays.
 :::
 
-Both endpoints take the same body, except that the entry-point one also accepts an optional `zone_id`. `key` is required and must be one of the client-reportable values (`lock.open_successful`, `lock.open_failure`, `lock.open_blocked`, `lock.close_successful`, `lock.close_successful_confirmed`, `lock.close_failure`, `lock.close_blocked`, `lock.open_unconfirmed`, `lock.close_unconfirmed`, and the matching `entry_point.*` values). `reason` is required when `key` is a failure value for that endpoint (`lock.open_failure` or `lock.close_failure` on a lock, `entry_point.open_failure` or `entry_point.close_failure` on an entry point), and optional otherwise. `happened_at` lets you backfill a tap the device recorded while offline. The reference pages list the optional telemetry fields alongside those, and [Reporting a tap](#reporting-a-tap) covers the ones that matter most for a lock tap.
+Both endpoints take the same body. `key` is required and must be one of the client-reportable values (`lock.open_successful`, `lock.open_failure`, `lock.open_blocked`, `lock.close_successful`, `lock.close_successful_confirmed`, `lock.close_failure`, `lock.close_blocked`, `lock.open_unconfirmed`, `lock.close_unconfirmed`, and the matching `entry_point.*` values). `reason` is required when `key` is a failure value for that endpoint (`lock.open_failure` or `lock.close_failure` on a lock, `entry_point.open_failure` or `entry_point.close_failure` on an entry point), and optional otherwise. `happened_at` lets you backfill a tap the device recorded while offline. The reference pages list the optional telemetry fields alongside those, and [Reporting a tap](#reporting-a-tap) covers the ones that matter most for a lock tap. The entry-point endpoint also accepts a `zone_id`: leave it out, because it is not used and a value the server does not recognise rejects the whole log, so the tap is never recorded.
 
 ## What `GET /access` returns
 
@@ -145,7 +145,7 @@ What the SDK does:
 
 What it does not do: your sign-in, your API calls, your access decisions, or your UI. Those stay in your app; the SDK is only the lock-communication layer. It has no notion of expiry or revocation, so deciding whether to open (from `access_state` and `access_expires_at`) is your app's job, before any tap.
 
-The SDK's README is the full reference: every function, option, outcome and error code, the platform setup, and a working example app.
+The SDK repository's README (you'll get access with the SDK) is the full reference: every function, option, outcome and error code, the platform setup, and a working example app.
 
 ### Results are graded, not pass/fail
 
@@ -157,16 +157,16 @@ This is the part most worth designing for. A completed tap does not return a sim
 | `fieldLostAfterStart` | The lock started, then the phone moved away. The lock finishes on its own, so this is a real success. |
 | Other `unconfirmed*` values | The lock could not confirm the action. Most of these probably completed, but not all, and for some the lock's position is unknown. |
 
-**Do not render an unconfirmed outcome as a failure,** and where the lock's position is unknown, do not draw it as locked or unlocked either. These values exist so your UI and your telemetry can tell an observed success from an inferred one, and tell you whether asking for another tap can help. You do not need to classify them yourself: the SDK's `isSuccessfulOutcome()` is `true` for `confirmed` and `fieldLostAfterStart`, and `shouldRetryOutcome()` is `true` where another tap can help. The SDK can also retry for you (`unlock(keyHex, name, { retry: {} })`), within a bounded number of attempts and time. The SDK README's "What to do with each outcome" table lists every outcome and what to show for it.
+**Do not render an unconfirmed outcome as a failure,** and where the lock's position is unknown, do not draw it as locked or unlocked either. These values exist so your UI and your telemetry can tell an observed success from an inferred one, and tell you whether asking for another tap can help. You do not need to classify them yourself: the SDK's `isSuccessfulOutcome()` is `true` for `confirmed` and `fieldLostAfterStart`, and `shouldRetryOutcome()` is `true` where another tap can help. The SDK can also retry for you (`unlock(keyHex, name, { retry: {} })`), within a bounded number of attempts and time. The SDK repository's README has a "What to do with each outcome" table that lists every outcome and what to show for it.
 
 ### Which lock was tapped?
 
 Before you call `unlock()` or `lock()`, compare `session.lockId` with the `serial_number` of the lock you meant. They are the same number in two notations: `lockId` is 16 hex characters, and `serial_number` is decimal. `lockId` is **not** the lock's `id` (the ULID from `GET /access`), so never compare those two.
 
-The SDK README's "Which lock was tapped?" section has a ready-made `isTappedLock()` helper for the comparison. Use it rather than writing your own: the values can be larger than JavaScript numbers hold exactly, so a naive comparison gets them wrong. It returns:
+The SDK repository's README has a "Which lock was tapped?" section with a ready-made `isTappedLock()` helper for the comparison. Use it rather than writing your own: the values can be larger than JavaScript numbers hold exactly, so a naive comparison gets them wrong. It returns:
 
 - `true`: the tenant tapped the lock you meant. Go ahead. For a unit with several locks, pick the lock whose serial matches and use its key.
-- `false`, and no other lock on the unit matches: the wrong lock. Close the session without acting on it, tell the tenant, and log it as a failure with `error_code: "wrong_lock"`.
+- `false`, and no other lock on the unit matches: the wrong lock. Close the session without acting on it, tell the tenant, and log it as `lock.open_failure` (or `lock.close_failure`) with `error_code: "wrong_lock"`. There is no SDK error in this case, since nothing was sent to the lock.
 - `null`: no evidence either way (for example, the serial is missing). Go ahead with the lock the tenant chose.
 
 The SDK does not detect a wrong lock for you, so this check is yours to make.
@@ -237,7 +237,6 @@ When `unlock()`, `lock()`, `connect()` or `unwrapAccessKey()` rejects, log `lock
 | `unknown` from anything else | `unknown` |
 | `dpNotDefined`, when your serial check returned `true` | `dp_not_defined` |
 | `dpNotDefined`, when your serial check returned `false` or `null` | `wrong_lock` |
-| (no SDK error) your serial check returned `false` and you did not act | `wrong_lock` |
 | `sessionTimeout` | `session_timeout` |
 | `systemIsBusy` | `system_busy` |
 | `userCanceled` | `user_canceled` |
@@ -247,7 +246,7 @@ When `unlock()`, `lock()`, `connect()` or `unwrapAccessKey()` rejects, log `lock
 
 The SDK never produces `wrongLock`; a wrong lock is something you detect with the serial check. New SDK error codes can arrive in a minor release, so keep a default branch that sends `unknown`.
 
-Entry-point taps follow the same rules on <Method m="post" /> [`/entry-points/{id}/logs`](/reference/v-2-entry-points-logs-store), with the matching `entry_point.*` keys.
+Entry-point taps follow the same rules on <Method m="post" /> [`/entry-points/{entryPoint}/logs`](/reference/v-2-entry-points-logs-store), with the matching `entry_point.*` keys.
 
 ## Keep going
 
