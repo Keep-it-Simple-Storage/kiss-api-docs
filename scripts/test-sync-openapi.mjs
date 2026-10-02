@@ -63,7 +63,7 @@ check('renamed path parameter', (spec) => {
 check('body switched from $ref to inline', (spec) => {
   const media = spec.paths[LOCK_LOGS].post.requestBody.content['application/json'];
   media.schema = structuredClone(bodySchema(spec, LOCK_LOGS));
-  media.schema.properties.package.description = 'KEEP-1154: raw upstream text';
+  media.schema.properties.package.description = 'KEEP-1: raw upstream text';
 }, false);
 
 check('two operations share one body schema', (spec) => {
@@ -83,7 +83,7 @@ check('withheld field as a path-level parameter', (spec) => {
 }, false);
 
 check('ticket number in another endpoint', (spec) => {
-  spec.paths['/health'].get.description = 'KEEP-1234: liveness';
+  spec.paths['/health'].get.description = 'KEEP-4: raw upstream text';
 }, false);
 
 check('internal package name in a kept schema', (spec) => {
@@ -96,8 +96,8 @@ check('internal package name in a kept schema', (spec) => {
 check('withheld fields added to both log bodies (dropped, not published)', (spec) => {
   for (const path of [LOCK_LOGS, ENTRY_LOGS]) {
     const s = bodySchema(spec, path);
-    s.properties.outcome = {type: 'string', description: 'KEEP-1983: why the tap ended'};
-    s.properties.lock_fw_version = {type: 'integer', description: 'KEEP-1984: chip firmware'};
+    s.properties.outcome = {type: 'string', description: 'KEEP-2: raw upstream text'};
+    s.properties.lock_fw_version = {type: 'integer', description: 'KEEP-3: raw upstream text'};
     s.properties.lock_fw_build = {type: 'integer'};
     s.properties.battery_mv = {type: 'integer'};
     s.example = {key: 'lock.open_successful', outcome: 'confirmed', battery_mv: 4100};
@@ -105,7 +105,7 @@ check('withheld fields added to both log bodies (dropped, not published)', (spec
 }, true);
 
 check('unreferenced schema with a ticket number (pruned)', (spec) => {
-  spec.components.schemas.InternalOnly = {type: 'object', description: 'KEEP-999 internal'};
+  spec.components.schemas.InternalOnly = {type: 'object', description: 'KEEP-5: raw upstream text'};
 }, true);
 
 // --- the real spec -----------------------------------------------------------
