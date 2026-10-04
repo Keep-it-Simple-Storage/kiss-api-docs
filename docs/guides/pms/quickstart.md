@@ -33,7 +33,7 @@ Create the token yourself in the web admin portal: **Company Settings → API**,
 Every unit has **two** IDs:
 
 - **`unit_id`**: the KISS identifier. KISS assigns it, and it never changes for the life of the unit. It is a ULID, a 26-character sortable ID that looks like `01K2E4M9XQ7T8VB3RY0DZC5NHF`. Treat it as an opaque string.
-- **`external_unit_id`**: your own identifier, stored on the unit as reference metadata. You set it.
+- **`external_unit_id`**: your own identifier for the unit. You set it, and it belongs to one unit in your account at a time.
 
 :::note You may see `crm_unit_id` in older examples
 `external_unit_id` and `crm_unit_id` are the same field. Both are accepted, and responses carry both, so existing integrations keep working. New ones should use `external_unit_id`. The same applies to `external_tenant_id` (was `pms_tenant_id`) and `external_location_code` (was `pms_location_code`).
@@ -68,6 +68,12 @@ Store those pairs alongside your records and address units by `unit_id` from the
 :::tip What is `external_unit_id` for, then?
 It is your reference label: KISS stores it so you (and KISS support) can correlate a unit with your records, and it is how the bulk `PATCH /units` matches items. Keep it current, but treat it as metadata rather than the key your integration depends on. If you ever lose your mapping, `GET /units` returns both IDs for every unit, a page at a time.
 :::
+
+### One unit per `external_unit_id`
+
+An `external_unit_id` belongs to one unit in your account. Creating a unit, or changing a unit's id with `PATCH /units/{unit_id}`, using an id that another live unit already holds answers `external_unit_id_conflict` rather than creating a second unit with the same id.
+
+When a unit's id changes, or the company moves to a different property management system, KISS keeps the unit's earlier ids. A write that still uses an earlier id finds the same unit instead of creating a duplicate. It is accepted, but it does not change the unit's facts: only the current id updates the unit. `GET /units` always returns the current id.
 
 Every unit belongs to a **location**, which is one physical facility. If your token reaches exactly one active location, omit it and the API infers it; otherwise pass `location_id` (the KISS ULID for the location) or your own `external_location_code` (set per location in the admin portal).
 
@@ -289,7 +295,7 @@ There is no callback to force an offline device to refresh sooner; the cache win
 
 ## Errors
 
-Responses use the `{ message, data, meta }` envelope; validation failures add a field-keyed `errors` object on `422`. The two `409` cases (idempotency-key reuse vs. a unit owned by a pull-mode integration) are distinguishable by `message`. Full status table: [Error handling](/guides/error-handling).
+Responses use the `{ message, data, meta }` envelope; validation failures add a field-keyed `errors` object on `422`. `409` responses that carry a `code` (`external_unit_id_conflict`, `connector_switch_in_progress`) are listed with their fixes in the guide. The others (idempotency-key reuse, a unit owned by a pull-mode integration) are distinguishable by `message`. Full status table: [Error handling](/guides/error-handling).
 
 ## Testing your integration
 
