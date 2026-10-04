@@ -295,7 +295,7 @@ There is no callback to force an offline device to refresh sooner; the cache win
 
 ## Errors
 
-Responses use the `{ message, data, meta }` envelope; validation failures add a field-keyed `errors` object on `422`. `409` responses that carry a `code` (for example `external_unit_id_conflict`) are listed with their fixes in the guide; the others (idempotency-key reuse, a unit owned by a pull-mode integration) are distinguishable by `message`. Full status table: [Error handling](/guides/error-handling).
+Responses use the `{ message, data, meta }` envelope; validation failures add a field-keyed `errors` object on `422`. `409` responses that carry a `code` (`external_unit_id_conflict`, `connector_switch_in_progress`) are listed with their fixes in the guide. The others (idempotency-key reuse, a unit owned by a pull-mode integration) are distinguishable by `message`. Full status table: [Error handling](/guides/error-handling).
 
 ## Testing your integration
 
