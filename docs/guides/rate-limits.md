@@ -32,6 +32,10 @@ Treat `429` as a normal, recoverable signal, not an error to surface to users:
 
 Other surfaces (unit writes and reads) are **not** separately rate-limited today, but that may change. Build your client to handle `429` everywhere regardless, and keep reads cheap with `ETag` / `If-None-Match`.
 
+::::note Partner keys
+A partner key gets a separate budget for each company named in its `KISS-Company` header, the same as if you held a per-company key for each one. See [One key for many companies](/guides/partner-keys).
+::::
+
 :::info Coming soon
 Throttling on writes and reads, plus the exact counts and windows, is a product decision in progress and will be published here (and in the [API Reference](/reference/kiss-api-reference)) once locked. Design for retries and treat `429` as the contract.
 :::
