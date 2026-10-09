@@ -13,7 +13,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Guides',
       collapsible: false,
-      items: ['guides/pms/quickstart', 'guides/white-label/quickstart'],
+      items: ['guides/pms/quickstart', 'guides/partner-keys', 'guides/white-label/quickstart'],
     },
     {
       type: 'category',

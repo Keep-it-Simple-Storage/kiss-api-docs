@@ -11,11 +11,14 @@ Every request carries `Authorization: Bearer <token>`. How you obtain that token
 | Caller | Token | Who authenticates |
 | --- | --- | --- |
 | **Partner / PMS server** | Per-company API token | Your server |
+| **Partner serving many companies** | One partner key, plus a `KISS-Company` header naming the company per request | Your server |
 | **Tenant (your app's user)** | A short-lived KISS access token your backend obtains for them | Your app's own login, then your backend |
 
 ## Partner API tokens
 
-API tokens authenticate server-to-server requests. Each token is scoped to a single company, and optionally to specific locations within that company.
+API tokens authenticate server-to-server requests. A per-company token is scoped to a single company, and optionally to specific locations within that company.
+
+If you serve many companies and do not want to hold one token per company, KISS also issues a single partner key that reaches every company that has enabled you. See [One key for many companies](/guides/partner-keys) for that flow; the rest of this page covers the per-company token.
 
 ### Create a token
 

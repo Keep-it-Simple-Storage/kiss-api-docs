@@ -16,6 +16,9 @@
       "name": "Auth"
     },
     {
+      "name": "Vendor"
+    },
+    {
       "name": "Units"
     },
     {
@@ -23,6 +26,9 @@
     },
     {
       "name": "Access"
+    },
+    {
+      "name": "Access Logs"
     },
     {
       "name": "Logs"
@@ -105,6 +111,230 @@
         },
         "summary": "Get user access",
         "description": "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh."
+      }
+    },
+    "/access-logs": {
+      "get": {
+        "operationId": "v2.access-logs.index",
+        "tags": [
+          "Access Logs"
+        ],
+        "parameters": [
+          {
+            "name": "filter[location]",
+            "in": "query",
+            "description": "Only logs at this location, addressed by its KISS `location_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[unit]",
+            "in": "query",
+            "description": "Only logs for this unit, addressed by its KISS `unit_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[key]",
+            "in": "query",
+            "description": "Exact event key, e.g. `lock.open_successful`, `lock.close_successful`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[log_type]",
+            "in": "query",
+            "description": "Restrict to one loggable type: `units`, `locks`, or `entrypoints`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[performer]",
+            "in": "query",
+            "description": "Full name substring of the person who performed the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[from]",
+            "in": "query",
+            "description": "Earliest event time (Y-m-d or ISO 8601).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[to]",
+            "in": "query",
+            "description": "Latest event time (Y-m-d or ISO 8601).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page to return. Paging details come back in `meta.pagination`.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Rows per page. Defaults to 15, capped at 100.",
+            "schema": {
+              "type": "integer",
+              "default": 15
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of access logs, newest first by effective time. An unrestricted token sees all company logs; a location-scoped token sees only logs at its assigned locations. Send the `ETag` back as `If-None-Match` to skip pages that have not changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "unit_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unit_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "location_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "location_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "performer_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "effective_at": {
+                            "type": "string"
+                          },
+                          "happened_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "unit_id",
+                          "unit_name",
+                          "location_id",
+                          "location_name",
+                          "performer_name",
+                          "reason",
+                          "effective_at",
+                          "happened_at",
+                          "created_at"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "last_page": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "current_page",
+                            "per_page",
+                            "total",
+                            "last_page"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "pagination"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent."
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "Token missing the `read:logs` scope, token has no locations assigned, or the caller is not a partner token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "List access logs",
+        "description": "Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. Needs the `read:logs` scope."
       }
     },
     "/auth/tenant-tokens": {
@@ -1524,6 +1754,28 @@
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
           },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "code"
+                  ]
+                }
+              }
+            }
+          },
           "422": {
             "description": "Every item in the batch failed. Same body as a 200; inspect `errors`.",
             "content": {
@@ -1636,6 +1888,99 @@
         },
         "summary": "Create or update units",
         "description": "Create or update up to 500 units in one idempotent call, matched on your `external_unit_id`. Unknown IDs create units, known IDs update their facts. This is the only write keyed on your own IDs, so you can change any unit fact (occupancy, lockout, balance, auction, move-in) without storing KISS ULIDs; send a single-item `units` array to update one unit by `external_unit_id`. Use it for the initial roster load and periodic reconciliation. Every applied unit comes back in `data.results` with its KISS `unit_id`, so you can record the mapping without a second call. Per-item failures come back in `data.errors` with a `200`; a batch where every item failed answers `422` with the same body."
+      },
+      "post": {
+        "operationId": "v2.units.store",
+        "tags": [
+          "Units"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreUnitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "array",
+                          "items": {}
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UnitResource"
+                    },
+                    "meta": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "409": {
+            "description": "The unit was not created. `code` is `external_unit_id_conflict` when the `external_unit_id` you sent already belongs to another unit in your account; find that unit with `GET /units` and address it by its `unit_id`, or choose a free id. `code` is `connector_switch_in_progress` while the company is switching PMS. Without a `code`, the `Idempotency-Key` was reused with a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationException"
+          }
+        }
       }
     },
     "/units/{unit}": {
@@ -1739,6 +2084,140 @@
         "description": "Fetch a single unit by its KISS `unit_id` (ULID)."
       }
     },
+    "/units/{ulid}": {
+      "patch": {
+        "operationId": "v2.units.patch",
+        "tags": [
+          "Units"
+        ],
+        "parameters": [
+          {
+            "name": "ulid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchUnitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "array",
+                          "items": {}
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UnitResource"
+                    },
+                    "meta": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "array",
+                          "items": {}
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "code"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationException"
+          }
+        },
+        "summary": "Update unit facts",
+        "description": "Sparse update of one unit's access facts (overlock, exemption, auction, unrentable, balance, occupancy). Addressed by the KISS `unit_id` (ULID), so reach for it when you already hold the ULID (from `GET /units`). To update by your own `crm_unit_id` instead, send a one-item batch to `PATCH /units`. Send only the fields that changed."
+      }
+    },
     "/units/{ulid}/tenancy": {
       "put": {
         "operationId": "v2.units.tenancy.put",
@@ -1833,7 +2312,8 @@
                       ]
                     },
                     "data": {
-                      "$ref": "#/components/schemas/UnitResource"
+                      "type": "array",
+                      "items": {}
                     },
                     "meta": {
                       "type": "string"
@@ -1850,6 +2330,59 @@
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
+          },
+          "404": {
+            "description": "No unit with this `unit_id` is reachable with this key. This endpoint never creates units; create one with `POST /units` first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request could not be applied. `code` is `connector_switch_in_progress` while the company is switching PMS. Without a `code`, either the unit is managed by a pull-mode PMS integration, or the `Idempotency-Key` was reused with a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "422": {
             "$ref": "#/components/responses/ValidationException"
@@ -1987,6 +2520,28 @@
               }
             }
           },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "code"
+                  ]
+                }
+              }
+            }
+          },
           "422": {
             "description": "",
             "content": {
@@ -2029,40 +2584,12 @@
         "description": "Addressed by the unit's KISS `unit_id` (ULID). End the primary tenancy and reset the unit to vacant (no request body). Clears occupied, the primary-user link, pms_tenant_id, move_in_date, balance_due (to 0), paid_through_date, pms_lockout, pms_auction, pms_unrentable, and pms_status_raw, and detaches secondary accessors. Returns 404 for an unknown unit."
       }
     },
-    "/units/{ulid}": {
-      "patch": {
-        "operationId": "v2.units.patch",
+    "/vendor/companies": {
+      "get": {
+        "operationId": "v2.vendor.companies.index",
         "tags": [
-          "Units"
+          "Vendor"
         ],
-        "parameters": [
-          {
-            "name": "ulid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "description": "Unique request identifier for deduplication (1–255 chars, 24 h window)",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatchUnitRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "",
@@ -2086,7 +2613,8 @@
                       ]
                     },
                     "data": {
-                      "$ref": "#/components/schemas/UnitResource"
+                      "type": "array",
+                      "items": {}
                     },
                     "meta": {
                       "type": "string"
@@ -2103,64 +2631,8 @@
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    },
-                    "code": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message",
-                    "code"
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "$ref": "#/components/responses/ValidationException"
           }
-        },
-        "summary": "Update unit facts",
-        "description": "Sparse update of one unit's access facts (overlock, exemption, auction, unrentable, balance, occupancy). Addressed by the KISS `unit_id` (ULID), so reach for it when you already hold the ULID (from `GET /units`). To update by your own `crm_unit_id` instead, send a one-item batch to `PATCH /units`. Send only the fields that changed."
+        }
       }
     }
   },
@@ -2394,13 +2866,14 @@
         "properties": {
           "external_unit_id": {
             "type": "string",
-            "description": "Your system's unit identifier. Only used to label the unit when this\ncall creates it; it never re-targets or re-labels an existing unit.",
+            "description": "Ignored. This endpoint only updates an existing unit; create units with `POST /units`.",
+            "deprecated": true,
             "maxLength": 255,
             "nullable": true
           },
           "crm_unit_id": {
             "type": "string",
-            "description": "Legacy alias of `external_unit_id`. Also create-only: it never re-targets an existing unit.",
+            "description": "Ignored. Legacy alias of `external_unit_id`.",
             "deprecated": true,
             "maxLength": 255,
             "nullable": true
@@ -2424,6 +2897,8 @@
           },
           "unit_name": {
             "type": "string",
+            "description": "Ignored. Units are named when they are created with `POST /units`.",
+            "deprecated": true,
             "maxLength": 255,
             "nullable": true
           },
@@ -2643,6 +3118,51 @@
           "external_tenant_id"
         ],
         "title": "StoreTenantTokenRequest"
+      },
+      "StoreUnitRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The unit's display name.",
+            "maxLength": 255
+          },
+          "location_id": {
+            "type": "string",
+            "description": "The location's `location_id`. Optional when your key reaches a single location.",
+            "nullable": true
+          },
+          "external_location_code": {
+            "type": "string",
+            "description": "The location's code in your system, an alternative to `location_id`.",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "pms_location_code": {
+            "type": "string",
+            "description": "Legacy alias of `external_location_code`.",
+            "deprecated": true,
+            "maxLength": 255,
+            "nullable": true
+          },
+          "external_unit_id": {
+            "type": "string",
+            "description": "Your system's unit identifier.",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "crm_unit_id": {
+            "type": "string",
+            "description": "Legacy alias of `external_unit_id`.",
+            "deprecated": true,
+            "maxLength": 255,
+            "nullable": true
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "StoreUnitRequest"
       },
       "SyncUnitsRequest": {
         "type": "object",

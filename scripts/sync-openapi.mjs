@@ -32,8 +32,10 @@ const OUT = 'openapi/kiss-api.json';
 const ALLOW = new Set([
   'v2.access',
   'v2.auth.tenant-tokens.store',
+  'v2.vendor.companies.index',
   'v2.units.index',
   'v2.units.show',
+  'v2.units.store',
   'v2.units.sync',
   'v2.units.patch',
   'v2.units.tenancy.put',
