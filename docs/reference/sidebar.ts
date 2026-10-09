@@ -20,6 +20,18 @@ const sidebar: SidebarsConfig = {
     },
     {
       type: "category",
+      label: "Vendor",
+      items: [
+        {
+          type: "doc",
+          id: "reference/v-2-vendor-companies-index",
+          label: "v2.vendor.companies.index",
+          className: "api-method get",
+        },
+      ],
+    },
+    {
+      type: "category",
       label: "Units",
       items: [
         {
@@ -36,9 +48,21 @@ const sidebar: SidebarsConfig = {
         },
         {
           type: "doc",
+          id: "reference/v-2-units-store",
+          label: "v2.units.store",
+          className: "api-method post",
+        },
+        {
+          type: "doc",
           id: "reference/v-2-units-show",
           label: "Get a unit",
           className: "api-method get",
+        },
+        {
+          type: "doc",
+          id: "reference/v-2-units-patch",
+          label: "Update unit facts",
+          className: "api-method patch",
         },
         {
           type: "doc",
@@ -51,12 +75,6 @@ const sidebar: SidebarsConfig = {
           id: "reference/v-2-units-tenancy-delete",
           label: "Remove primary user",
           className: "api-method delete",
-        },
-        {
-          type: "doc",
-          id: "reference/v-2-units-patch",
-          label: "Update unit facts",
-          className: "api-method patch",
         },
       ],
     },
@@ -92,6 +110,18 @@ const sidebar: SidebarsConfig = {
           type: "doc",
           id: "reference/v-2-access",
           label: "Get user access",
+          className: "api-method get",
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Access Logs",
+      items: [
+        {
+          type: "doc",
+          id: "reference/v-2-access-logs-index",
+          label: "List access logs",
           className: "api-method get",
         },
       ],
