@@ -25,6 +25,9 @@
       "name": "Access"
     },
     {
+      "name": "Access Logs"
+    },
+    {
       "name": "Logs"
     },
     {
@@ -105,6 +108,230 @@
         },
         "summary": "Get user access",
         "description": "Everything the signed-in user's app needs to operate offline: their units with the evaluated access state, the entry points for their zones, the NFC keys, and the facility timezone. Authenticated with the user's Bearer token. Cache it and refresh on launch / pull-to-refresh."
+      }
+    },
+    "/access-logs": {
+      "get": {
+        "operationId": "v2.access-logs.index",
+        "tags": [
+          "Access Logs"
+        ],
+        "parameters": [
+          {
+            "name": "filter[location]",
+            "in": "query",
+            "description": "Only logs at this location, addressed by its KISS `location_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[unit]",
+            "in": "query",
+            "description": "Only logs for this unit, addressed by its KISS `unit_id` (ULID).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[key]",
+            "in": "query",
+            "description": "Exact event key, e.g. `lock.open_successful`, `lock.close_successful`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[log_type]",
+            "in": "query",
+            "description": "Restrict to one loggable type: `units`, `locks`, or `entrypoints`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[performer]",
+            "in": "query",
+            "description": "Full name substring of the person who performed the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[from]",
+            "in": "query",
+            "description": "Earliest event time (Y-m-d or ISO 8601).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[to]",
+            "in": "query",
+            "description": "Latest event time (Y-m-d or ISO 8601).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page to return. Paging details come back in `meta.pagination`.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Rows per page. Defaults to 15, capped at 100.",
+            "schema": {
+              "type": "integer",
+              "default": 15
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of access logs, newest first by effective time. An unrestricted token sees all company logs; a location-scoped token sees only logs at its assigned locations. Send the `ETag` back as `If-None-Match` to skip pages that have not changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "unit_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unit_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "location_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "location_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "performer_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "effective_at": {
+                            "type": "string"
+                          },
+                          "happened_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "unit_id",
+                          "unit_name",
+                          "location_id",
+                          "location_name",
+                          "performer_name",
+                          "reason",
+                          "effective_at",
+                          "happened_at",
+                          "created_at"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "last_page": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "current_page",
+                            "per_page",
+                            "total",
+                            "last_page"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "pagination"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent."
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "Token missing the `read:logs` scope, token has no locations assigned, or the caller is not a partner token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "List access logs",
+        "description": "Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). Results are paged (15 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. Needs the `read:logs` scope."
       }
     },
     "/auth/tenant-tokens": {
@@ -330,16 +557,18 @@
     },
     "/locks/{lock}/logs": {
       "post": {
-        "operationId": "v2.locks.logs.store",
         "tags": [
           "Logs"
         ],
+        "operationId": "v2.locks.logs.store",
+        "summary": "Report lock activity",
+        "description": "Record a lock event (open or close: success, failure, or blocked) after an NFC interaction.",
         "parameters": [
           {
             "name": "lock",
             "in": "path",
             "required": true,
-            "description": "The lock ulid",
+            "description": "The lock's `id` (a ULID) from `GET /access`, at `bundles[].lock.id`. Not its `serial_number`.",
             "schema": {
               "type": "string"
             }
@@ -350,79 +579,44 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/App.Http.Requests.Api.V2.Locks.StoreLockLogRequest"
+                "$ref": "#/components/schemas/StoreLockLogRequest"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {}
-                    },
-                    "meta": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message",
-                    "data",
-                    "meta"
-                  ]
-                }
-              }
-            }
+            "description": "The tap was recorded. The response uses the standard `{ message, data, meta }` envelope."
           },
           "401": {
-            "$ref": "#/components/responses/AuthenticationException"
+            "description": "The token is missing, invalid or expired."
           },
           "403": {
-            "$ref": "#/components/responses/AuthorizationException"
+            "description": "The token may not log against this lock. A tenant may only log against locks on units they hold."
           },
           "404": {
-            "$ref": "#/components/responses/ModelNotFoundException"
+            "description": "No lock with that `id`."
           },
           "422": {
-            "$ref": "#/components/responses/ValidationException"
+            "description": "The body failed validation, or the `Idempotency-Key` header is missing. The tap was not recorded."
           }
-        },
-        "summary": "Report lock activity",
-        "description": "Record a lock event (open or close: success, failure, or blocked) after an NFC interaction."
+        }
       }
     },
     "/entry-points/{entryPoint}/logs": {
       "post": {
-        "operationId": "v2.entry-points.logs.store",
         "tags": [
           "Logs"
         ],
+        "operationId": "v2.entry-points.logs.store",
+        "summary": "Report entry-point activity",
+        "description": "Record an entry-point event (gate or door) after an NFC interaction.",
         "parameters": [
           {
             "name": "entryPoint",
             "in": "path",
             "required": true,
-            "description": "The entry point ulid",
+            "description": "The entry point's `id` (a ULID) from `GET /access`, at `entry_points[].id`.",
             "schema": {
               "type": "string"
             }
@@ -440,58 +634,21 @@
         },
         "responses": {
           "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {}
-                    },
-                    "meta": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message",
-                    "data",
-                    "meta"
-                  ]
-                }
-              }
-            }
+            "description": "The tap was recorded. The response uses the standard `{ message, data, meta }` envelope."
           },
           "401": {
-            "$ref": "#/components/responses/AuthenticationException"
+            "description": "The token is missing, invalid or expired."
           },
           "403": {
-            "$ref": "#/components/responses/AuthorizationException"
+            "description": "The token may not log against this entry point. A tenant may only log against entry points their zones reach."
           },
           "404": {
-            "$ref": "#/components/responses/ModelNotFoundException"
+            "description": "No entry point with that `id`."
           },
           "422": {
-            "$ref": "#/components/responses/ValidationException"
+            "description": "The body failed validation, or the `Idempotency-Key` header is missing. The tap was not recorded."
           }
-        },
-        "summary": "Report entry-point activity",
-        "description": "Record an entry-point event (gate or door) after an NFC interaction."
+        }
       }
     },
     "/tenants": {
@@ -2173,12 +2330,14 @@
       }
     },
     "schemas": {
-      "App.Http.Requests.Api.V2.Locks.StoreLockLogRequest": {
+      "StoreLockLogRequest": {
         "type": "object",
+        "required": [
+          "key"
+        ],
         "properties": {
           "key": {
             "type": "string",
-            "description": "Only the device open/close actions a client reports. Server-generated\nkeys (registration, bundle, access-share) are written by their own\nflows and must not be forgeable through this endpoint.",
             "enum": [
               "lock.open_successful",
               "lock.open_failure",
@@ -2198,91 +2357,99 @@
               "entry_point.close_blocked",
               "entry_point.open_unconfirmed",
               "entry_point.close_unconfirmed"
-            ]
+            ],
+            "description": "What happened on the tap, as the tenant was shown it. On this endpoint use a `lock.*` value; see [Reporting a tap](https://docs.keepitsimplestorage.com/guides/white-label/quickstart#reporting-a-tap) for which one to send."
           },
           "reason": {
             "type": "string",
-            "description": "KEEP-1277: `nullable` is REQUIRED here, not cosmetic. `reason` is\noptional for every key except the two failure keys above, but the\nglobal ConvertEmptyStringsToNull middleware rewrites an empty string\nto null, and without `nullable` a null value then fails the `string`\nrule and 422s the whole request.",
             "maxLength": 1000,
-            "nullable": true
+            "nullable": true,
+            "description": "Required when `key` is `lock.open_failure` or `lock.close_failure`, optional otherwise. On a failure, short text saying what went wrong. On an unconfirmed key, the cause token for that outcome; see [Reporting a tap](https://docs.keepitsimplestorage.com/guides/white-label/quickstart#reporting-a-tap)."
           },
           "happened_at": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "When the tap happened on the device (ISO 8601). Send it to backfill a tap recorded while offline."
           },
           "app_version": {
             "type": "string",
             "maxLength": 20,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: your app's version, e.g. `2.4.0`. Up to 20 characters."
           },
           "app_build": {
             "type": "string",
             "maxLength": 20,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: your app's build number. Up to 20 characters."
           },
           "platform": {
             "type": "string",
+            "nullable": true,
             "enum": [
               "ios",
               "android"
             ],
-            "nullable": true
+            "description": "Optional: `ios` or `android`. You can send it in the `X-Client-Platform` header instead."
           },
           "error_code": {
             "type": "string",
-            "description": "KEEP-1150: telemetry must never fail the whole request. An error\ncode the server does not recognise is coerced to null in the\ncontroller (AccessLogErrorCode::tryFrom), so validating it with\nRule::in only served to 422 the primary open/close outcome log and\ndrop it entirely. Accept any string; the model's enum cast + the\ncontroller tryFrom still guarantee only valid values or null persist.",
-            "nullable": true
+            "nullable": true,
+            "description": "Why the tap failed, as one of the server's snake_case error codes (see [Reporting a tap](https://docs.keepitsimplestorage.com/guides/white-label/quickstart#reporting-a-tap)). Any other value is accepted but stored as null."
           },
           "first_error_code": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "The error code of the first failed attempt, when the tap took more than one. Same values as `error_code`."
           },
           "duration_ms": {
             "type": "integer",
             "minimum": 0,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: how long the whole interaction took, in milliseconds, including any retries."
           },
           "attempt_count": {
             "type": "integer",
             "minimum": 0,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: how many attempts the interaction took, counting the first."
           },
           "nfc_antenna_profile": {
             "type": "string",
             "maxLength": 64,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional. Leave it out unless KISS asks you to send it."
           },
           "scanned_lock_serial": {
             "type": "string",
             "maxLength": 255,
-            "nullable": true
+            "nullable": true,
+            "description": "The lock the phone actually reached: `0x` followed by the lock SDK's `session.lockId`."
           },
           "field_lost_after_start": {
             "type": "boolean",
-            "description": "KEEP-1148: flags a real open the phone was pulled away from mid-motor.",
-            "nullable": true
+            "nullable": true,
+            "description": "`true` when the lock started the action and the phone moved away before it finished (the lock SDK's `fieldLostAfterStart` outcome). Send it with the successful key."
           },
           "package": {
             "type": "string",
-            "description": "KEEP-1154: which NFC engine + version produced the tap (kiss_core /\ntapt_nfc + its version), so performance can be sliced by NFC stack\nacross apps and the bench.",
             "maxLength": 40,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the name of the library that ran the tap, for diagnostics."
           },
           "package_version": {
             "type": "string",
             "maxLength": 40,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the version of that library."
           },
           "client_now": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the device's current time when it sends the log (ISO 8601), so KISS can spot a phone clock that is wrong."
           }
-        },
-        "required": [
-          "key"
-        ],
-        "title": "App.Http.Requests.Api.V2.Locks.StoreLockLogRequest"
+        }
       },
       "PatchTenantRequest": {
         "type": "object",
@@ -2518,10 +2685,12 @@
       },
       "StoreEntryPointLogRequest": {
         "type": "object",
+        "required": [
+          "key"
+        ],
         "properties": {
           "key": {
             "type": "string",
-            "description": "Only the device open/close actions a client reports; server-generated\nkeys are written by their own flows, not forgeable through this endpoint.",
             "enum": [
               "lock.open_successful",
               "lock.open_failure",
@@ -2541,95 +2710,99 @@
               "entry_point.close_blocked",
               "entry_point.open_unconfirmed",
               "entry_point.close_unconfirmed"
-            ]
+            ],
+            "description": "What happened on the tap, as the tenant was shown it. On this endpoint use a `entry_point.*` value; see [Reporting a tap](https://docs.keepitsimplestorage.com/guides/white-label/quickstart#reporting-a-tap) for which one to send."
           },
           "reason": {
             "type": "string",
-            "description": "Accepted for client parity with V1 (the apps may send it); the log is\nrecorded against the entry point's resolved zone, so it is not yet used.",
             "maxLength": 1000,
-            "nullable": true
-          },
-          "zone_id": {
-            "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Required when `key` is `entry_point.open_failure` or `entry_point.close_failure`, optional otherwise. On a failure, short text saying what went wrong. On an unconfirmed key, the cause token for that outcome; see [Reporting a tap](https://docs.keepitsimplestorage.com/guides/white-label/quickstart#reporting-a-tap)."
           },
           "happened_at": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "When the tap happened on the device (ISO 8601). Send it to backfill a tap recorded while offline."
           },
           "app_version": {
             "type": "string",
             "maxLength": 20,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: your app's version, e.g. `2.4.0`. Up to 20 characters."
           },
           "app_build": {
             "type": "string",
             "maxLength": 20,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: your app's build number. Up to 20 characters."
           },
           "platform": {
             "type": "string",
+            "nullable": true,
             "enum": [
               "ios",
               "android"
             ],
-            "nullable": true
+            "description": "Optional: `ios` or `android`. You can send it in the `X-Client-Platform` header instead."
           },
           "error_code": {
             "type": "string",
-            "description": "KEEP-1150: telemetry must never fail the whole request. An error\ncode the server does not recognise is coerced to null in the\ncontroller (AccessLogErrorCode::tryFrom), so validating it with\nRule::in only served to 422 the primary open/close outcome log and\ndrop it entirely. Accept any string; the model's enum cast + the\ncontroller tryFrom still guarantee only valid values or null persist.",
-            "nullable": true
+            "nullable": true,
+            "description": "Why the tap failed, as one of the server's snake_case error codes (see [Reporting a tap](https://docs.keepitsimplestorage.com/guides/white-label/quickstart#reporting-a-tap)). Any other value is accepted but stored as null."
           },
           "first_error_code": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "The error code of the first failed attempt, when the tap took more than one. Same values as `error_code`."
           },
           "duration_ms": {
             "type": "integer",
             "minimum": 0,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: how long the whole interaction took, in milliseconds, including any retries."
           },
           "attempt_count": {
             "type": "integer",
             "minimum": 0,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: how many attempts the interaction took, counting the first."
           },
           "nfc_antenna_profile": {
             "type": "string",
             "maxLength": 64,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional. Leave it out unless KISS asks you to send it."
           },
           "scanned_lock_serial": {
             "type": "string",
             "maxLength": 255,
-            "nullable": true
+            "nullable": true,
+            "description": "The lock the phone actually reached: `0x` followed by the lock SDK's `session.lockId`."
           },
           "field_lost_after_start": {
             "type": "boolean",
-            "description": "KEEP-1148: flags a real open the phone was pulled away from mid-motor.",
-            "nullable": true
+            "nullable": true,
+            "description": "`true` when the lock started the action and the phone moved away before it finished (the lock SDK's `fieldLostAfterStart` outcome). Send it with the successful key."
           },
           "package": {
             "type": "string",
-            "description": "KEEP-1154: which NFC engine + version produced the tap (kiss_core /\ntapt_nfc + its version), so performance can be sliced by NFC stack\nacross apps and the bench.",
             "maxLength": 40,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the name of the library that ran the tap, for diagnostics."
           },
           "package_version": {
             "type": "string",
             "maxLength": 40,
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the version of that library."
           },
           "client_now": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Optional: the device's current time when it sends the log (ISO 8601), so KISS can spot a phone clock that is wrong."
           }
-        },
-        "required": [
-          "key"
-        ],
-        "title": "StoreEntryPointLogRequest"
+        }
       },
       "StoreTenantTokenRequest": {
         "type": "object",
@@ -2902,44 +3075,6 @@
         }
       },
       "ModelNotFoundException": {
-        "description": "Not found",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "description": "Error overview."
-                }
-              },
-              "required": [
-                "message"
-              ]
-            }
-          }
-        }
-      },
-      "AuthorizationException": {
-        "description": "Authorization error",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "description": "Error overview."
-                }
-              },
-              "required": [
-                "message"
-              ]
-            }
-          }
-        }
-      },
-      "NotFoundHttpException": {
         "description": "Not found",
         "content": {
           "application/json": {

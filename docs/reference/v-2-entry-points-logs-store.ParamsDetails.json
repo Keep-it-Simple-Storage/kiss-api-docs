@@ -1,1 +1,1 @@
-{"parameters":[{"name":"entryPoint","in":"path","required":true,"description":"The entry point ulid","schema":{"type":"string"}}]}
+{"parameters":[{"name":"entryPoint","in":"path","required":true,"description":"The entry point's `id` (a ULID) from `GET /access`, at `entry_points[].id`.","schema":{"type":"string"}}]}
