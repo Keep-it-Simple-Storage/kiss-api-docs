@@ -113,7 +113,7 @@ Send individual changes (an overlock, a payment, a status flag) in real time as 
 
 ## Example: bulk sync
 
-The bulk upsert is the workhorse. Send each unit's known facts; KISS reconciles.
+The bulk upsert is the workhorse. Send each unit's known facts; KISS reconciles. A fact you leave out of an item stays unchanged.
 
 The example below omits the location, so it assumes a token that reaches exactly one active location. If yours reaches more than one, add `location_id` or `external_location_code` to each item, or the items come back rejected in `data.errors`.
 
