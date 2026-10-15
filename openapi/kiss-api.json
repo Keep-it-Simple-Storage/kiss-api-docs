@@ -834,6 +834,42 @@
                           "type": {
                             "type": "string"
                           },
+                          "memberships": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "external_tenant_id": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "location_id": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "is_secondary": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "external_tenant_id",
+                                "location_id",
+                                "type",
+                                "is_secondary"
+                              ]
+                            }
+                          },
                           "created_at": {
                             "type": "string"
                           },
@@ -850,6 +886,7 @@
                           "location_id",
                           "external_location_code",
                           "type",
+                          "memberships",
                           "created_at",
                           "updated_at"
                         ]
@@ -897,7 +934,14 @@
             }
           },
           "304": {
-            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent. Skip it and move on to the next page."
+            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent. Skip it and move on to the next page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
@@ -985,6 +1029,42 @@
                         "type": {
                           "type": "string"
                         },
+                        "memberships": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "external_tenant_id": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "location_id": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "is_secondary": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "external_tenant_id",
+                              "location_id",
+                              "type",
+                              "is_secondary"
+                            ]
+                          }
+                        },
                         "created_at": {
                           "type": "string"
                         },
@@ -1001,6 +1081,7 @@
                         "location_id",
                         "external_location_code",
                         "type",
+                        "memberships",
                         "created_at",
                         "updated_at"
                       ]
@@ -1025,7 +1106,14 @@
             }
           },
           "304": {
-            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent."
+            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
@@ -3369,6 +3457,59 @@
           "last_synced_at"
         ],
         "title": "UnitResource"
+      },
+      "TenantResource": {
+        "type": "object",
+        "properties": {
+          "tenant_id": {
+            "type": "string"
+          },
+          "external_tenant_id": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "phone_number": {
+            "type": "string"
+          },
+          "location_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "external_location_code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "memberships": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant_id",
+          "external_tenant_id",
+          "first_name",
+          "last_name",
+          "phone_number",
+          "location_id",
+          "external_location_code",
+          "type",
+          "created_at",
+          "updated_at",
+          "memberships"
+        ],
+        "title": "TenantResource"
       }
     },
     "responses": {
