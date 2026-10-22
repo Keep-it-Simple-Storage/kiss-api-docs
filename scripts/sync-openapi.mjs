@@ -134,7 +134,8 @@ const META = {
   },
   'v2.health': {
     summary: 'Health check',
-    description: 'Liveness probe. Returns `200` when the API is up.',
+    description:
+      'Returns `200` when the API and the services it depends on are answering. Any other status means the API is not fully available; a `503` carries `data.checks`, naming each service as `ok` or `fail`.',
   },
 };
 

@@ -301,7 +301,7 @@ Responses use the `{ message, data, meta }` envelope; validation failures add a 
 
 Before you wire up production data:
 
-- **Check connectivity** with the public health endpoint: `GET /health` returns `200` when the API is up.
+- **Check connectivity** with the public health endpoint: `GET /health` returns `200` when the API and the services behind it are up, and `503` when one of them is not.
 - **Isolate problems** by starting from a minimal payload (one unit, required fields only) and adding fields back until a `422` appears; validation errors name the exact field path. See [Error handling](/guides/error-handling).
 - **Work against a non-production roster.** Ask your KISS contact to set you up with a test company and a scoped token so you can exercise move-in, overlock, and move-out without touching live tenants. A self-serve partner sandbox is on the way; until then KISS provisions a test company for you.
 - **Run the end-to-end check** in the checklist below: overlock a unit and watch access revoke in the app, then release it and watch it restore.

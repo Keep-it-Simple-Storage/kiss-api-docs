@@ -552,10 +552,89 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "array",
+                          "items": {}
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "unavailable"
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "enum": [
+                            "v2"
+                          ]
+                        },
+                        "checks": {
+                          "type": "object",
+                          "properties": {
+                            "database": {
+                              "type": "string",
+                              "enum": [
+                                "fail",
+                                "ok"
+                              ]
+                            },
+                            "redis": {
+                              "type": "string",
+                              "enum": [
+                                "fail",
+                                "ok"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "database",
+                            "redis"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "version",
+                        "checks"
+                      ]
+                    },
+                    "meta": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "Health check",
-        "description": "Liveness probe. Returns `200` when the API is up."
+        "description": "Returns `200` when the API and the services it depends on are answering. Any other status means the API is not fully available; a `503` carries `data.checks`, naming each service as `ok` or `fail`."
       }
     },
     "/locks/{lock}/logs": {
