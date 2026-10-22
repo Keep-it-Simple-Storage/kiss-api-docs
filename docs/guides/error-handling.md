@@ -348,7 +348,7 @@ If something isn't working, start here:
 curl https://api-app.keepitsimplestorage.com/api/v2/health
 ```
 
-If this returns a `200`, the API and the services behind it are up and the issue is in your request. A `503` means the API is reachable but a service it depends on is not; `data.checks` names it, and there is nothing to fix on your side. If it doesn't respond at all, the API is down.
+If this returns a `200`, the API and the services behind it are up and the issue is in your request. A `503` means the API is reachable but a service it depends on is not; `data.checks` names it, and there is nothing to fix on your side. If it doesn't respond at all, either the API is down or your client can't reach it (DNS, TLS, firewall or proxy); check from another network to tell which.
 
 ### 2. Check your token
 
