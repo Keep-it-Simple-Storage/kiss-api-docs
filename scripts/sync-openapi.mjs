@@ -119,7 +119,10 @@ const META = {
       'Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, ' +
       'falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. ' +
       'Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). ' +
-      'Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. ' +
+      'Each log also says who performed it. `performer_type` is `tenant`, `employee` (your staff), `partner_employee` (staff of a partner organization you have given access to your locations), `consumer`, or `kiss_staff` (KISS support or installation staff). ' +
+      '`performer_id` is that person\'s KISS ULID; for a tenant it is the same value `GET /tenants` returns as `tenant_id`, and it is null for `kiss_staff`. ' +
+      '`external_tenant_id` is the tenant\'s id in your system at the location where the event happened, the same value `GET /tenants` returns. It is null for anyone who is not a tenant, and for a tenant with no id from your system on file (common for guests and secondary tenants, who are reported as themselves, never as the lease holder). ' +
+      'Results are paged (15 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. ' +
       'Needs the `read:logs` scope.',
   },
   'v2.locks.logs.store': {
