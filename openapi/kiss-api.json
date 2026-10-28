@@ -197,7 +197,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of access logs, newest first by effective time. An unrestricted token sees all company logs; a location-scoped token sees only logs at its assigned locations. Send the `ETag` back as `If-None-Match` to skip pages that have not changed.",
+            "description": "A page of access logs, newest first by effective time. An unrestricted token sees all company logs; a location-scoped token sees only logs at its assigned locations. Send the `ETag` back as `If-None-Match` to skip pages that have not changed. Each entry says who performed it: `performer_type` is one of `tenant`, `employee`, `partner_employee`, `consumer`, or `kiss_staff` (KISS support or installation staff), and null in the rare case KISS cannot classify the performer. `performer_id` is that person's KISS ULID; for an active tenant it is the same value `GET /v2/tenants` returns as `tenant_id`, and a tenant who was merged into another account is reported as the account they were merged into. It is null for `kiss_staff` and for an account that no longer exists. `external_tenant_id` is the tenant's ID in your PMS at the location where the event happened; when the tenant has no profile there, it is their ID only if every location you can see holds the same one. It is null for anyone who is not a tenant and when no PMS ID is on file.",
             "content": {
               "application/json": {
                 "schema": {
@@ -250,6 +250,18 @@
                           },
                           "created_at": {
                             "type": "string"
+                          },
+                          "performer_type": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "performer_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "external_tenant_id": {
+                            "type": "string",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -263,7 +275,10 @@
                           "reason",
                           "effective_at",
                           "happened_at",
-                          "created_at"
+                          "created_at",
+                          "performer_type",
+                          "performer_id",
+                          "external_tenant_id"
                         ]
                       }
                     },
@@ -334,7 +349,7 @@
           }
         },
         "summary": "List access logs",
-        "description": "Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). Results are paged (25 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. Needs the `read:logs` scope."
+        "description": "Paginated feed of access events (lock opens/closes, gate activations, unit-access changes) across your locations. Each log carries three timestamps: `effective_at` is the one to sort and display — it equals `happened_at` when the device reported one, falling back to `created_at` (server receipt) for older hardware or offline-uploaded events where `happened_at` is null. Filter by `location`, `unit`, `key` (e.g. `lock.open_successful`), `log_type` (`units` / `entrypoints` / `locks`), and date range (`from` / `to` on `effective_at`). Each log also says who performed it. `performer_type` is `tenant`, `employee` (your staff), `partner_employee` (staff of a partner organization you have given access to your locations), `consumer`, or `kiss_staff` (KISS support or installation staff). `performer_id` is that person's KISS ULID; for an active tenant it is the same value `GET /tenants` returns as `tenant_id`, and a tenant merged into another account is reported as that account. It is null for `kiss_staff` and for an account that no longer exists. `external_tenant_id` is the tenant's id in your system at the location where the event happened. If the tenant holds different ids at different locations, it can differ from the single id `GET /tenants` shows. It is null for anyone who is not a tenant, and for a tenant with no id from your system on file (common for guests and secondary tenants, who are reported as themselves, never as the lease holder). Results are paged (15 per page, `per_page` up to 100) with details in `meta.pagination`. Supports conditional requests via `ETag` / `If-None-Match` with a 60-second cache window. Needs the `read:logs` scope."
       }
     },
     "/auth/tenant-tokens": {
@@ -1013,14 +1028,7 @@
             }
           },
           "304": {
-            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent. Skip it and move on to the next page.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Your `If-None-Match` matched: this page has not changed since that `ETag`, and no body is sent. Skip it and move on to the next page."
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
@@ -1185,14 +1193,7 @@
             }
           },
           "304": {
-            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "description": "Your `If-None-Match` matched: this tenant has not changed since that `ETag`, and no body is sent."
           },
           "401": {
             "$ref": "#/components/responses/AuthenticationException"
@@ -2531,7 +2532,7 @@
             }
           },
           "409": {
-            "description": "The request could not be applied. `code` is `connector_switch_in_progress` while the company is switching PMS. Without a `code`, either the unit is managed by a pull-mode PMS integration, or the `Idempotency-Key` was reused with a different request.",
+            "description": "The request could not be applied. `code` is `connector_switch_in_progress` while the company is switching PMS, or `tenant_id_conflict` when your tenant id already belongs to a different tenant at this location than the `tenant_id` you sent. Without a `code`, either the unit is managed by a pull-mode PMS integration, or the `Idempotency-Key` was reused with a different request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3074,6 +3075,11 @@
             "format": "date-time",
             "nullable": true
           },
+          "tenant_id": {
+            "type": "string",
+            "description": "The KISS `tenant_id` of a tenant who is already a member at this unit's location. When sent, it decides who moves in, and the `tenant` block is not used. To move someone in at a location where they are not yet a member, send the `tenant` block instead.",
+            "nullable": true
+          },
           "external_tenant_id": {
             "type": "string",
             "description": "The moving-in tenant's identifier in your system.",
@@ -3536,59 +3542,6 @@
           "last_synced_at"
         ],
         "title": "UnitResource"
-      },
-      "TenantResource": {
-        "type": "object",
-        "properties": {
-          "tenant_id": {
-            "type": "string"
-          },
-          "external_tenant_id": {
-            "type": "string"
-          },
-          "first_name": {
-            "type": "string"
-          },
-          "last_name": {
-            "type": "string"
-          },
-          "phone_number": {
-            "type": "string"
-          },
-          "location_id": {
-            "type": "string",
-            "nullable": true
-          },
-          "external_location_code": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "memberships": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "tenant_id",
-          "external_tenant_id",
-          "first_name",
-          "last_name",
-          "phone_number",
-          "location_id",
-          "external_location_code",
-          "type",
-          "created_at",
-          "updated_at",
-          "memberships"
-        ],
-        "title": "TenantResource"
       }
     },
     "responses": {
