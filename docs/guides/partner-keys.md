@@ -61,14 +61,78 @@ curl https://api-app.keepitsimplestorage.com/api/v2/vendor/companies \
       "company_id": "01JATXQ1KZ7P4RN82VC9EWY30M",
       "name": "Lakeside Storage",
       "enabled_at": "2026-10-05T14:03:11+00:00",
-      "locations": null
+      "location_scoped": false,
+      "locations": [
+        {
+          "location_id": "01JATXQ7M4T2B9VK3RD6NQ8XPE",
+          "name": "Lakeside Downtown",
+          "external_location_code": "LS-01",
+          "address": {
+            "street_address_1": "1420 Harbor Ave",
+            "street_address_2": null,
+            "city": "Tacoma",
+            "state": "WA",
+            "zip_code": "98402",
+            "full_address": "1420 Harbor Ave, Tacoma, WA 98402"
+          }
+        },
+        {
+          "location_id": "01JATXQ9R6C5N3WZ8YK2TV7BHM",
+          "name": "Lakeside South Hill",
+          "external_location_code": "LS-02",
+          "address": {
+            "street_address_1": "8810 Canyon Rd E",
+            "street_address_2": "Suite 200",
+            "city": "Puyallup",
+            "state": "WA",
+            "zip_code": "98375",
+            "full_address": "8810 Canyon Rd E Suite 200, Puyallup, WA 98375"
+          }
+        }
+      ],
+      "facility_phone_number": {
+        "country_code": "+1",
+        "phone_number": "2535550147",
+        "full_phone_number": "+12535550147"
+      },
+      "lock_support_phone_number": {
+        "country_code": "+1",
+        "phone_number": "8005550123",
+        "full_phone_number": "+18005550123"
+      },
+      "administrators": [
+        { "name": "Dana Whitfield", "email": "dana@lakesidestorage.com" }
+      ]
     },
     {
       "company_id": "01JATXQ8H6D3KXW0B7T5MN2VRF",
       "name": "Northbend Self Storage",
       "enabled_at": "2026-09-28T09:12:44+00:00",
+      "location_scoped": true,
       "locations": [
-        { "location_id": "01JATXR2P9F7Q3VZC8H1WM5KBN", "name": "Northbend Main St", "external_location_code": "NB-01" }
+        {
+          "location_id": "01JATXR2P9F7Q3VZC8H1WM5KBN",
+          "name": "Northbend Main St",
+          "external_location_code": "NB-01",
+          "address": {
+            "street_address_1": "1180 Northbend Way",
+            "street_address_2": null,
+            "city": "Bellingham",
+            "state": "WA",
+            "zip_code": "98225",
+            "full_address": "1180 Northbend Way, Bellingham, WA 98225"
+          }
+        }
+      ],
+      "facility_phone_number": {
+        "country_code": "+1",
+        "phone_number": "3605550182",
+        "full_phone_number": "+13605550182"
+      },
+      "lock_support_phone_number": null,
+      "administrators": [
+        { "name": "Marcus Reyes", "email": "marcus@northbendselfstorage.com" },
+        { "name": "Sofia Ellison", "email": "sofia@northbendselfstorage.com" }
       ]
     }
   ],
@@ -76,7 +140,7 @@ curl https://api-app.keepitsimplestorage.com/api/v2/vendor/companies \
 }
 ```
 
-`locations` is `null` when the company allowed all of its locations, as with Lakeside Storage above. It is an array of `{ "location_id", "name", "external_location_code" }` when the company picked specific ones, as with Northbend Self Storage. Poll this endpoint on a schedule, or whenever a call for a company you expected starts answering `403`, rather than assuming the roster never changes.
+`location_scoped` is `false` when the company allowed all of its locations, as with Lakeside Storage above, and `true` when it picked specific ones, as with Northbend Self Storage. `locations` always lists what you can reach: every location for a whole-company grant, only the chosen ones otherwise, sorted by name. Each location has its `address`, which is `null` if the company hasn't entered one. `facility_phone_number` and `lock_support_phone_number` are the company's phone numbers and can be `null`. `administrators` lists the name and email of each admin at the company, so you can match the account to one on your side. Poll this endpoint on a schedule, or whenever a call for a company you expected starts answering `403`, rather than assuming the roster never changes.
 
 ## Calling the API for a company
 
