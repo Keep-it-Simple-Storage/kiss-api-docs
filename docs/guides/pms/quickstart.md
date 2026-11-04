@@ -87,7 +87,7 @@ Every event in your system maps to one call. You can mix two cadences: bulk-sync
 | --- | --- | --- |
 | Look up units you did not just write | <Method m="get" /> [`/units`](/reference/v-2-units-index) | Lists your units with the `external_unit_id` ↔ `unit_id` mapping. Returns a page at a time; narrow it with `filter[external_location_code]` to one store. Supports `ETag` / `If-None-Match`. |
 | Look up tenants | <Method m="get" /> [`/tenants`](/reference/v-2-tenants-index) | Lists the tenants at your locations with the `external_tenant_id` ↔ `tenant_id` mapping, plus name, `phone_number`, and location. Paged and filterable; supports `ETag` / `If-None-Match`. Needs the `tenants:read` scope. |
-| Tenant details changed | <Method m="patch" /> [`/tenants/{tenant_id}`](/reference/v-2-tenants-patch) | Update `first_name`, `last_name`, or `phone` on a tenant carrying your id, re-key its `external_tenant_id`, or claim one that has none by sending `external_tenant_id` with a matching `phone`. Returns `meta.warnings` when the phone number is shared with another account. Needs the `tenants:write` scope. |
+| Tenant details changed | <Method m="patch" /> [`/tenants/{tenant_id}`](/reference/v-2-tenants-patch) | Required whenever a tenant's name or phone changes: send the new value as soon as it changes, not in a nightly or batch catch-up. Updates `first_name`, `last_name`, or `phone` on a tenant carrying your id, re-key its `external_tenant_id`, or claim one that has none by sending `external_tenant_id` with a matching `phone`. Returns `meta.warnings` when the phone number is shared with another account. Needs the `tenants:write` scope. |
 | Bootstrap, or periodic reconcile | <Method m="patch" /> [`/units`](/reference/v-2-units-sync) | Create or update up to 500 units, matched on `external_unit_id`. Use it to load your roster and catch drift, then address units per-unit by `unit_id` for real-time changes. Applied units return in `data.results`, per-item errors in `data.errors`. A batch with at least one success answers `200`; a batch where every item failed answers `422` with the same body. |
 | New rental | <Method m="put" /> [`/units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-put) | Assign the primary user. Sets occupancy and the **move-in date**, and (with a `tenant` block) lets them claim the unit in the app. Replaces an existing primary user. |
 | Delinquency, payment, auction, status | <Method m="patch" /> [`/units/{unit_id}`](/reference/v-2-units-patch) | Set the access flags (`lockout`, `auction`, `unrentable`, `balance_due`, and so on). Send only what changed. |
@@ -198,6 +198,14 @@ If a `phone_number` in this list matches someone in your own records, claim the 
 
 ## Updating a tenant
 
+:::caution Push name and phone changes as soon as they happen
+When a tenant's `first_name`, `last_name` or `phone` changes in your system, send it to KISS with `PATCH /tenants/{tenant_id}` as soon as it changes. A nightly sync or a batch catch-up is not enough: the tenant may try to sign in minutes later.
+
+`phone` is the tenant's sign-in credential for the KISS app. A number changed on your side but not in KISS means the tenant cannot sign in with the new one. The name is what the facility's managers see on the unit, so a stale name shows the wrong person there.
+
+Do not hold a change back over a warning or a conflict. A phone number another account already uses still lands, with a `phone_number_shared` entry in `meta.warnings`. If the tenant has records at more than one of your locations and your token reaches only one of them, a name change answers `409 tenant_spans_locations`; send `phone` on its own then, in a request of its own, so the number still updates. A token that reaches more than one of the tenant's records answers `409 tenant_profile_ambiguous` for every write, so scope it to one location first. All of these cases are explained below.
+:::
+
 `PATCH /tenants/{tenant_id}` updates a tenant's name or phone number, or re-keys the id you gave them. Send at least one of `first_name`, `last_name`, `phone`, or `external_tenant_id`. It does not onboard a tenant or move one between units, which the tenancy endpoints above do.
 
 ```bash
@@ -205,7 +213,7 @@ curl -X PATCH https://api-app.keepitsimplestorage.com/api/v2/tenants/01J8ZQK3M7V
   -H "Authorization: Bearer $KISS_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
-  -d '{"phone": "+15125550142"}'
+  -d '{"first_name": "Dana", "last_name": "Whitfield", "phone": "+15125550142"}'
 ```
 
 ```json
@@ -308,11 +316,12 @@ Before you wire up production data:
 
 ## Integration checklist
 
-1. Create your token (Company Settings → API) with `pms:read` + `pms:write`.
+1. Create your token (Company Settings → API) with `pms:read`, `pms:write`, `tenants:write` and `tenants:read`.
 2. `GET /units` to see what is registered; load your roster with `PATCH /units` and store each `unit_id`.
-3. Wire your events to the calls in the table above.
-4. Retry on timeout / 5xx with the *same* `Idempotency-Key`, backing off between attempts; alert on 4xx.
-5. Run a live test with KISS: overlock a unit, watch access revoke in the app, release it, watch it restore.
+3. Push tenant name and phone changes with `PATCH /tenants/{tenant_id}` as soon as they change, not in a nightly or batch catch-up. `GET /tenants` gives you the `tenant_id` when you do not have it.
+4. Wire your events to the calls in the table above.
+5. Retry on timeout / 5xx with the *same* `Idempotency-Key`, backing off between attempts; alert on 4xx.
+6. Run a live test with KISS: overlock a unit, watch access revoke in the app, release it, watch it restore.
 
 ## Staying in sync: events and webhooks
 
