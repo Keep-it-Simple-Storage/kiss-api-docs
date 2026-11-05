@@ -75,7 +75,7 @@ A response can flag a concern without failing. [`PATCH /tenants/{tenant_id}`](/r
 }
 ```
 
-**Fix:** every sync item needs exactly one identifier: your own `external_unit_id`, or the KISS `unit_id` for an update. Everything else (`occupied`, `move_in_date`, `external_tenant_id`, `balance_due`, the access flags) is optional, so send only what you know. To mark a unit occupied, set `occupied: true` and include the tenant's `external_tenant_id`. Note that `external_tenant_id` is a **flat** field on the unit, not a nested `tenant` object:
+**Fix:** every sync item needs exactly one identifier: your own `external_unit_id`, or the KISS `unit_id` for an update. Other fields are not required by validation, but most of them power a feature; see [What to send](/guides/unit-fields). To give a tenant access, assign them with `PUT /units/{unit_id}/tenancy`; `occupied` and `external_tenant_id` on a sync alone do not. Note that `external_tenant_id` is a **flat** field on the unit, not a nested `tenant` object:
 ```json
 {
   "external_unit_id": "PMS-U-1001",
