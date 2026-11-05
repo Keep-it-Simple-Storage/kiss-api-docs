@@ -38,7 +38,7 @@ These are the fields you control. Most of them gate access or feed a feature; [W
 | Field | Gates access? | Meaning |
 | --- | --- | --- |
 | `lockout` | Yes | The overlock switch. `true` revokes the tenant's lock access; `false` restores it. |
-| `lock_exempt` | Yes | Never deny this tenant for billing or overlock reasons: skips the balance checks and `lockout`. Auction, out-of-service, and a future `move_in_date` still apply. |
+| `lock_exempt` | Yes | Never deny this tenant for billing or overlock reasons: skips the balance checks and `lockout`. The `auction` flag, out-of-service, and a future `move_in_date` still apply. |
 | `auction` | Yes | Unit is in auction status; tenant access is denied. |
 | `unrentable` | Yes | Unit is out of service; no tenant access. |
 | `move_in_date` | Yes | A future date delays access until that date. Compared as a calendar date in the facility's timezone, so access starts at the beginning of the move-in day. |

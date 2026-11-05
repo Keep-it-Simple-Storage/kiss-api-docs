@@ -7,7 +7,7 @@ sidebar_custom_props:
 
 # What to send for each unit
 
-KISS decides who can open a unit from the facts you send about it. The API accepts a write that carries only a few fields, and it does not reject one that leaves the rest out. It should not be read as "the rest are optional": each field below powers a feature, and a field you never send switches that feature off for every customer you serve, without an error on either side.
+KISS decides who can open a unit from the facts you send about it. The API accepts a write that carries only a few fields, and it does not reject one that leaves the rest out. Do not read that as "the rest are optional": each field below powers a feature, and a field you never send switches that feature off for every customer you serve, without an error on either side.
 
 Send everything under **Required**. Send everything under **Recommended** that your system has.
 
@@ -57,8 +57,8 @@ Your KISS contact sets the threshold, the grace period, and whether your `lockou
 
 - A field you leave out of a sync item or a `PATCH /units/{unit_id}` keeps its stored value. Leaving a field out never clears it.
 - `PUT /units/{unit_id}/tenancy` does not take `balance_due` or `paid_through_date`. Follow every move-in with a `PATCH /units/{unit_id}` that sets both.
-- A tenancy write sets `lock_exempt` to false unless you send it, and clears `auction` and `unrentable`. Send `lock_exempt` with the move-in if it applies.
+- A tenancy write sets `lock_exempt` to false unless you send it, and clears `auction` and `unrentable`. It keeps `lockout` only when the same tenant already occupies the unit; a move-in for anyone else clears it. Send `lock_exempt` with the move-in if it applies.
 - Send payments and status changes as they happen with `PATCH /units/{unit_id}`. To record a paid-off balance, send `balance_due: 0` there.
 - In every `PATCH /units` sync item, send the unit's full current facts, including `balance_due` and `paid_through_date`, even when only one of them changed. `PATCH /units/{unit_id}` takes only what changed.
-- Re-send every occupied unit with [`PATCH /units`](/reference/v-2-units-sync) at least once a day, early in the facility's day, with a new `Idempotency-Key` for each day's send (a request repeating a key used in the last 24 hours is answered from the earlier response and not applied again; reuse a key only to retry the same request after a timeout or error). KISS applies move-in days, grace periods and auction countdowns when it receives a write for the unit, so this re-send is when they take effect: a tenant whose move-in day starts at midnight can open the unit from your morning send, not from midnight. Batches carry up to 500 units.
+- Re-send every occupied unit with [`PATCH /units`](/reference/v-2-units-sync) at least once a day, early in the facility's day, with a new `Idempotency-Key` for each day's send (a request repeating a key used in the last 24 hours with the same body is answered from the earlier response and not applied again, and one with a different body is rejected with `409`; reuse a key only to retry the same request after a timeout or error). KISS applies move-in days, grace periods and auction countdowns when it receives a write for the unit, so this re-send is when they take effect: a tenant whose move-in day starts at midnight can open the unit from your morning send, not from midnight. Batches carry up to 500 units.
 - On move-out, call [`DELETE /units/{unit_id}/tenancy`](/reference/v-2-units-tenancy-delete). It clears the tenant, move-in date, balance, paid-through date, and the lockout, auction and out-of-service flags, so the next renter starts clean. `lock_exempt` is not cleared; the next tenancy write resets it unless you send it.
