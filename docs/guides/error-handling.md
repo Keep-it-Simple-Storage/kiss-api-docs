@@ -55,7 +55,7 @@ A response can flag a concern without failing. [`PATCH /tenants/{tenant_id}`](/r
 | `403` | Forbidden | Token is valid but lacks permission for this resource |
 | `404` | Not Found | The resource doesn't exist (e.g., wrong lock ID or entry point ID) |
 | `422` | Unprocessable Entity | Request is well-formed but fails validation (missing required fields, invalid values) |
-| `409` | Conflict | Source-type collision (a push write against a pull-owned unit), an `external_unit_id` another unit already holds, a unit write during a PMS switch, a rejected tenant update (see below), or `Idempotency-Key` reused with a different payload. |
+| `409` | Conflict | Source-type collision (a push write against a pull-owned unit), an `external_unit_id` another unit already holds, a unit write during a PMS switch, a tenant id another account already holds while the phone number you sent resolves elsewhere (see below), a rejected tenant update (see below), or `Idempotency-Key` reused with a different payload. |
 | `429` | Too Many Requests | Rate limit exceeded. Wait and retry. |
 | `500` | Server Error | Something went wrong on our end. If this persists, contact support. |
 
@@ -239,6 +239,22 @@ In a bulk `PATCH /units`, the same `code` appears on the item's entry in `data.e
 While KISS moves a company from one property management system to another, it refuses unit writes for that company so nothing changes mid-move. This applies to bulk `PATCH /units` (the whole request is refused), `PATCH /units/{unit_id}`, and `PUT` or `DELETE /units/{unit_id}/tenancy`.
 
 **Fix:** retry later. Reads keep working during the switch. If writes stay blocked longer than you expect, contact KISS support.
+
+---
+
+### Pushing a tenant id another account holds
+
+**Error (HTTP 409):**
+```json
+{
+  "message": "Your tenant id tenant_4821 at location 01HQ6Z3N9K7V2B4M8C5X1D0RTA already belongs to a different KISS account than the phone number you sent, so nothing was changed. Contact KISS support to reconcile the two accounts.",
+  "code": "tenant_phone_conflict"
+}
+```
+
+`PUT /units/{unit_id}/tenancy` resolves the person from the phone number you send. When the tenant id you push is already held at that location by a different KISS account than the phone number resolves to, KISS refuses the write instead of joining the two into one account. Nothing changes: the unit, the tenancy on it, and both accounts stay as they were.
+
+**Fix:** contact KISS support to reconcile the two accounts. Retrying the same push unchanged gets the same refusal, so don't — wait for support to reconcile the accounts, then re-send the push.
 
 ---
 
