@@ -62,7 +62,7 @@ const META = {
   'v2.auth.tenant-tokens.store': {
     summary: 'Sign a tenant in',
     description:
-      "Exchange your company API token plus the tenant's ID in your own system (`external_tenant_id`, the same value `GET /tenants` returns) for a short-lived access token scoped to that tenant. Your app sends it as `Authorization: Bearer <token>` on `GET /access` and hands it to the lock SDK, so your users never see a KISS login screen on top of your own. The token lasts 15 minutes; hold it for the session and mint a fresh one when it expires. Needs the `tenants:auth` scope.",
+      "Exchange your company API token plus the tenant's ID in your own system (`external_tenant_id`, the same value `GET /tenants` returns) for a short-lived access token scoped to that tenant. Your app sends it as `Authorization: Bearer <token>` on `GET /access` and hands it to the lock SDK, so your users never see a KISS login screen on top of your own. The token lasts 15 minutes, and minting again replaces the tenant's previous token, so a tenant holds one at a time. KISS can end it early when the tenant's access ends. Needs the `tenants:auth` scope.",
   },
   'v2.units.index': {
     summary: 'List units',
