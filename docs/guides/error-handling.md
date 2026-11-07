@@ -368,7 +368,7 @@ If this returns a `200`, the API and the services behind it are up and the issue
 
 ### 2. Check your token
 
-A `401` on every request usually means your token is wrong or expired. For PMS integrators, verify the API token in the KISS dashboard under Company > API. Tenant tokens expire 15 minutes after they are minted, so a `401` there usually just means it is time to mint a fresh one with `POST /auth/tenant-tokens`.
+A `401` on every request usually means your token is wrong or expired. For PMS integrators, verify the API token in the KISS dashboard under Company > API. Tenant tokens expire 15 minutes after they are minted, so a `401` there usually just means it is time to mint a fresh one with `POST /auth/tenant-tokens`. It can also mean a newer mint replaced it, or KISS ended the tenant's session (move-out, archive, or support).
 
 ### 3. Read the error message
 
