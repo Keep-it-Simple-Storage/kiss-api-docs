@@ -53,18 +53,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "type": "array",
@@ -370,7 +360,7 @@
         },
         "responses": {
           "200": {
-            "description": "A tenant-scoped access token, valid for 15 minutes, plus the tenant it belongs to. Send it as `Authorization: Bearer <token>` on `GET /access` and hand it to the lock SDK.",
+            "description": "A tenant-scoped access token, valid for 15 minutes, plus the tenant it belongs to. Minting replaces the tenant's previous token, so a tenant holds one at a time. Send it as `Authorization: Bearer <token>` on `GET /access` and hand it to the lock SDK.",
             "content": {
               "application/json": {
                 "schema": {
@@ -521,18 +511,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "type": "object",
@@ -576,18 +556,7 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string"
                     },
                     "data": {
                       "type": "object",
@@ -688,18 +657,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "type": "array",
@@ -771,18 +730,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "type": "array",
@@ -1410,13 +1359,6 @@
                     "message": {
                       "anyOf": [
                         {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
                           "type": "string"
                         },
                         {
@@ -1545,18 +1487,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "type": "string"
@@ -1607,18 +1539,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "type": "string"
@@ -1650,18 +1572,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "type": "array",
@@ -1711,18 +1623,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "type": "array",
@@ -2092,18 +1994,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "$ref": "#/components/schemas/UnitResource"
@@ -2179,18 +2071,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "type": "array",
@@ -2210,18 +2092,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "$ref": "#/components/schemas/UnitResource"
@@ -2295,18 +2167,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "$ref": "#/components/schemas/UnitResource"
@@ -2335,18 +2197,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -2429,18 +2281,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "$ref": "#/components/schemas/UnitResource"
@@ -2466,18 +2308,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "data": {
                       "type": "array",
@@ -2594,18 +2426,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "$ref": "#/components/schemas/UnitResource"
@@ -2624,18 +2446,8 @@
                       "type": "object",
                       "properties": {
                         "message": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "array",
-                              "items": {}
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
+                          "type": "string",
+                          "nullable": true
                         },
                         "data": {
                           "type": "array",
@@ -2667,18 +2479,8 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -2718,18 +2520,7 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "array",
-                          "items": {}
-                        }
-                      ]
+                      "type": "string"
                     },
                     "data": {
                       "type": "string"
@@ -3656,6 +3447,12 @@
           "occupied": {
             "type": "boolean"
           },
+          "lockout": {
+            "type": "boolean"
+          },
+          "pms_lockout": {
+            "type": "boolean"
+          },
           "move_in_date": {
             "type": "string"
           },
@@ -3689,6 +3486,8 @@
           "unit_name",
           "location_id",
           "occupied",
+          "lockout",
+          "pms_lockout",
           "move_in_date",
           "external_tenant_id",
           "pms_tenant_id",
