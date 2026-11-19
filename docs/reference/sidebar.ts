@@ -25,7 +25,7 @@ const sidebar: SidebarsConfig = {
         {
           type: "doc",
           id: "reference/v-2-vendor-companies-index",
-          label: "v2.vendor.companies.index",
+          label: "List companies that enabled you",
           className: "api-method get",
         },
       ],
@@ -49,7 +49,7 @@ const sidebar: SidebarsConfig = {
         {
           type: "doc",
           id: "reference/v-2-units-store",
-          label: "v2.units.store",
+          label: "Create a unit",
           className: "api-method post",
         },
         {

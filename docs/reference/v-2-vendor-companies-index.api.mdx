@@ -1,11 +1,11 @@
 ---
 id: v-2-vendor-companies-index
-title: "v2.vendor.companies.index"
-description: "v2.vendor.companies.index"
-sidebar_label: "v2.vendor.companies.index"
+title: "List companies that enabled you"
+description: "Lists every company that has turned on your partner key, ordered by name. This is the first call a partner makes, and the only one sent with your partner key and no `KISS-Company` header. Each company carries its `company_id`: send it as `KISS-Company` on every other request you make for that company. It also lists the locations you can reach (each with its `location_id`, your `external_location_code` and its address), whether the company enabled only some of its locations (`location_scoped`), its facility and lock-support phone numbers, and the name and email of each of its administrators. When a company enabled only some locations, `locations` lists just those and can be empty. A company that turns you off no longer appears. See the [partner keys guide](/guides/partner-keys)."
+sidebar_label: "List companies that enabled you"
 hide_title: true
 hide_table_of_contents: true
-api: eJzdVk1vIzcM/SuEzhM7G/TkHopFsVsERYtFs+3FMBx6RHu00UhaiePN1Jj/XlAz/nYSdw899GSPSD7ykRTFjfKBIrLx7l6riVrfjdbktI+j0tcBnaE0Mk7TsyoU4yqpyVT9lRXUrFCRUvAuUVKTjbq7vZUfTamMJgiimqgPa4ot9FgtcGUS9PhQeasTIFizJlhFdAxLHwvwUVMkDYu9mcOaRvB++33zzeitiTWJE1D20jiMZWXWpMH6MnMCvwSuaGv5o/gbRDep9IH0EY53tgXDqT8kXVzCTIBOQ41tNgLnHY3gcSud97CPYFL23MMbTmSXBTiJFL5VxBXFvVF6hApDIJeAPSwIqA7cjuBxiaWxhtt5qLyjuWvqBcXHHIAYP81TE4KPfCqPBK6xVjy5wwRAhQmcZ0jEcl4XGQt1bZxJHJF9TFBijC1gznuWU43G5uyMVKFK75gcS7ExBGt6DuMvSSq+UamsqEb5x20gNVF+8YVKVoUKUZqNTd8vNaWEKzpQTByNW6muUBr5EAFjxFYVyjDV6W3kgezc6IvgQuuigBwuLOk58rm4UJJQkasJx4a6Qp2U/MBm4b0ldOpAKX0/nZ2ff83nmSk6tPMdQun1BdUL3FDrSOmK4BJHIp4P+vN3V6GfGN1dZVQabq9ER76O5d8mXJ+SZWPt/Dwv23R3Mg6/NiZKJ0zP83KB9cBpG/FBPCfeZmfhnHg7bJGhIV4s/764M4G5OGKuuWON49i+kL6uUC/A7RUywze0TmgeOT1xcQnwPG/5Ql4em/9jzsfz/fsn0cuTRh6It7lsGzNrz7pzqru5vW/i/Uw+n7iH4/WlTn6t4meZyTeipqsenz372rj7XnhbqBqf9x+otZHw0A5nS7Tp7PZuX8Lh3RsikPx0hfrh9t35WvWbScm4FfgIxq3RGr1dq8pImhwbtEl2qfz4DyKTwDgs2azpP3nGX2CZeckbf8TotcWzJq68bKcryv6RKzVR415/vNOXQUpxTdLh041qolUTVTGHNBmPMZgbDGH0RBQMJ1MHS4l9xBWJR5GP1zKSj8P6FL1uyvzRzQS/bGJ+h6ZDhkhNprND0UM+TbsUHmZGgpEoh3O1IIy5Dfs/H32sZfdQ7z/dA/sncjmJxi19BjEsd1r9ev/wAKLyBy0pkiulc4T2NpNnLD7L3h232lB60c6tQU4HbxwnqH1iMI5pFYc1t0k0gt+JNKDbKQJXyNJKskVWFOkn+Nk7xpKh9U2EHFykMMrz0Ceu0e1Hx6tlPop5lzOmZx4HiyavU7mom6EFpqrHys28bYJZoSqfWKSbzQIT/Rlt18nx14aiVG5WqDVG00/I6awrVEWoZRZPN+qJWilAWVKQXlujbfIQOL0hUvJdX/7y4bPqun8AQji3dg==
+api: eJztV0uP2zYQ/isDnhJAa2+CntxDsQjSYtEHgm7aHgzDHotji1mJVMiRs6rh/14MKVvyYxM3hx6KXPzQDIfzDWc+ftoqV5NHNs7eazVRm9ejDVnt/Ch3VY3WUBgZq+lJZYpxHdRkqv6MDmqWKU+hdjZQUJOten17K1+aQu5NLRHVRL3dkG8hxWqBCxMgxYfClToAQmk2BGuPlmHlfAbOa/KkYdkvs1jRCO72/28+Gb1fUprAASju0lj0eWE2pKF0ecQEbgVc0H7l97JfZ7oJuatJH8VxtmzBcEgPSWeXYgZAq6HCNi4C6yyNYLG3zlPYBZgQd07hDQcqVxlYyRQ+FcQF+X5RWECBdU02ADtYElBVczuCxQpzUxpu53XhLM1tUy3JL2ICsvhxHpq6dp5P7Z7ANmUpO9lhAaDAANYxBGJ5XmUxFurKWBPYIzsfIEfvW8BY92inCk0ZqzNSmcqdZbIsh411XZqEYfwhyIlvVcgLqlB+cVuTmii3/EA5q0zVXpqNTeqXikLANQ0cA3tj12qXKY08jIDeY6syZZiq8OXIHdi50ReDC6yLBrK4LEnPkc/NmZKCil1N2De0y9TJkQ/WLJ0rCa0aOIWvh3PY51/jeWLyFsv5IULu9AXXC9hQa0/hiuQCeyKed/7zV1dFP1n0+qpFueH2yujI16H829TXl2TVlOX8vC77cu+EDj82xksnTM/rcgF1h2mf8SCfk91mZ+mc7DZska4hnj3+/nBnEuYixVwzY41l3z5Tvl2mngnXO0SEX/A6gXm06ckWlwKe1y0O5GXa/B9jPub3r2ei55lGLogvY9k3ZvSe7c6hHni7b+Kek88Zd0ivz3Xy5078rDJxIiq66vLp0VfG3ifjbaYqfOr/oNZG0sOye7bCMpxN7/4m7O69LgOpzy5T392+OpdVv5oQjF2D82DsBkuj97Iq96TJssEyiJaKl39nMgGMxZzNhv6Ta/wZlBGX3PFHiH4ZCLleLiJHxcKNt6TBWWhd46FGz5Y8PFJ7pBeTTnwvIrNTXyvjA0OOZQl4WFbhI4UkfMQnij5nCQJZhk+Gi7Ndoq91sPj5/uHh5k1KbwEFoSY/greYF4ekRTwZClFGLvqOXkwkvgbDgOE0kLMdchd1oVSNAksaMVkRxqkYXbwR3DNgGVynWwVGL09lWY4WPEleL+JnhBVTGlwViywhXVy+KZLOlEXdhfEyO0jXoabsRjQVMriKRHXLsj6lF2f6+GUWXfYzG7eSQb3pBhXioEIa1MFpnWrSFUR83Y7H4zyCv0T/4mcyPaSYHanxVNYPTRCV7ELaUWraa/O74zaVFk2ld6uV9Erp7Jo8iKxHSeWBKAKYDvoqwLoxmmYvxvE7jDvbjdhejhITFE5ezNYURw+5UBM1ThM9PryjiYYgvyEh9+lWNb5UE1Uw12EyHmNtbrCuR49EteFgqrqkwM7jmuQtT+zjjaiR44l8551u8vhnN5P4eeOjBJt25EBqMp0NTQ/xaTiwx5AUJBnJsnuuloQ+MnD68aPzlchudffuHtg9ko38YezKxSCG5TpTMjYgLr/TijzZXEhTYKeUL6CIbOD33pA78Y4HQVbXzlgOULnAYCzT2nf92gQawW9EGtAeHNNBm/QCVZCnH+CNs4w5pzGKyXmqR1EKuMAV2v7WjAwHhxNLwfYN2brmNPNtT9DfyPEbOX4jx3Ny7KiF6YnHdYkmvnBH7tt2TDlViSmj3Nlz5SxThQss1u12iYH+8OVuJ48/NuSF4GaZ2qA3SUNPZ7tMpW6O3PdIrfBUnlMtlLzBsoky8VRDCTMe6Punt+/VbvcP3m3wZw==
 sidebar_class_name: "get api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -23,7 +23,7 @@ import Translate from "@docusaurus/Translate";
 <Heading
   as={"h1"}
   className={"openapi__heading"}
-  children={"v2.vendor.companies.index"}
+  children={"List companies that enabled you"}
 >
 </Heading>
 
@@ -37,7 +37,7 @@ import Translate from "@docusaurus/Translate";
 
 
 
-v2.vendor.companies.index
+Lists every company that has turned on your partner key, ordered by name. This is the first call a partner makes, and the only one sent with your partner key and no `KISS-Company` header. Each company carries its `company_id`: send it as `KISS-Company` on every other request you make for that company. It also lists the locations you can reach (each with its `location_id`, your `external_location_code` and its address), whether the company enabled only some of its locations (`location_scoped`), its facility and lock-support phone numbers, and the name and email of each of its administrators. When a company enabled only some locations, `locations` lists just those and can be empty. A company that turns you off no longer appears. See the [partner keys guide](/guides/partner-keys).
 
 <ParamsDetails
   parameters={undefined}
