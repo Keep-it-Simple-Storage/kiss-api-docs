@@ -64,6 +64,14 @@ const META = {
     description:
       "Exchange your company API token plus the tenant's ID in your own system (`external_tenant_id`, the same value `GET /tenants` returns) for a short-lived access token scoped to that tenant. Your app sends it as `Authorization: Bearer <token>` on `GET /access` and hands it to the lock SDK, so your users never see a KISS login screen on top of your own. The token lasts 15 minutes, and minting again replaces the tenant's previous token, so a tenant holds one at a time. KISS can end it early when the tenant's access ends. Needs the `tenants:auth` scope.",
   },
+  'v2.vendor.companies.index': {
+    summary: 'List companies that enabled you',
+    description:
+      'Start here. This call shows which companies have turned on your partner key, sorted by name. Send it with your partner key and no `KISS-Company` header; it is the only request that goes without one. ' +
+      'Every company comes with a `company_id`. Put that in `KISS-Company` on each request you make for that company. ' +
+      'You also get the locations you can reach, each with its `location_id`, your `external_location_code` and its address. If the company turned you on for only some locations, `location_scoped` is `true` and `locations` lists just those, which can mean none. ' +
+      "The company's facility and lock-support phone numbers come back too, along with the name and email of each administrator. When a company turns you off, it drops out of the list. The [partner keys guide](/guides/partner-keys) walks through the whole flow.",
+  },
   'v2.units.index': {
     summary: 'List units',
     description:
@@ -72,6 +80,14 @@ const META = {
   'v2.units.show': {
     summary: 'Get a unit',
     description: 'Fetch a single unit by its KISS `unit_id` (ULID).',
+  },
+  'v2.units.store': {
+    summary: 'Create a unit',
+    description:
+      'Creates one empty unit with no tenant. Send its `name` and say where it goes with `location_id` or `external_location_code`. You can skip both if your key only reaches one location. Add your own `external_unit_id` if you have one. ' +
+      'You get back `201` and the unit, in the same shape as `GET /units`. Hold on to its `unit_id`: `PUT /units/{unit_id}/tenancy` will not create a unit, so the unit has to exist before you move a tenant in. ' +
+      'If your `external_unit_id` is already on another unit, you may get a `409` with `code: external_unit_id_conflict`, and nothing is created. If that is the same unit, look it up with `GET /units` and use it. If it is a different unit, pick an `external_unit_id` that is not in use. ' +
+      'Needs the `units:write` scope (or its `pms:write` alias) and an `Idempotency-Key` header. Loading or reconciling a lot of units at once? Use `PATCH /units`.',
   },
   'v2.units.sync': {
     summary: 'Create or update units',
@@ -272,6 +288,20 @@ async function main() {
       '[sync-openapi] guide link to one will fail the Docusaurus build as a broken link. Check that\n' +
       '[sync-openapi] the endpoint is deployed and listed in PartnerApiSpec::OPERATIONS in kiss-api.'
     );
+  }
+
+  const untitled = [];
+  for (const item of Object.values(keptPaths))
+    for (const [method, op] of Object.entries(item))
+      if (HTTP_METHODS.has(method.toLowerCase()) && (!op.summary || !op.description)) untitled.push(op.operationId);
+
+  if (untitled.length) {
+    console.error(
+      `[sync-openapi] ${untitled.length} published operation(s) have no summary or description:\n` +
+      untitled.map((id) => `[sync-openapi]   - ${id}`).join('\n') + '\n' +
+      '[sync-openapi] Their reference pages would use the raw operationId as the title. Add an entry to META.'
+    );
+    process.exit(1);
   }
 
   const usedTags = new Set();

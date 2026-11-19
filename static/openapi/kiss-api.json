@@ -1378,7 +1378,7 @@
             }
           },
           "409": {
-            "description": "The tenant exists but cannot be updated here. `code` is `tenant_not_externally_linked` when the account carries no id from your system and no claim was sent, `tenant_profile_ambiguous` when your token reaches more than one of the tenant's records, `tenant_spans_locations` when a name was sent for a tenant holding records at several of your locations, or when a re-key was sent but your token does not reach every location the tenant occupies (identity and name are each one value behind all of them; a phone number is held per location, so sending that alone still works), or `external_tenant_id_conflict` when the `external_tenant_id` you sent already belongs to another tenant in your account. Additionally, a claim may be rejected with `claim_phone_required` if no `phone` was sent, `claim_phone_mismatch` if the phone does not match the one KISS holds for this tenant, or `claim_raced` if a concurrent write already linked the tenant to a different id first.",
+            "description": "The tenant exists but cannot be updated here. `code` is `tenant_not_externally_linked` when the account carries no id from your system and no claim was sent. `tenant_profile_ambiguous` when your token reaches more than one of the tenant's primary records (or, when it reaches none of those, more than one of any of its records), or when a claim or re-key carries an id that one of the tenant's guest or shared-access records also holds; the message suggests narrowing the token only for a phone-only write whose records sit at different locations. `tenant_spans_locations` when a name was sent for a tenant holding records at more than one location, or when a re-key was sent but your token does not reach every location the tenant occupies (identity and name are each one value behind all of them; a phone number is held per location, so sending that alone still works). `external_tenant_id_conflict` when the `external_tenant_id` you sent already belongs to another tenant in your account. Additionally, a claim may be rejected with `claim_phone_required` if no `phone` was sent, `claim_phone_mismatch` if the phone does not match the one KISS holds for this tenant, or `claim_raced` if a concurrent write already linked the tenant to a different id first.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2040,7 +2040,9 @@
           "422": {
             "$ref": "#/components/responses/ValidationException"
           }
-        }
+        },
+        "summary": "Create a unit",
+        "description": "Creates one empty unit with no tenant. Send its `name` and say where it goes with `location_id` or `external_location_code`. You can skip both if your key only reaches one location. Add your own `external_unit_id` if you have one. You get back `201` and the unit, in the same shape as `GET /units`. Hold on to its `unit_id`: `PUT /units/{unit_id}/tenancy` will not create a unit, so the unit has to exist before you move a tenant in. If your `external_unit_id` is already on another unit, you may get a `409` with `code: external_unit_id_conflict`, and nothing is created. If that is the same unit, look it up with `GET /units` and use it. If it is a different unit, pick an `external_unit_id` that is not in use. Needs the `units:write` scope (or its `pms:write` alias) and an `Idempotency-Key` header. Loading or reconciling a lot of units at once? Use `PATCH /units`."
       }
     },
     "/units/{unit}": {
@@ -2747,7 +2749,9 @@
               }
             }
           }
-        }
+        },
+        "summary": "List companies that enabled you",
+        "description": "Start here. This call shows which companies have turned on your partner key, sorted by name. Send it with your partner key and no `KISS-Company` header; it is the only request that goes without one. Every company comes with a `company_id`. Put that in `KISS-Company` on each request you make for that company. You also get the locations you can reach, each with its `location_id`, your `external_location_code` and its address. If the company turned you on for only some locations, `location_scoped` is `true` and `locations` lists just those, which can mean none. The company's facility and lock-support phone numbers come back too, along with the name and email of each administrator. When a company turns you off, it drops out of the list. The [partner keys guide](/guides/partner-keys) walks through the whole flow."
       }
     }
   },

@@ -1,11 +1,11 @@
 ---
 id: v-2-units-store
-title: "v2.units.store"
-description: "v2.units.store"
-sidebar_label: "v2.units.store"
+title: "Create a unit"
+description: "Creates one empty unit with no tenant. Send its `name` and say where it goes with `location_id` or `external_location_code`. You can skip both if your key only reaches one location. Add your own `external_unit_id` if you have one. You get back `201` and the unit, in the same shape as `GET /units`. Hold on to its `unit_id`: `PUT /units/{unit_id}/tenancy` will not create a unit, so the unit has to exist before you move a tenant in. If your `external_unit_id` is already on another unit, you may get a `409` with `code: external_unit_id_conflict`, and nothing is created. If that is the same unit, look it up with `GET /units` and use it. If it is a different unit, pick an `external_unit_id` that is not in use. Needs the `units:write` scope (or its `pms:write` alias) and an `Idempotency-Key` header. Loading or reconciling a lot of units at once? Use `PATCH /units`."
+sidebar_label: "Create a unit"
 hide_title: true
 hide_table_of_contents: true
-api: eJzFWFFvGzcM/iuEXtoCV2c1mod5D0NXdEPQbguSdMMQGDYj0T41d9JV0tk5GAb2H/YP90sGSmf7bF9Wdyi6vCSRKOoj+ZEibyVsRQ6DtuZCiZFYDAe10cEPfLCORCYCzr0Y3Yr3vCrGmajQYUmBHC+vhMGSxEhcKCorG8jI5vlbakQmtBEjkRMqciITjj7W2pESo+BqyoQiL52u+F4xYuUfawIWIh9AKzJBzzQ5mFkHilRdFVpGlPD0xd9//jU8PweZo/MZDF9CDkttlF0+E5nwMqcSxWglQlMxMh+cNnOxXo8TCvLhB6saljgEJa0JZAJvYbW98eyDZ5CrY9X27gPJIDJROfZi0OR5N7nkEMChzTc5Abv6iQelfVVgA3xwIDJR4sM7MvOQi9Hw/HydicImKBOtTlO8OfDEw7RzeDqAX6MYFrDMyUBjawf31IAjlDl5QPDazIudBsZj6qLAu4KSn9aZoIdAzmAx2eqWVp1ocwcaHwLdovCND1RmgAawiOqDXhAEe2DBkX968FWl/1xo72iOsgEsNHqwM5j22xjvV1Q5khh2zPkkoq02DvlJYfxj55QnPjKlkxcneUG68vTrHre/VfHfLF93U/82pcY4E0EHFhHXXGW4tFylzBTrdTriK2t8SqfhNy/41z5c8cWytSTvcd7LkCOPKgwnaHzU5yfy4HMDeSQfZfur0KeLyZE2K2VdaeoK31lbEJpW272tQ/9mm4ePC5R2QRNtJgpDP9itvwIZNCd7gC/+vBMFqTm5U6W9rZ2kSZLrgd3u7xL2NAzow8Q3RpKaYOhRfJBNG0700GqfNF1K7BOgE95dLPcDdxCl3pgcerzrz31v9fnmyPJOhUjFIZ2JjKHQ+7rve2aT1G3KtsfGqbq87Cso7w3WIWdIqbx9jfqyj+CNc9aBXZBbaFoOHrVpa8W3x1ZsmgpYogdjA0hHbM4ApvH1Au2PK/tEWjMrtAzT1BSEnHrKP7/S4MkEwMIRqgbuqLBm7vmJRmNDTq59ptoXHaW0tQnfwUwbBSHH0GLTIYfpT29u4Cz2mlNAowCVcuQ96AB3DejgYbq5OgPrQObWegKEmSMCvW+StMaQDNZN/FIHmTNbK2fnrJGt0gVFs6QtKzQNn0mC2szh8ufrAfyuQ27rANiqzZIbDvraaXSso9qTSnYgKD2bkWPHtO3l4CuQh1+F3r7mU6wZDo9Z8xsWWqXumpiE/xf5fZf9mYhYfN8l+2dfgaKAuiAFnQ1uYriphZmmoqXfLEkttvZyqFApnXriyz3s7aXoHMZ5JlDp+/z9eO1pDYiuXx+iPpq0Sgq55Rmssj56ErmpEilHuG6SW2ymrtoVPF2FUPnR2RlW+jlW1eCeqNLB67IqiLXinAbSlrx/thge+e3SWVXL+A8PR55k7XRo4gUxwCRGt+Pu1nVc9VsGdAPLYDbzV3zlCV2s7emPH60r+U0Try4vINh7MpGqTKir3VT25gEZ/G6K2vFlr23ZLT82ivRIbFuoThJpM7PRiPa5eXtxfQ0M8YpiUkuODLt9E7SemUZzRWilQTKFfSweZFRltQkeSstTrQk0T6O2h9rTAH4hUjzvbAQTSXWq3Dk5+h5eWxNQhlRQIzhHVcwOZkmJpuOqI0btAd0GKtBDOKsK1LEDi0xatWRLLUUc83Mm4ehWrFZ36Om9K9ZrXv5Yk2OGjDOxQKdT+3I7XmebUZ/Jo7TnDSVGMyz84bS/2hUX8fSqTZxn8AW/AfQaek9N73eKBRY1S4t1tmqFXid8z29Sw7KROCqEuxOvpKQq/KvsuJPhl79e33BmtN8hysRYh0v+UoLLNN/Y6K+YbHFtJQo08zqWU5F08s8/nANCwQ==
+api: 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
 sidebar_class_name: "post api-method"
 info_path: reference/kiss-api-reference
 custom_edit_url: null
@@ -23,7 +23,7 @@ import Translate from "@docusaurus/Translate";
 <Heading
   as={"h1"}
   className={"openapi__heading"}
-  children={"v2.units.store"}
+  children={"Create a unit"}
 >
 </Heading>
 
@@ -37,7 +37,7 @@ import Translate from "@docusaurus/Translate";
 
 
 
-v2.units.store
+Creates one empty unit with no tenant. Send its `name` and say where it goes with `location_id` or `external_location_code`. You can skip both if your key only reaches one location. Add your own `external_unit_id` if you have one. You get back `201` and the unit, in the same shape as `GET /units`. Hold on to its `unit_id`: `PUT /units/{unit_id}/tenancy` will not create a unit, so the unit has to exist before you move a tenant in. If your `external_unit_id` is already on another unit, you may get a `409` with `code: external_unit_id_conflict`, and nothing is created. If that is the same unit, look it up with `GET /units` and use it. If it is a different unit, pick an `external_unit_id` that is not in use. Needs the `units:write` scope (or its `pms:write` alias) and an `Idempotency-Key` header. Loading or reconciling a lot of units at once? Use `PATCH /units`.
 
 <Heading
   id={"request"}
