@@ -11,7 +11,7 @@ This guide is for a partner that sends data for many storage companies, for exam
 
 ## Getting a partner key
 
-A partner key is issued by KISS. Email [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com) and we will set one up for you.
+A partner key is issued by KISS. Email [dev@keepitsimplestorage.com](mailto:dev@keepitsimplestorage.com) and we will set one up for you.
 
 **Copy it as soon as you receive it.** Like a per-company token, it is shown once and cannot be retrieved afterwards by anyone, including KISS support. Store it in a secrets manager, not in source code. A partner key expires one year after it is created, like a company token; see [Token lifetime](/guides/authentication#token-lifetime).
 
