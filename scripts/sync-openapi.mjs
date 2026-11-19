@@ -86,7 +86,7 @@ const META = {
     description:
       'Creates one empty unit with no tenant. Send its `name` and say where it goes with `location_id` or `external_location_code`. You can skip both if your key only reaches one location. Add your own `external_unit_id` if you have one. ' +
       'You get back `201` and the unit, in the same shape as `GET /units`. Hold on to its `unit_id`: `PUT /units/{unit_id}/tenancy` will not create a unit, so the unit has to exist before you move a tenant in. ' +
-      'If your `external_unit_id` is already on another unit, you may get a `409` with `code: external_unit_id_conflict`, and nothing is created. Look that unit up with `GET /units` and use it instead. ' +
+      'If your `external_unit_id` is already on another unit, you may get a `409` with `code: external_unit_id_conflict`, and nothing is created. If that is the same unit, look it up with `GET /units` and use it. If it is a different unit, pick an `external_unit_id` that is not in use. ' +
       'Needs the `units:write` scope (or its `pms:write` alias) and an `Idempotency-Key` header. Loading or reconciling a lot of units at once? Use `PATCH /units`.',
   },
   'v2.units.sync': {
