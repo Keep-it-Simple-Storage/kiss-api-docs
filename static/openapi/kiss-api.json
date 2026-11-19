@@ -2042,7 +2042,7 @@
           }
         },
         "summary": "Create a unit",
-        "description": "Creates one vacant unit with no tenant. Send a `name`, place it with `location_id` or `external_location_code` (optional when your key reaches a single location), and add your own `external_unit_id` if you have one. Answers `201` with the unit in the same shape `GET /units` returns. Keep its `unit_id` for later calls: `PUT /units/{unit_id}/tenancy` only updates a unit that already exists, so create the unit here first. If the `external_unit_id` already belongs to another unit, it can answer `409` with `code` `external_unit_id_conflict` and create nothing; look that unit up with `GET /units` instead. Needs the `units:write` scope (or its `pms:write` alias) and an `Idempotency-Key` header. To load or reconcile many units at once, use `PATCH /units`."
+        "description": "Creates one empty unit with no tenant. Send its `name` and say where it goes with `location_id` or `external_location_code`. You can skip both if your key only reaches one location. Add your own `external_unit_id` if you have one. You get back `201` and the unit, in the same shape as `GET /units`. Hold on to its `unit_id`: `PUT /units/{unit_id}/tenancy` will not create a unit, so the unit has to exist before you move a tenant in. If your `external_unit_id` is already on another unit, you may get a `409` with `code: external_unit_id_conflict`, and nothing is created. Look that unit up with `GET /units` and use it instead. Needs the `units:write` scope (or its `pms:write` alias) and an `Idempotency-Key` header. Loading or reconciling a lot of units at once? Use `PATCH /units`."
       }
     },
     "/units/{unit}": {
@@ -2751,7 +2751,7 @@
           }
         },
         "summary": "List companies that enabled you",
-        "description": "Lists every company that has turned on your partner key, ordered by name. This is the first call a partner makes, and the only one sent with your partner key and no `KISS-Company` header. Each company carries its `company_id`: send it as `KISS-Company` on every other request you make for that company. It also lists the locations you can reach (each with its `location_id`, your `external_location_code` and its address), whether the company enabled only some of its locations (`location_scoped`), its facility and lock-support phone numbers, and the name and email of each of its administrators. When a company enabled only some locations, `locations` lists just those and can be empty. A company that turns you off no longer appears. See the [partner keys guide](/guides/partner-keys)."
+        "description": "Start here. This call shows which companies have turned on your partner key, sorted by name. Send it with your partner key and no `KISS-Company` header; it is the only request that goes without one. Every company comes with a `company_id`. Put that in `KISS-Company` on each request you make for that company. You also get the locations you can reach, each with its `location_id`, your `external_location_code` and its address. If the company turned you on for only some locations, `location_scoped` is `true` and `locations` lists just those, which can mean none. The company's facility and lock-support phone numbers come back too, along with the name and email of each administrator. When a company turns you off, it drops out of the list. The [partner keys guide](/guides/partner-keys) walks through the whole flow."
       }
     }
   },
