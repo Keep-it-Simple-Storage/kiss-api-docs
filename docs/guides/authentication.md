@@ -62,7 +62,7 @@ If you run a test facility alongside real ones under the same company, issue a s
 :::
 
 :::note No account yet?
-If you do not have a KISS account, email [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com) with your company details and why you want to integrate, and we will set you up with a sandbox company to build against.
+If you do not have a KISS account, email [dev@keepitsimplestorage.com](mailto:dev@keepitsimplestorage.com) with your company details and why you want to integrate, and we will set you up with a sandbox company to build against.
 :::
 
 :::caution

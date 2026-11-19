@@ -178,7 +178,7 @@ The SDK opens NAC1080-based locks. ST25DV-based locks are not supported yet: a t
 :::
 
 :::info Access is by partnership agreement
-The SDK isn't on a public package registry. Once your partnership agreement with KISS is signed, we add your team to the private SDK repository as a GitHub collaborator or via a deploy key, and you install it as a normal git dependency, pinned to a release tag. **Reach out to your KISS contact (or [help@keepitsimplestorage.com](mailto:help@keepitsimplestorage.com)) to get started.**
+The SDK isn't on a public package registry. Once your partnership agreement with KISS is signed, we add your team to the private SDK repository as a GitHub collaborator or via a deploy key, and you install it as a normal git dependency, pinned to a release tag. **Reach out to your KISS contact (or [dev@keepitsimplestorage.com](mailto:dev@keepitsimplestorage.com)) to get started.**
 :::
 
 ## Keep going
